@@ -4,13 +4,6 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Dispute Monitoring Dashboard</title>
-
-<link rel="icon" href="data:image/svg+xml,
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
-<rect width='100' height='100' rx='20' fill='violet'/>
-<text x='50' y='65' font-size='60' text-anchor='middle' fill='white' font-family='Arial'>H</text>
-<text x='85' y='25' font-size='20'>⚠</text>
-</svg>">
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -25,186 +18,53 @@
   :root { --glow: 0 0 28px rgba(99,102,241,0.22); }
   *{ box-sizing:border-box; }
   body{ font-family:'Sora',sans-serif; }
-
-  .glass{
-    background:rgba(15,23,42,0.72);
-    backdrop-filter:blur(18px);
-    -webkit-backdrop-filter:blur(18px);
-    border:1px solid rgba(99,102,241,0.14);
-  }
-  .glass-light{
-    background:rgba(255,255,255,0.04);
-    backdrop-filter:blur(8px);
-    border:1px solid rgba(255,255,255,0.07);
-  }
-  .bg-mesh{
-    background:#020817;
-    background-image:
-      radial-gradient(ellipse 60% 50% at 10% 20%,rgba(99,102,241,0.11) 0%,transparent 60%),
-      radial-gradient(ellipse 50% 60% at 90% 80%,rgba(16,185,129,0.06) 0%,transparent 60%),
-      radial-gradient(ellipse 40% 40% at 50% 50%,rgba(59,130,246,0.05) 0%,transparent 60%);
-  }
-
-  @keyframes pulse-ring{
-    0%{transform:scale(1);opacity:1}
-    100%{transform:scale(1.6);opacity:0}
-  }
-  .pulse-ring::before{
-    content:'';position:absolute;inset:-4px;border-radius:9999px;
-    border:2px solid rgba(99,102,241,0.5);
-    animation:pulse-ring 2s ease-out infinite;
-  }
-  @keyframes slideIn{
-    from{opacity:0;transform:translateY(10px)}
-    to{opacity:1;transform:translateY(0)}
-  }
+  .glass{ background:rgba(15,23,42,0.72); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border:1px solid rgba(99,102,241,0.14); }
+  .glass-light{ background:rgba(255,255,255,0.04); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.07); }
+  .bg-mesh{ background:#020817; background-image: radial-gradient(ellipse 60% 50% at 10% 20%,rgba(99,102,241,0.11) 0%,transparent 60%), radial-gradient(ellipse 50% 60% at 90% 80%,rgba(16,185,129,0.06) 0%,transparent 60%), radial-gradient(ellipse 40% 40% at 50% 50%,rgba(59,130,246,0.05) 0%,transparent 60%); }
+  @keyframes pulse-ring{ 0%{transform:scale(1);opacity:1} 100%{transform:scale(1.6);opacity:0} }
+  .pulse-ring::before{ content:'';position:absolute;inset:-4px;border-radius:9999px; border:2px solid rgba(99,102,241,0.5); animation:pulse-ring 2s ease-out infinite; }
+  @keyframes slideIn{ from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
   .slide-in{ animation:slideIn 0.35s ease forwards; }
-
   @keyframes statusPulse{ 0%,100%{opacity:1} 50%{opacity:0.45} }
   .pending-dot{ animation:statusPulse 2s ease-in-out infinite; }
-
   .bar-fill{ transition:width 0.8s cubic-bezier(0.4,0,0.2,1); }
-
-  .ticket-row:hover{
-    background:rgba(99,102,241,0.055)!important;
-    box-shadow:inset 3px 0 0 rgba(99,102,241,0.55);
-  }
+  .ticket-row:hover{ background:rgba(99,102,241,0.055)!important; box-shadow:inset 3px 0 0 rgba(99,102,241,0.55); }
   .ticket-row{ transition:all 0.18s ease; }
-
   .card-glow:hover{ box-shadow:var(--glow); border-color:rgba(99,102,241,0.28); }
   .card-glow{ transition:all 0.3s ease; }
-
   ::-webkit-scrollbar{ width:4px;height:4px; }
   ::-webkit-scrollbar-track{ background:transparent; }
   ::-webkit-scrollbar-thumb{ background:rgba(99,102,241,0.35);border-radius:2px; }
-
-  .form-input:focus{
-    outline:none;
-    border-color:rgba(99,102,241,0.6);
-    box-shadow:0 0 0 3px rgba(99,102,241,0.11);
-  }
-
-  @keyframes notifPop{
-    0%{transform:translateX(120%);opacity:0}
-    15%{transform:translateX(0);opacity:1}
-    80%{transform:translateX(0);opacity:1}
-    100%{transform:translateX(120%);opacity:0}
-  }
+  .form-input:focus{ outline:none; border-color:rgba(99,102,241,0.6); box-shadow:0 0 0 3px rgba(99,102,241,0.11); }
+  @keyframes notifPop{ 0%{transform:translateX(120%);opacity:0} 15%{transform:translateX(0);opacity:1} 80%{transform:translateX(0);opacity:1} 100%{transform:translateX(120%);opacity:0} }
   .notif-pop{ animation:notifPop 3.5s ease forwards; }
-
   .rotation-item{ transition:all 0.25s ease; }
-  .rotation-item.active{
-    background:rgba(99,102,241,0.18);
-    border-color:rgba(99,102,241,0.45);
-    transform:scale(1.02);
-  }
-  .rotation-item.next-up{
-    background:rgba(245,158,11,0.07);
-    border-color:rgba(245,158,11,0.28);
-  }
+  .rotation-item.active{ background:rgba(99,102,241,0.18); border-color:rgba(99,102,241,0.45); transform:scale(1.02); }
+  .rotation-item.next-up{ background:rgba(245,158,11,0.07); border-color:rgba(245,158,11,0.28); }
   .log-item{ border-left:2px solid; }
-
-  /* Loading */
-  #loading-overlay{
-    position:fixed;inset:0;z-index:999;background:#020817;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
-    transition:opacity 0.4s ease;
-  }
+  #loading-overlay{ position:fixed;inset:0;z-index:999;background:#020817; display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px; transition:opacity 0.4s ease; }
   @keyframes spin{ to{transform:rotate(360deg)} }
-  .spinner{
-    width:42px;height:42px;
-    border:3px solid rgba(99,102,241,0.14);
-    border-top-color:#6366f1;border-radius:50%;
-    animation:spin 0.75s linear infinite;
-  }
-
-  /* Firebase badge */
-  #fb-status{
-    position:fixed;bottom:14px;right:14px;z-index:40;
-    display:flex;align-items:center;gap:6px;
-    background:rgba(15,23,42,0.88);border:1px solid rgba(99,102,241,0.18);
-    padding:5px 12px;border-radius:999px;backdrop-filter:blur(8px);
-    font-size:11px;font-family:'JetBrains Mono',monospace;color:#94a3b8;
-  }
+  .spinner{ width:42px;height:42px; border:3px solid rgba(99,102,241,0.14); border-top-color:#6366f1;border-radius:50%; animation:spin 0.75s linear infinite; }
+  #fb-status{ position:fixed;bottom:14px;right:14px;z-index:40; display:flex;align-items:center;gap:6px; background:rgba(15,23,42,0.88);border:1px solid rgba(99,102,241,0.18); padding:5px 12px;border-radius:999px;backdrop-filter:blur(8px); font-size:11px;font-family:'JetBrains Mono',monospace;color:#94a3b8; }
   .fb-dot{ width:7px;height:7px;border-radius:50%;flex-shrink:0; }
   .fb-dot.connected{ background:#10b981;box-shadow:0 0 6px #10b981; }
   .fb-dot.connecting{ background:#f59e0b;animation:statusPulse 1s ease infinite; }
   .fb-dot.error{ background:#ef4444; }
-
-  /* Working-today pill */
-  .wt-pill{
-    display:inline-flex;align-items:center;gap:6px;
-    background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.22);
-    border-radius:9999px;padding:4px 10px 4px 8px;
-    font-size:12px;font-weight:600;color:#c7d2fe;
-    transition:all 0.2s ease;
-  }
+  .wt-pill{ display:inline-flex;align-items:center;gap:6px; background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.22); border-radius:9999px;padding:4px 10px 4px 8px; font-size:12px;font-weight:600;color:#c7d2fe; transition:all 0.2s ease; }
   .wt-pill:hover{ background:rgba(99,102,241,0.18); }
-  .wt-pill .del-btn{
-    width:16px;height:16px;border-radius:50%;
-    background:rgba(239,68,68,0.15);border:none;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;
-    color:#f87171;transition:all 0.15s ease;font-size:11px;
-  }
+  .wt-pill .del-btn{ width:16px;height:16px;border-radius:50%; background:rgba(239,68,68,0.15);border:none;cursor:pointer; display:flex;align-items:center;justify-content:center; color:#f87171;transition:all 0.15s ease;font-size:11px; }
   .wt-pill .del-btn:hover{ background:rgba(239,68,68,0.35);color:#fff; }
-
-  /* Dropdown panel */
-  #add-dropdown{
-    position:fixed;
-    z-index:9999;
-    background:rgba(10,16,36,0.98);
-    border:1px solid rgba(99,102,241,0.25);
-    border-radius:14px;
-    box-shadow:0 24px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(99,102,241,0.08);
-    max-height:260px;overflow-y:auto;
-    min-width:260px;
-    display:none;
-    backdrop-filter:blur(20px);
-    -webkit-backdrop-filter:blur(20px);
-  }
+  #add-dropdown{ position:fixed; z-index:9999; background:rgba(10,16,36,0.98); border:1px solid rgba(99,102,241,0.25); border-radius:14px; box-shadow:0 24px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(99,102,241,0.08); max-height:260px;overflow-y:auto; min-width:260px; display:none; backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); }
   #add-dropdown.open{ display:block; }
-
-  @keyframes fadeSlide{
-    from{opacity:0;transform:translateY(4px)}
-    to{opacity:1;transform:translateY(0)}
-  }
+  @keyframes fadeSlide{ from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
   #add-dropdown.open{ animation:fadeSlide 0.18s ease forwards; }
-
-  .member-chip{
-    display:flex;align-items:center;padding:9px 12px;
-    cursor:pointer;border-radius:8px;transition:background 0.15s;
-    font-size:13px;color:#cbd5e1;gap:10px;
-  }
+  .member-chip{ display:flex;align-items:center;padding:9px 12px; cursor:pointer;border-radius:8px;transition:background 0.15s; font-size:13px;color:#cbd5e1;gap:10px; }
   .member-chip:hover{ background:rgba(99,102,241,0.14); }
   .member-chip.already{ opacity:0.32;pointer-events:none; }
-
-  /* ── Confirm Modal ── */
-  #confirm-modal{
-    position:fixed;inset:0;z-index:200;
-    display:none;align-items:center;justify-content:center;padding:16px;
-  }
-  #confirm-modal.open{ display:flex; }
-
-  /* ── Skip Modal ── */
-  #skip-modal{
-    position:fixed;inset:0;z-index:200;
-    display:none;align-items:center;justify-content:center;padding:16px;
-  }
-  #skip-modal.open{ display:flex; }
-
-  .modal-backdrop{
-    position:absolute;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);
-  }
-  .modal-card{
-    position:relative;z-index:1;
-    background:rgba(10,16,36,0.98);
-    border:1px solid rgba(99,102,241,0.25);
-    border-radius:20px;
-    box-shadow:0 32px 64px rgba(0,0,0,0.7);
-    padding:28px 28px 24px;
-    width:100%;max-width:420px;
-    animation:slideIn 0.25s ease;
-  }
+  .modal-overlay{ position:fixed;inset:0;z-index:200; display:none;align-items:center;justify-content:center;padding:16px; }
+  .modal-overlay.open{ display:flex; }
+  .modal-backdrop{ position:absolute;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px); }
+  .modal-card{ position:relative;z-index:1; background:rgba(10,16,36,0.98); border:1px solid rgba(99,102,241,0.25); border-radius:20px; box-shadow:0 32px 64px rgba(0,0,0,0.7); padding:28px 28px 24px; width:100%;max-width:420px; animation:slideIn 0.25s ease; }
 </style>
 </head>
 <body class="bg-mesh min-h-screen text-slate-100 dark">
@@ -226,9 +86,7 @@
 <div id="toast" class="fixed top-5 right-5 z-50 hidden">
   <div class="notif-pop glass rounded-xl px-5 py-3 flex items-center gap-3 shadow-2xl border border-indigo-500/30">
     <div class="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
-      <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-      </svg>
+      <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
     </div>
     <div>
       <p class="text-xs text-slate-400" id="toast-sub">Saved to Firebase</p>
@@ -237,15 +95,13 @@
   </div>
 </div>
 
-<!-- ══════════ CONFIRM REMOVE MODAL ══════════ -->
-<div id="confirm-modal">
+<!-- CONFIRM REMOVE MODAL -->
+<div id="confirm-modal" class="modal-overlay">
   <div class="modal-backdrop" onclick="closeConfirmModal()"></div>
   <div class="modal-card">
     <div class="flex items-center gap-3 mb-4">
       <div class="w-10 h-10 rounded-xl bg-rose-500/15 flex items-center justify-center flex-shrink-0">
-        <svg class="w-5 h-5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-        </svg>
+        <svg class="w-5 h-5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
       </div>
       <div>
         <h3 class="text-base font-bold text-white">Remove Member?</h3>
@@ -260,47 +116,33 @@
       </div>
     </div>
     <div class="flex gap-3">
-      <button onclick="closeConfirmModal()"
-        class="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-semibold py-2.5 rounded-xl transition-all border border-white/10">
-        Cancel
-      </button>
-      <button onclick="confirmRemoveMember()"
-        class="flex-1 bg-rose-600 hover:bg-rose-500 text-white text-sm font-semibold py-2.5 rounded-xl transition-all shadow-lg shadow-rose-900/30">
-        Yes, Remove
-      </button>
+      <button onclick="closeConfirmModal()" class="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-semibold py-2.5 rounded-xl transition-all border border-white/10">Cancel</button>
+      <button onclick="confirmRemoveMember()" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white text-sm font-semibold py-2.5 rounded-xl transition-all">Yes, Remove</button>
     </div>
   </div>
 </div>
 
-<!-- ══════════ SKIP DISPUTE MODAL ══════════ -->
-<div id="skip-modal">
+<!-- SKIP DISPUTE MODAL -->
+<div id="skip-modal" class="modal-overlay">
   <div class="modal-backdrop" onclick="closeSkipModal()"></div>
   <div class="modal-card">
     <div class="flex items-center gap-3 mb-4">
       <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center flex-shrink-0">
-        <svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
+        <svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       </div>
       <div>
         <h3 class="text-base font-bold text-white">Skip This Dispute?</h3>
         <p class="text-xs text-slate-500">Please provide a reason for skipping.</p>
       </div>
     </div>
-
-    <!-- Ticket info pill -->
     <div class="glass-light rounded-xl px-4 py-3 mb-4 flex items-center gap-3">
       <span class="text-xs font-mono text-rose-400 bg-rose-500/10 px-2 py-1 rounded-full border border-rose-500/20 flex-shrink-0">⚡ Dispute</span>
       <p class="text-sm text-white font-medium truncate" id="skip-ticket-title">—</p>
       <span class="ml-auto text-xs font-mono text-slate-500 flex-shrink-0" id="skip-ticket-id">—</span>
     </div>
-
-    <!-- Reason selector -->
     <div class="mb-3">
       <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Reason</label>
-      <select id="skip-reason-select"
-        class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 appearance-none cursor-pointer transition-all mb-2"
-        onchange="handleSkipReasonSelect(this.value)">
+      <select id="skip-reason-select" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 appearance-none cursor-pointer transition-all mb-2" onchange="handleSkipReasonSelect(this.value)">
         <option value="">— Select a reason —</option>
         <option value="Duplicate ticket">Duplicate ticket</option>
         <option value="Insufficient information">Insufficient information</option>
@@ -309,29 +151,109 @@
         <option value="Escalated to another team">Escalated to another team</option>
         <option value="Other">Other (type below)</option>
       </select>
-      <input id="skip-reason-input" type="text" placeholder="Enter custom reason…"
-        class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 placeholder-slate-600 transition-all hidden"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();confirmSkip();}"/>
+      <input id="skip-reason-input" type="text" placeholder="Enter custom reason…" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 placeholder-slate-600 transition-all hidden" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmSkip();}"/>
     </div>
-
-    <!-- Note (optional) -->
     <div class="mb-5">
       <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Additional Note <span class="text-slate-600 normal-case tracking-normal">(optional)</span></label>
-      <textarea id="skip-note" rows="2" placeholder="Any extra context…"
-        class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 placeholder-slate-600 transition-all resize-none"></textarea>
+      <textarea id="skip-note" rows="2" placeholder="Any extra context…" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 placeholder-slate-600 transition-all resize-none"></textarea>
     </div>
-
     <div class="flex gap-3">
-      <button onclick="closeSkipModal()"
-        class="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-semibold py-2.5 rounded-xl transition-all border border-white/10">
-        Cancel
-      </button>
-      <button onclick="confirmSkip()"
-        class="flex-1 bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold py-2.5 rounded-xl transition-all shadow-lg shadow-amber-900/30 flex items-center justify-center gap-2">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8"/>
-        </svg>
+      <button onclick="closeSkipModal()" class="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-semibold py-2.5 rounded-xl transition-all border border-white/10">Cancel</button>
+      <button onclick="confirmSkip()" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8"/></svg>
         Confirm Skip
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ✏️ EDIT TICKET MODAL (NEW) -->
+<div id="edit-modal" class="modal-overlay">
+  <div class="modal-backdrop" onclick="closeEditModal()"></div>
+  <div class="modal-card" style="max-width:480px;">
+    <div class="flex items-center gap-3 mb-5">
+      <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+      </div>
+      <div>
+        <h3 class="text-base font-bold text-white">Edit Ticket</h3>
+        <p class="text-xs text-slate-500 font-mono" id="edit-ticket-id-label">—</p>
+      </div>
+      <button onclick="closeEditModal()" class="ml-auto text-slate-500 hover:text-white transition-colors">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="space-y-4">
+      <div>
+        <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Ticket Type</label>
+        <select id="edit-type" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 appearance-none cursor-pointer transition-all">
+          <option value="Dispute">⚡ Dispute</option>
+          <option value="Partner Portal">🔗 Partner Portal</option>
+          <option value="Inquiry">💬 Inquiry</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Ticket Title</label>
+        <input id="edit-title" type="text" placeholder="Describe the issue…" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 placeholder-slate-600 transition-all" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmEditTicket();}"/>
+      </div>
+      <div>
+        <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Assigned To</label>
+        <select id="edit-assignee" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 appearance-none cursor-pointer transition-all"></select>
+      </div>
+      <div>
+        <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Status</label>
+        <select id="edit-status" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 appearance-none cursor-pointer transition-all">
+          <option value="Pending">Pending</option>
+          <option value="Completed">Completed</option>
+          <option value="Skipped">Skipped</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeEditModal()" class="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-semibold py-2.5 rounded-xl transition-all border border-white/10">Cancel</button>
+      <button onclick="confirmEditTicket()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        Save Changes
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ⏭ SKIP ROTATION MODAL (NEW) -->
+<div id="skip-rotation-modal" class="modal-overlay">
+  <div class="modal-backdrop" onclick="closeSkipRotationModal()"></div>
+  <div class="modal-card" style="max-width:400px;">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center flex-shrink-0">
+        <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <div>
+        <h3 class="text-base font-bold text-white">Skip Current Person?</h3>
+        <p class="text-xs text-slate-500">Move to the next person in rotation without assigning a ticket.</p>
+      </div>
+    </div>
+    <div class="glass-light rounded-xl px-4 py-3 mb-5 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div id="skip-rot-curr-avatar" class="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">?</div>
+        <div>
+          <p class="text-[10px] text-slate-500 uppercase tracking-wider">Skipping</p>
+          <p class="text-sm font-bold text-white" id="skip-rot-curr-name">—</p>
+        </div>
+      </div>
+      <svg class="w-5 h-5 text-slate-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+      <div class="flex items-center gap-3">
+        <div>
+          <p class="text-[10px] text-slate-500 uppercase tracking-wider text-right">Next Up</p>
+          <p class="text-sm font-bold text-indigo-300 text-right" id="skip-rot-next-name">—</p>
+        </div>
+        <div id="skip-rot-next-avatar" class="w-9 h-9 rounded-full bg-amber-500 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">?</div>
+      </div>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="closeSkipRotationModal()" class="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-semibold py-2.5 rounded-xl transition-all border border-white/10">Cancel</button>
+      <button onclick="confirmSkipRotation()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8"/></svg>
+        Yes, Skip
       </button>
     </div>
   </div>
@@ -340,16 +262,12 @@
 <!-- LAYOUT -->
 <div class="flex h-screen overflow-hidden">
 
-  <!-- ── SIDEBAR ──────────────────────────────── -->
+  <!-- SIDEBAR -->
   <aside class="w-64 flex-shrink-0 glass border-r border-indigo-500/10 flex flex-col h-full z-10">
-
-    <!-- Logo -->
     <div class="px-6 py-5 border-b border-white/5">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-900/50">
-          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-          </svg>
+          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
         </div>
         <div>
           <p class="text-sm font-bold text-white tracking-tight">DisputeOps</p>
@@ -357,48 +275,36 @@
         </div>
       </div>
     </div>
-
-    <!-- Nav -->
     <nav class="px-3 py-4 space-y-1">
-      <button onclick="showSection('dashboard')" id="nav-dashboard"
-        class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all bg-indigo-600/20 text-indigo-300 border border-indigo-500/20">
+      <button onclick="showSection('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all bg-indigo-600/20 text-indigo-300 border border-indigo-500/20">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
         Dashboard
       </button>
-      <button onclick="showSection('tickets')" id="nav-tickets"
-        class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5">
+      <button onclick="showSection('tickets')" id="nav-tickets" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         All Tickets
         <span id="ticket-count-badge" class="ml-auto bg-indigo-600 text-white text-[10px] font-mono px-1.5 py-0.5 rounded-full">0</span>
       </button>
-      <button onclick="showSection('team')" id="nav-team"
-        class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5">
+      <button onclick="showSection('team')" id="nav-team" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         Team Stats
       </button>
     </nav>
-
-    <!-- Rotation queue (sidebar) -->
+    <!-- Sidebar rotation — current person always FIRST -->
     <div class="px-3 mt-1">
       <p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold px-3 mb-2">Today's Rotation</p>
       <div id="sidebar-rotation" class="space-y-0.5"></div>
     </div>
-
-    <!-- Dark / footer -->
     <div class="mt-auto px-4 py-4 border-t border-white/5">
       <button onclick="toggleDark()" class="w-full flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors py-2 px-3 rounded-lg hover:bg-white/5">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
-        </svg>
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
         <span id="dark-label">Light Mode</span>
       </button>
     </div>
   </aside>
 
-  <!-- ── MAIN ─────────────────────────────────── -->
+  <!-- MAIN -->
   <main class="flex-1 overflow-y-auto">
-
-    <!-- Top bar -->
     <header class="sticky top-0 z-10 glass border-b border-white/5 px-8 py-4 flex items-center justify-between">
       <div>
         <h1 id="page-title" class="text-lg font-bold text-white">Dashboard</h1>
@@ -406,30 +312,23 @@
       </div>
       <div class="flex items-center gap-4">
         <div class="flex items-center gap-2 glass-light rounded-full px-4 py-2 border border-indigo-500/20">
-          <div class="relative w-2 h-2">
-            <div class="w-2 h-2 rounded-full bg-indigo-400 pulse-ring relative"></div>
-          </div>
+          <div class="relative w-2 h-2"><div class="w-2 h-2 rounded-full bg-indigo-400 pulse-ring relative"></div></div>
           <span class="text-xs text-slate-400">Next up:</span>
           <span id="header-next" class="text-xs font-bold text-indigo-300 font-mono">—</span>
         </div>
-        <button onclick="openModal()"
-          class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all shadow-lg shadow-indigo-900/40 hover:shadow-indigo-700/40">
+        <button onclick="openModal()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all shadow-lg shadow-indigo-900/40">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
           New Ticket
         </button>
       </div>
     </header>
 
-    <!-- ═══════════ DASHBOARD ═══════════ -->
+    <!-- DASHBOARD -->
     <div id="section-dashboard" class="p-8 space-y-5">
-
-      <!-- Stat cards -->
       <div class="grid grid-cols-4 gap-4">
         <div class="glass rounded-2xl p-5 card-glow">
           <div class="flex items-start justify-between mb-3">
-            <div class="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center">
-              <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-            </div>
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center"><svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
             <span class="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full">TOTAL</span>
           </div>
           <p class="text-3xl font-bold text-white font-mono" id="stat-total">—</p>
@@ -437,9 +336,7 @@
         </div>
         <div class="glass rounded-2xl p-5 card-glow">
           <div class="flex items-start justify-between mb-3">
-            <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
-              <svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
+            <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center"><svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
             <span class="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">OPEN</span>
           </div>
           <p class="text-3xl font-bold text-white font-mono" id="stat-pending">—</p>
@@ -447,9 +344,7 @@
         </div>
         <div class="glass rounded-2xl p-5 card-glow">
           <div class="flex items-start justify-between mb-3">
-            <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
-              <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center"><svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
             <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">DONE</span>
           </div>
           <p class="text-3xl font-bold text-white font-mono" id="stat-completed">—</p>
@@ -457,9 +352,7 @@
         </div>
         <div class="glass rounded-2xl p-5 card-glow">
           <div class="flex items-start justify-between mb-3">
-            <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center">
-              <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-            </div>
+            <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center"><svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
             <span class="text-[10px] font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">ON DUTY</span>
           </div>
           <p class="text-3xl font-bold text-white font-mono" id="stat-working">—</p>
@@ -467,24 +360,18 @@
         </div>
       </div>
 
-      <!-- ══ WORKING TODAY CARD ══ -->
+      <!-- WORKING TODAY -->
       <div class="glass rounded-2xl p-6 card-glow">
         <div class="flex items-center justify-between mb-4">
           <div>
             <h3 class="text-sm font-bold text-white">Working Today</h3>
             <p class="text-xs text-slate-500 mt-0.5">Rotation uses only members listed here · Changes sync instantly</p>
           </div>
-          <div class="flex items-center gap-2">
-            <span id="wt-count" class="text-xs font-mono text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">0 members</span>
-          </div>
+          <span id="wt-count" class="text-xs font-mono text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">0 members</span>
         </div>
-
-        <!-- Pills + Add -->
         <div class="flex flex-wrap items-center gap-2 min-h-[40px]" id="wt-pills">
           <span class="text-xs text-slate-600 italic">No members yet…</span>
         </div>
-
-        <!-- Add member row -->
         <div class="mt-4 flex gap-2 items-center" id="add-member-wrapper">
           <div class="relative flex-1">
             <input id="custom-name-input" type="text" placeholder="Type a name or pick from the list…"
@@ -492,11 +379,9 @@
               onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomName();}"
               oninput="filterDropdown(this.value)"
               onfocus="openDropdown()"
-              autocomplete="off"
-            />
+              autocomplete="off"/>
           </div>
-          <button onclick="addCustomName()"
-            class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all flex-shrink-0 shadow-lg shadow-indigo-900/30">
+          <button onclick="addCustomName()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all flex-shrink-0">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Add
           </button>
@@ -504,10 +389,9 @@
         <p class="text-[11px] text-slate-600 mt-2">💡 Tip: Removing a person resets them from the rotation queue.</p>
       </div>
 
-      <!-- 3-col row -->
+      <!-- 3-col -->
       <div class="grid grid-cols-3 gap-4">
-
-        <!-- Ticket submit -->
+        <!-- New ticket -->
         <div class="glass rounded-2xl p-6 card-glow">
           <h3 class="text-sm font-bold text-white mb-1">New Ticket</h3>
           <p class="text-xs text-slate-500 mb-5">Auto-assigns · saved to Firestore</p>
@@ -522,16 +406,14 @@
             </div>
             <div>
               <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-1.5">Ticket Title</label>
-              <input id="ticket-title" type="text" placeholder="Describe the issue…"
-                class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-3 py-2.5 placeholder-slate-600 transition-all"/>
+              <input id="ticket-title" type="text" placeholder="Describe the issue…" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-3 py-2.5 placeholder-slate-600 transition-all"/>
             </div>
             <div class="pt-1">
               <div class="glass-light rounded-xl px-4 py-3 flex items-center justify-between mb-3">
                 <span class="text-xs text-slate-400">Will assign to:</span>
                 <span id="preview-assignee" class="text-sm font-bold text-indigo-300 font-mono">—</span>
               </div>
-              <button id="submit-btn" onclick="submitTicket()"
-                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm py-2.5 rounded-xl transition-all shadow-lg shadow-indigo-900/30 flex items-center justify-center gap-2">
+              <button id="submit-btn" onclick="submitTicket()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm py-2.5 rounded-xl transition-all flex items-center justify-center gap-2">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 Submit Ticket
               </button>
@@ -539,9 +421,17 @@
           </div>
         </div>
 
-        <!-- Rotation indicator -->
+        <!-- ROTATION STATUS with Skip button -->
         <div class="glass rounded-2xl p-6 card-glow flex flex-col">
-          <h3 class="text-sm font-bold text-white mb-1">Rotation Status</h3>
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="text-sm font-bold text-white">Rotation Status</h3>
+            <!-- ⏭ NEW: Skip rotation button -->
+            <button onclick="openSkipRotationModal()" title="Skip current person in rotation"
+              class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/25 border border-indigo-500/25 transition-all">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Skip Person
+            </button>
+          </div>
           <p class="text-xs text-slate-500 mb-4">Based on today's active members</p>
           <div class="flex-1 flex flex-col items-center justify-center gap-4">
             <div class="text-center">
@@ -587,25 +477,21 @@
         </div>
         <div class="overflow-x-auto">
           <table class="w-full">
-            <thead>
-              <tr class="border-b border-white/5">
-                <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">ID</th>
-                <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Type</th>
-                <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Title</th>
-                <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Assigned</th>
-                <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Status</th>
-                <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Action</th>
-              </tr>
-            </thead>
-            <tbody id="recent-table-body">
-              <tr><td colspan="6" class="px-6 py-12 text-center text-slate-600 text-sm">Connecting…</td></tr>
-            </tbody>
+            <thead><tr class="border-b border-white/5">
+              <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">ID</th>
+              <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Type</th>
+              <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Title</th>
+              <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Assigned</th>
+              <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Status</th>
+              <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Action</th>
+            </tr></thead>
+            <tbody id="recent-table-body"><tr><td colspan="6" class="px-6 py-12 text-center text-slate-600 text-sm">Connecting…</td></tr></tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- ═══════════ ALL TICKETS ═══════════ -->
+    <!-- ALL TICKETS -->
     <div id="section-tickets" class="p-8 space-y-6 hidden">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -615,34 +501,29 @@
           <button onclick="filterTickets('Skipped')"   id="filter-Skipped"   class="filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white">Skipped</button>
         </div>
         <div class="relative">
-          <input id="search-input" oninput="searchTickets()" type="text" placeholder="Search tickets…"
-            class="form-input bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2 pl-9 w-56 placeholder-slate-600 transition-all"/>
+          <input id="search-input" oninput="searchTickets()" type="text" placeholder="Search tickets…" class="form-input bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2 pl-9 w-56 placeholder-slate-600 transition-all"/>
           <svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
         </div>
       </div>
       <div class="glass rounded-2xl overflow-hidden card-glow">
         <div class="overflow-x-auto">
           <table class="w-full">
-            <thead>
-              <tr class="border-b border-white/5">
-                <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">ID</th>
-                <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Type</th>
-                <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Title</th>
-                <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Assigned To</th>
-                <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Date</th>
-                <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Status</th>
-                <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Action</th>
-              </tr>
-            </thead>
-            <tbody id="all-table-body">
-              <tr><td colspan="7" class="px-6 py-16 text-center text-slate-600 text-sm">Loading…</td></tr>
-            </tbody>
+            <thead><tr class="border-b border-white/5">
+              <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">ID</th>
+              <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Type</th>
+              <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Title</th>
+              <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Assigned To</th>
+              <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Date</th>
+              <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Status</th>
+              <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Action</th>
+            </tr></thead>
+            <tbody id="all-table-body"><tr><td colspan="7" class="px-6 py-16 text-center text-slate-600 text-sm">Loading…</td></tr></tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- ═══════════ TEAM STATS ═══════════ -->
+    <!-- TEAM STATS -->
     <div id="section-team" class="p-8 space-y-6 hidden">
       <div class="glass rounded-2xl p-6 card-glow">
         <h3 class="text-sm font-bold text-white mb-1">Team Performance</h3>
@@ -650,7 +531,6 @@
         <div id="team-stats-grid" class="space-y-3"></div>
       </div>
     </div>
-
   </main>
 </div>
 
@@ -674,15 +554,13 @@
       </div>
       <div>
         <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Ticket Title</label>
-        <input id="modal-title" type="text" placeholder="Describe the issue briefly…"
-          class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-3 placeholder-slate-600 transition-all"/>
+        <input id="modal-title" type="text" placeholder="Describe the issue briefly…" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-3 placeholder-slate-600 transition-all"/>
       </div>
       <div class="glass-light rounded-xl px-4 py-3 flex items-center justify-between">
         <span class="text-xs text-slate-400">Auto-assigned to:</span>
         <span id="modal-assignee" class="text-sm font-bold text-indigo-300 font-mono">—</span>
       </div>
-      <button id="modal-submit-btn" onclick="submitTicketModal()"
-        class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm py-3 rounded-xl transition-all shadow-lg shadow-indigo-900/30 flex items-center justify-center gap-2">
+      <button id="modal-submit-btn" onclick="submitTicketModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm py-3 rounded-xl transition-all flex items-center justify-center gap-2">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
         Submit &amp; Save to Firebase
       </button>
@@ -690,7 +568,7 @@
   </div>
 </div>
 
-<!-- MEMBER DROPDOWN PORTAL -->
+<!-- MEMBER DROPDOWN -->
 <div id="add-dropdown">
   <div class="px-4 pt-3 pb-1 border-b border-white/5">
     <p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Default Team</p>
@@ -698,9 +576,7 @@
   <div id="dropdown-list" class="px-2 py-2"></div>
 </div>
 
-<!-- ════════════════════ SCRIPT ════════════════════ -->
 <script>
-// ─── Firebase ────────────────────────────────────────────────────
 const firebaseConfig = {
   apiKey:"AIzaSyCsoYyepyJGIqbdW-QfWUZjJozmxrx2oWk",
   authDomain:"handlingdisputes.firebaseapp.com",
@@ -716,644 +592,485 @@ db.enablePersistence().catch(()=>{});
 const ticketsCol = db.collection('tickets');
 const metaDoc    = db.collection('meta').doc('rotation');
 
-// ─── Constants ───────────────────────────────────────────────────
 const DEFAULT_TEAM = ['Kent','Johnny','Reysel','Jashmier','Keone','Diovic','Ralph','Myca'];
-
 const TYPE_CFG = {
   'Dispute':        {color:'text-rose-400',   bg:'bg-rose-500/10',   border:'border-rose-500/20',   icon:'⚡'},
   'Partner Portal': {color:'text-blue-400',   bg:'bg-blue-500/10',   border:'border-blue-500/20',   icon:'🔗'},
   'Inquiry':        {color:'text-violet-400', bg:'bg-violet-500/10', border:'border-violet-500/20', icon:'💬'},
 };
-
-const COLOR_POOL = [
-  'bg-indigo-500','bg-blue-500','bg-violet-500','bg-fuchsia-500',
-  'bg-rose-500','bg-amber-500','bg-emerald-500','bg-teal-500',
-  'bg-cyan-500','bg-pink-500','bg-orange-500','bg-lime-500',
-];
+const COLOR_POOL = ['bg-indigo-500','bg-blue-500','bg-violet-500','bg-fuchsia-500','bg-rose-500','bg-amber-500','bg-emerald-500','bg-teal-500','bg-cyan-500','bg-pink-500','bg-orange-500','bg-lime-500'];
 function memberColor(name) {
   const code = [...name].reduce((a,c)=>a+c.charCodeAt(0),0);
   return COLOR_POOL[code % COLOR_POOL.length];
 }
 
-// ─── App state ───────────────────────────────────────────────────
 let state = {
-  tickets:       [],
-  rotationIndex: 0,
-  workingToday:  [],
-  activityLog:   [],
-  filter:        'all',
-  search:        '',
-  darkMode:      true,
-  submitting:    false,
-  loaded:        false,
-  // Confirm remove
-  pendingRemoveName: null,
-  // Skip
-  pendingSkipId: null,
+  tickets:[], rotationIndex:0, workingToday:[], activityLog:[],
+  filter:'all', search:'', darkMode:true, submitting:false, loaded:false,
+  pendingRemoveName:null, pendingSkipId:null, pendingEditId:null,
 };
 
-// ─── Firebase status ─────────────────────────────────────────────
 function setFbStatus(cls, label) {
-  document.getElementById('fb-dot').className    = 'fb-dot ' + cls;
+  document.getElementById('fb-dot').className = 'fb-dot '+cls;
   document.getElementById('fb-label').textContent = label;
 }
 function hideLoader() {
   const el = document.getElementById('loading-overlay');
   el.style.opacity = '0';
-  setTimeout(() => el.style.display = 'none', 400);
+  setTimeout(()=>el.style.display='none', 400);
 }
 
-// ─── INIT ────────────────────────────────────────────────────────
 async function init() {
   document.getElementById('current-date').textContent =
     new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-
   const snap = await metaDoc.get().catch(()=>null);
-  if (!snap || !snap.exists) {
-    await metaDoc.set({ rotationIndex:0, workingToday: DEFAULT_TEAM.slice(), activityLog:[] }).catch(console.error);
+  if (!snap||!snap.exists) {
+    await metaDoc.set({rotationIndex:0,workingToday:DEFAULT_TEAM.slice(),activityLog:[]}).catch(console.error);
   }
-
-  metaDoc.onSnapshot(snap => {
-    if (!snap.exists) return;
-    const d = snap.data();
-    state.rotationIndex = d.rotationIndex  ?? 0;
-    state.workingToday  = d.workingToday   ?? [];
-    state.activityLog   = d.activityLog    ?? [];
-
-    renderWorkingToday();
-    renderRotation();
-    renderSidebar();
-    renderActivityLog();
-    renderPreview();
-    renderDropdown('');
-    document.getElementById('stat-working').textContent = state.workingToday.length;
-  }, err => { console.error(err); setFbStatus('error','Sync error'); });
-
-  ticketsCol.orderBy('ts','desc').onSnapshot(snap => {
-    state.tickets = snap.docs.map(d => ({_id:d.id,...d.data()}));
-    renderStats();
-    renderRecentTable();
-    renderAllTable();
-    renderTeamStats();
-    renderSidebar();
-
-    if (!state.loaded) {
-      state.loaded = true;
-      hideLoader();
-      setFbStatus('connected','🔴 Live · Firestore');
-    }
-  }, err => { console.error(err); setFbStatus('error','Connection failed'); hideLoader(); });
+  metaDoc.onSnapshot(snap=>{
+    if(!snap.exists)return;
+    const d=snap.data();
+    state.rotationIndex=d.rotationIndex??0;
+    state.workingToday=d.workingToday??[];
+    state.activityLog=d.activityLog??[];
+    renderWorkingToday(); renderRotation(); renderSidebar(); renderActivityLog(); renderPreview(); renderDropdown('');
+    document.getElementById('stat-working').textContent=state.workingToday.length;
+  },err=>{console.error(err);setFbStatus('error','Sync error');});
+  ticketsCol.orderBy('ts','desc').onSnapshot(snap=>{
+    state.tickets=snap.docs.map(d=>({_id:d.id,...d.data()}));
+    renderStats(); renderRecentTable(); renderAllTable(); renderTeamStats(); renderSidebar();
+    if(!state.loaded){state.loaded=true;hideLoader();setFbStatus('connected','🔴 Live · Firestore');}
+  },err=>{console.error(err);setFbStatus('error','Connection failed');hideLoader();});
 }
 
-// ─── WORKING TODAY ───────────────────────────────────────────────
 function addCustomName() {
-  const input = document.getElementById('custom-name-input');
-  const name  = input.value.trim();
-  if (!name) return;
+  const input=document.getElementById('custom-name-input');
+  const name=input.value.trim();
+  if(!name)return;
   addMember(name);
-  input.value = '';
+  input.value='';
   closeDropdown();
 }
-
 function addMember(name) {
-  name = name.trim();
-  if (!name) return;
-  if (state.workingToday.map(n=>n.toLowerCase()).includes(name.toLowerCase())) {
-    showToast(`${name} is already on the list`, 'Already added');
-    return;
-  }
-  const updated = [...state.workingToday, name];
-  metaDoc.update({ workingToday: updated }).catch(console.error);
+  name=name.trim();
+  if(!name)return;
+  if(state.workingToday.map(n=>n.toLowerCase()).includes(name.toLowerCase())){showToast(`${name} is already on the list`,'Already added');return;}
+  metaDoc.update({workingToday:[...state.workingToday,name]}).catch(console.error);
   closeDropdown();
 }
-
-// ── Opens the custom confirmation modal instead of browser confirm ──
 function removeMember(name) {
-  state.pendingRemoveName = name;
-
-  // Populate modal
-  const clr = memberColor(name);
-  const avatar = document.getElementById('confirm-avatar');
-  avatar.className = `w-8 h-8 rounded-full ${clr} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;
-  avatar.textContent = name[0].toUpperCase();
-  document.getElementById('confirm-name-display').textContent = name;
-
+  state.pendingRemoveName=name;
+  const clr=memberColor(name);
+  const av=document.getElementById('confirm-avatar');
+  av.className=`w-8 h-8 rounded-full ${clr} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;
+  av.textContent=name[0].toUpperCase();
+  document.getElementById('confirm-name-display').textContent=name;
   document.getElementById('confirm-modal').classList.add('open');
 }
-
-function closeConfirmModal() {
-  state.pendingRemoveName = null;
-  document.getElementById('confirm-modal').classList.remove('open');
-}
-
+function closeConfirmModal(){state.pendingRemoveName=null;document.getElementById('confirm-modal').classList.remove('open');}
 function confirmRemoveMember() {
-  const name = state.pendingRemoveName;
-  if (!name) return;
+  const name=state.pendingRemoveName;
+  if(!name)return;
   closeConfirmModal();
-
-  const updated = state.workingToday.filter(n => n !== name);
-  const newIdx  = updated.length > 0 ? state.rotationIndex % updated.length : 0;
-  metaDoc.update({ workingToday: updated, rotationIndex: newIdx }).catch(console.error);
-  showToast(`${name} removed from today's list`, 'Member removed');
+  const updated=state.workingToday.filter(n=>n!==name);
+  const newIdx=updated.length>0?state.rotationIndex%updated.length:0;
+  metaDoc.update({workingToday:updated,rotationIndex:newIdx}).catch(console.error);
+  showToast(`${name} removed from today's list`,'Member removed');
 }
-
 function renderWorkingToday() {
-  const container = document.getElementById('wt-pills');
-  const wt = state.workingToday;
-  document.getElementById('wt-count').textContent = `${wt.length} member${wt.length!==1?'s':''}`;
-
-  if (!wt.length) {
-    container.innerHTML = `<span class="text-xs text-slate-600 italic">No members added yet — add someone above.</span>`;
-    return;
-  }
-  container.innerHTML = wt.map((name, i) => {
-    const isCurr = i === state.rotationIndex;
-    const clr    = memberColor(name);
-    return `
-      <div class="wt-pill ${isCurr ? 'ring-1 ring-indigo-500' : ''}" title="${isCurr ? 'Currently assigned next' : ''}">
-        <div class="w-5 h-5 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">${name[0].toUpperCase()}</div>
-        <span>${name}</span>
-        ${isCurr ? '<span class="text-[9px] font-mono text-indigo-400 bg-indigo-500/15 px-1.5 py-0.5 rounded-full">NEXT</span>' : ''}
-        <button class="del-btn" onclick="removeMember('${name.replace(/'/g,"\\'")}'); event.stopPropagation();" title="Remove ${name} from today">✕</button>
-      </div>`;
+  const container=document.getElementById('wt-pills');
+  const wt=state.workingToday;
+  document.getElementById('wt-count').textContent=`${wt.length} member${wt.length!==1?'s':''}`;
+  if(!wt.length){container.innerHTML=`<span class="text-xs text-slate-600 italic">No members added yet — add someone above.</span>`;return;}
+  container.innerHTML=wt.map((name,i)=>{
+    const isCurr=i===(state.rotationIndex%wt.length);
+    const clr=memberColor(name);
+    return `<div class="wt-pill ${isCurr?'ring-1 ring-indigo-500':''}" title="${isCurr?'Currently assigned next':''}">
+      <div class="w-5 h-5 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">${name[0].toUpperCase()}</div>
+      <span>${name}</span>
+      ${isCurr?'<span class="text-[9px] font-mono text-indigo-400 bg-indigo-500/15 px-1.5 py-0.5 rounded-full">NEXT</span>':''}
+      <button class="del-btn" onclick="removeMember('${name.replace(/'/g,"\\'")}');event.stopPropagation();" title="Remove ${name}">✕</button>
+    </div>`;
   }).join('');
 }
 
-// ─── SKIP DISPUTE ────────────────────────────────────────────────
+// ── SKIP ROTATION (NEW) ──────────────────────────────────────────
+function openSkipRotationModal() {
+  const wt=state.workingToday;
+  if(!wt.length){showToast('No members in rotation','Nothing to skip');return;}
+  const si=state.rotationIndex%wt.length;
+  const curr=wt[si];
+  const next=wt[(si+1)%wt.length];
+  const cClr=memberColor(curr), nClr=memberColor(next);
+  const ca=document.getElementById('skip-rot-curr-avatar');
+  ca.className=`w-9 h-9 rounded-full ${cClr} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;
+  ca.textContent=curr[0].toUpperCase();
+  document.getElementById('skip-rot-curr-name').textContent=curr;
+  const na=document.getElementById('skip-rot-next-avatar');
+  na.className=`w-9 h-9 rounded-full ${nClr} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;
+  na.textContent=next[0].toUpperCase();
+  document.getElementById('skip-rot-next-name').textContent=next;
+  document.getElementById('skip-rotation-modal').classList.add('open');
+}
+function closeSkipRotationModal(){document.getElementById('skip-rotation-modal').classList.remove('open');}
+async function confirmSkipRotation() {
+  const wt=state.workingToday;
+  if(!wt.length)return;
+  const si=state.rotationIndex%wt.length;
+  const skipped=wt[si];
+  const newIdx=(si+1)%wt.length;
+  closeSkipRotationModal();
+  await metaDoc.update({rotationIndex:newIdx}).catch(console.error);
+  showToast(`Skipped ${skipped} → now ${wt[newIdx]}`,'Rotation Advanced');
+}
+
+// ── SKIP DISPUTE ────────────────────────────────────────────────
 function openSkipModal(fid) {
-  const t = state.tickets.find(x => x._id === fid);
-  if (!t) return;
-  state.pendingSkipId = fid;
-
-  document.getElementById('skip-ticket-title').textContent = t.title || '—';
-  document.getElementById('skip-ticket-id').textContent    = t.id    || '—';
-
-  // Reset fields
-  document.getElementById('skip-reason-select').value = '';
-  document.getElementById('skip-reason-input').value  = '';
+  const t=state.tickets.find(x=>x._id===fid);
+  if(!t)return;
+  state.pendingSkipId=fid;
+  document.getElementById('skip-ticket-title').textContent=t.title||'—';
+  document.getElementById('skip-ticket-id').textContent=t.id||'—';
+  document.getElementById('skip-reason-select').value='';
+  document.getElementById('skip-reason-input').value='';
   document.getElementById('skip-reason-input').classList.add('hidden');
-  document.getElementById('skip-note').value          = '';
-
+  document.getElementById('skip-note').value='';
   document.getElementById('skip-modal').classList.add('open');
-  setTimeout(() => document.getElementById('skip-reason-select').focus(), 60);
+  setTimeout(()=>document.getElementById('skip-reason-select').focus(),60);
 }
-
-function closeSkipModal() {
-  state.pendingSkipId = null;
-  document.getElementById('skip-modal').classList.remove('open');
-}
-
+function closeSkipModal(){state.pendingSkipId=null;document.getElementById('skip-modal').classList.remove('open');}
 function handleSkipReasonSelect(val) {
-  const customInput = document.getElementById('skip-reason-input');
-  if (val === 'Other') {
-    customInput.classList.remove('hidden');
-    customInput.focus();
-  } else {
-    customInput.classList.add('hidden');
-    customInput.value = '';
-  }
+  const ci=document.getElementById('skip-reason-input');
+  if(val==='Other'){ci.classList.remove('hidden');ci.focus();}
+  else{ci.classList.add('hidden');ci.value='';}
 }
-
 async function confirmSkip() {
-  const fid = state.pendingSkipId;
-  if (!fid) return;
-
-  const selectVal = document.getElementById('skip-reason-select').value;
-  const customVal = document.getElementById('skip-reason-input').value.trim();
-  const note      = document.getElementById('skip-note').value.trim();
-
-  const reason = selectVal === 'Other' ? customVal : selectVal;
-  if (!reason) {
-    // Highlight the select
-    document.getElementById('skip-reason-select').style.borderColor = 'rgba(239,68,68,0.6)';
-    setTimeout(() => document.getElementById('skip-reason-select').style.borderColor = '', 1500);
-    return;
-  }
-
-  const t = state.tickets.find(x => x._id === fid);
+  const fid=state.pendingSkipId;
+  if(!fid)return;
+  const sv=document.getElementById('skip-reason-select').value;
+  const cv=document.getElementById('skip-reason-input').value.trim();
+  const note=document.getElementById('skip-note').value.trim();
+  const reason=sv==='Other'?cv:sv;
+  if(!reason){document.getElementById('skip-reason-select').style.borderColor='rgba(239,68,68,0.6)';setTimeout(()=>document.getElementById('skip-reason-select').style.borderColor='',1500);return;}
+  const t=state.tickets.find(x=>x._id===fid);
   closeSkipModal();
-
-  await ticketsCol.doc(fid).update({
-    status:     'Skipped',
-    skipReason: reason,
-    skipNote:   note || null,
-  }).catch(e => alert(e.message));
-
-  showToast(`${t?.id || 'Ticket'} skipped — ${reason}`, 'Dispute Skipped');
+  await ticketsCol.doc(fid).update({status:'Skipped',skipReason:reason,skipNote:note||null}).catch(e=>alert(e.message));
+  showToast(`${t?.id||'Ticket'} skipped — ${reason}`,'Dispute Skipped');
 }
 
-// ─── DROPDOWN ────────────────────────────────────────────────────
+// ── EDIT TICKET (NEW) ────────────────────────────────────────────
+function openEditModal(fid) {
+  const t=state.tickets.find(x=>x._id===fid);
+  if(!t)return;
+  state.pendingEditId=fid;
+  document.getElementById('edit-ticket-id-label').textContent=t.id||'—';
+  document.getElementById('edit-title').value=t.title||'';
+  document.getElementById('edit-type').value=t.type||'Dispute';
+  document.getElementById('edit-status').value=t.status||'Pending';
+  // Build assignee list from all known names
+  const allNames=[...new Set([...state.workingToday,...state.tickets.map(x=>x.assignee).filter(Boolean)])];
+  if(t.assignee&&!allNames.includes(t.assignee))allNames.push(t.assignee);
+  const sel=document.getElementById('edit-assignee');
+  sel.innerHTML=allNames.map(n=>`<option value="${n}"${n===t.assignee?' selected':''}>${n}</option>`).join('');
+  document.getElementById('edit-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('edit-title').focus(),60);
+}
+function closeEditModal(){state.pendingEditId=null;document.getElementById('edit-modal').classList.remove('open');}
+async function confirmEditTicket() {
+  const fid=state.pendingEditId;
+  if(!fid)return;
+  const title=document.getElementById('edit-title').value.trim();
+  const type=document.getElementById('edit-type').value;
+  const assignee=document.getElementById('edit-assignee').value;
+  const status=document.getElementById('edit-status').value;
+  if(!title){document.getElementById('edit-title').style.borderColor='rgba(239,68,68,0.6)';setTimeout(()=>document.getElementById('edit-title').style.borderColor='',1500);return;}
+  closeEditModal();
+  const updates={title,type,assignee,status};
+  if(status!=='Skipped'){updates.skipReason=null;updates.skipNote=null;}
+  await ticketsCol.doc(fid).update(updates).catch(e=>alert(e.message));
+  showToast('Ticket updated successfully','Changes Saved');
+}
+
+// ── DROPDOWN ────────────────────────────────────────────────────
 function renderDropdown(query) {
-  const list = document.getElementById('dropdown-list');
-  const q    = query.toLowerCase().trim();
-  const filtered = DEFAULT_TEAM.filter(n => q === '' || n.toLowerCase().includes(q));
-  if (!filtered.length) {
-    list.innerHTML = `<p class="text-xs text-slate-600 px-3 py-3 text-center">No matches for "${query}"</p>`;
-    return;
-  }
-  const alreadySet = state.workingToday.map(n => n.toLowerCase());
-  list.innerHTML = filtered.map(n => {
-    const already = alreadySet.includes(n.toLowerCase());
-    const clr = memberColor(n);
-    return `
-      <div class="member-chip ${already ? 'already' : ''}" onclick="addMember('${n}'); event.stopPropagation();">
-        <div class="w-7 h-7 rounded-full ${clr} flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">${n[0]}</div>
-        <span class="flex-1 font-medium">${n}</span>
-        ${already
-          ? '<span class="text-[10px] text-slate-500 font-mono bg-white/5 px-2 py-0.5 rounded-full">added</span>'
-          : '<span class="text-[10px] text-indigo-400 font-mono bg-indigo-500/10 px-2 py-0.5 rounded-full">+ add</span>'}
-      </div>`;
+  const list=document.getElementById('dropdown-list');
+  const q=query.toLowerCase().trim();
+  const filtered=DEFAULT_TEAM.filter(n=>q===''||n.toLowerCase().includes(q));
+  if(!filtered.length){list.innerHTML=`<p class="text-xs text-slate-600 px-3 py-3 text-center">No matches</p>`;return;}
+  const alreadySet=state.workingToday.map(n=>n.toLowerCase());
+  list.innerHTML=filtered.map(n=>{
+    const already=alreadySet.includes(n.toLowerCase());
+    const clr=memberColor(n);
+    return `<div class="member-chip ${already?'already':''}" onclick="addMember('${n}');event.stopPropagation();">
+      <div class="w-7 h-7 rounded-full ${clr} flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">${n[0]}</div>
+      <span class="flex-1 font-medium">${n}</span>
+      ${already?'<span class="text-[10px] text-slate-500 font-mono bg-white/5 px-2 py-0.5 rounded-full">added</span>':'<span class="text-[10px] text-indigo-400 font-mono bg-indigo-500/10 px-2 py-0.5 rounded-full">+ add</span>'}
+    </div>`;
   }).join('');
 }
-
-function filterDropdown(val) { renderDropdown(val); positionDropdown(); }
-
+function filterDropdown(val){renderDropdown(val);positionDropdown();}
 function positionDropdown() {
-  const input = document.getElementById('custom-name-input');
-  const dd    = document.getElementById('add-dropdown');
-  const rect  = input.getBoundingClientRect();
-  dd.style.top   = (rect.bottom + 6) + 'px';
-  dd.style.left  = rect.left + 'px';
-  dd.style.width = rect.width + 'px';
+  const input=document.getElementById('custom-name-input');
+  const dd=document.getElementById('add-dropdown');
+  const rect=input.getBoundingClientRect();
+  dd.style.top=(rect.bottom+6)+'px';dd.style.left=rect.left+'px';dd.style.width=rect.width+'px';
 }
-
-function openDropdown() {
-  renderDropdown(document.getElementById('custom-name-input').value);
-  positionDropdown();
-  document.getElementById('add-dropdown').classList.add('open');
-}
-
-function closeDropdown() {
-  document.getElementById('add-dropdown').classList.remove('open');
-}
-
-document.addEventListener('click', e => {
-  const input  = document.getElementById('custom-name-input');
-  const dd     = document.getElementById('add-dropdown');
-  const addBtn = document.querySelector('#add-member-wrapper button');
-  if (!dd.contains(e.target) && e.target !== input && e.target !== addBtn) closeDropdown();
+function openDropdown(){renderDropdown(document.getElementById('custom-name-input').value);positionDropdown();document.getElementById('add-dropdown').classList.add('open');}
+function closeDropdown(){document.getElementById('add-dropdown').classList.remove('open');}
+document.addEventListener('click',e=>{
+  const input=document.getElementById('custom-name-input');
+  const dd=document.getElementById('add-dropdown');
+  const addBtn=document.querySelector('#add-member-wrapper button');
+  if(!dd.contains(e.target)&&e.target!==input&&e.target!==addBtn)closeDropdown();
 });
+window.addEventListener('scroll',()=>{if(document.getElementById('add-dropdown').classList.contains('open'))positionDropdown();},true);
+window.addEventListener('resize',()=>{if(document.getElementById('add-dropdown').classList.contains('open'))positionDropdown();});
 
-window.addEventListener('scroll', () => {
-  if (document.getElementById('add-dropdown').classList.contains('open')) positionDropdown();
-}, true);
-window.addEventListener('resize', () => {
-  if (document.getElementById('add-dropdown').classList.contains('open')) positionDropdown();
-});
-
-// ─── CREATE TICKET ───────────────────────────────────────────────
-async function createTicket(type, title) {
-  title = title.trim();
-  if (!title) { alert('Please enter a ticket title.'); return false; }
-  if (!state.workingToday.length) { alert('No members in Working Today! Add at least one person first.'); return false; }
-  if (state.submitting) return false;
+// ── CREATE TICKET ────────────────────────────────────────────────
+async function createTicket(type,title) {
+  title=title.trim();
+  if(!title){alert('Please enter a ticket title.');return false;}
+  if(!state.workingToday.length){alert('No members in Working Today!');return false;}
+  if(state.submitting)return false;
   setSubmitting(true);
-
-  let ticketId, assignee;
+  let ticketId,assignee;
   try {
-    await db.runTransaction(async tx => {
-      const metaSnap   = await tx.get(metaDoc);
-      const curIdx     = metaSnap.exists ? (metaSnap.data().rotationIndex ?? 0) : 0;
-      const curWorking = metaSnap.exists ? (metaSnap.data().workingToday  ?? []) : [];
-      const curLog     = metaSnap.exists ? (metaSnap.data().activityLog   ?? []) : [];
-
-      if (!curWorking.length) throw new Error('No members in Working Today.');
-
-      const safeIdx = curIdx % curWorking.length;
-      assignee      = curWorking[safeIdx];
-      const nextIdx = (safeIdx + 1) % curWorking.length;
-
-      const latestSnap = await ticketsCol.orderBy('seqNum','desc').limit(1).get();
-      const lastSeq    = latestSnap.empty ? 0 : (latestSnap.docs[0].data().seqNum || 0);
-      const newSeq     = lastSeq + 1;
-      ticketId         = 'TKT-' + String(newSeq).padStart(4,'0');
-
-      const now     = new Date();
-      const dateStr = now.toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'});
-      const timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-
-      const ticket = {
-        id:ticketId, seqNum:newSeq, type, title, assignee,
-        date:dateStr, time:timeStr, status:'Pending',
-        ts:firebase.firestore.FieldValue.serverTimestamp(),
-      };
-      const logEntry = { msg:`${ticketId} → ${assignee}`, type, time:timeStr, ts:Date.now() };
-      const newLog   = [logEntry,...curLog].slice(0,20);
-
-      tx.set(ticketsCol.doc(), ticket);
-      tx.set(metaDoc, { rotationIndex:nextIdx, workingToday:curWorking, activityLog:newLog });
+    await db.runTransaction(async tx=>{
+      const metaSnap=await tx.get(metaDoc);
+      const curIdx=metaSnap.exists?(metaSnap.data().rotationIndex??0):0;
+      const curWorking=metaSnap.exists?(metaSnap.data().workingToday??[]):[];
+      const curLog=metaSnap.exists?(metaSnap.data().activityLog??[]):[];
+      if(!curWorking.length)throw new Error('No members in Working Today.');
+      const safeIdx=curIdx%curWorking.length;
+      assignee=curWorking[safeIdx];
+      const nextIdx=(safeIdx+1)%curWorking.length;
+      const latestSnap=await ticketsCol.orderBy('seqNum','desc').limit(1).get();
+      const lastSeq=latestSnap.empty?0:(latestSnap.docs[0].data().seqNum||0);
+      const newSeq=lastSeq+1;
+      ticketId='TKT-'+String(newSeq).padStart(4,'0');
+      const now=new Date();
+      const dateStr=now.toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'});
+      const timeStr=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+      const ticket={id:ticketId,seqNum:newSeq,type,title,assignee,date:dateStr,time:timeStr,status:'Pending',ts:firebase.firestore.FieldValue.serverTimestamp()};
+      const logEntry={msg:`${ticketId} → ${assignee}`,type,time:timeStr,ts:Date.now()};
+      const newLog=[logEntry,...curLog].slice(0,20);
+      tx.set(ticketsCol.doc(),ticket);
+      tx.set(metaDoc,{rotationIndex:nextIdx,workingToday:curWorking,activityLog:newLog});
     });
-
     showToast(`${ticketId} assigned to ${assignee}`);
     setSubmitting(false);
     return true;
   } catch(err) {
     console.error(err);
     setSubmitting(false);
-    let msg = 'Failed: ' + err.message;
-    if (err.code === 'permission-denied') msg = 'Permission denied — update your Firestore Security Rules.';
+    let msg='Failed: '+err.message;
+    if(err.code==='permission-denied')msg='Permission denied — update your Firestore Security Rules.';
     alert(msg);
     return false;
   }
 }
-
-// ─── MARK COMPLETE ───────────────────────────────────────────────
 async function markComplete(fid) {
-  const t = state.tickets.find(x => x._id === fid);
-  if (!t) return;
-  // If ticket was skipped, reopen as Pending
-  const newStatus = (t.status === 'Completed') ? 'Pending' : 'Completed';
-  const updates   = { status: newStatus };
-  if (newStatus === 'Pending') { updates.skipReason = null; updates.skipNote = null; }
-  await ticketsCol.doc(fid).update(updates).catch(e => alert(e.message));
+  const t=state.tickets.find(x=>x._id===fid);
+  if(!t)return;
+  const newStatus=t.status==='Completed'?'Pending':'Completed';
+  const updates={status:newStatus};
+  if(newStatus==='Pending'){updates.skipReason=null;updates.skipNote=null;}
+  await ticketsCol.doc(fid).update(updates).catch(e=>alert(e.message));
 }
-
-// ─── SUBMIT WRAPPERS ─────────────────────────────────────────────
 async function submitTicket() {
-  const ok = await createTicket(document.getElementById('ticket-type').value, document.getElementById('ticket-title').value);
-  if (ok) document.getElementById('ticket-title').value = '';
+  const ok=await createTicket(document.getElementById('ticket-type').value,document.getElementById('ticket-title').value);
+  if(ok)document.getElementById('ticket-title').value='';
 }
 async function submitTicketModal() {
-  const ok = await createTicket(document.getElementById('modal-type').value, document.getElementById('modal-title').value);
-  if (ok) { document.getElementById('modal-title').value=''; closeModal(); }
+  const ok=await createTicket(document.getElementById('modal-type').value,document.getElementById('modal-title').value);
+  if(ok){document.getElementById('modal-title').value='';closeModal();}
 }
 
-// ─── RENDER ──────────────────────────────────────────────────────
+// ── RENDER ───────────────────────────────────────────────────────
 function renderStats() {
-  const total   = state.tickets.length;
-  const done    = state.tickets.filter(t => t.status==='Completed').length;
-  const skipped = state.tickets.filter(t => t.status==='Skipped').length;
-  document.getElementById('stat-total').textContent     = total;
-  document.getElementById('stat-pending').textContent   = total - done - skipped;
-  document.getElementById('stat-completed').textContent = done;
-  document.getElementById('ticket-count-badge').textContent = total;
+  const total=state.tickets.length;
+  const done=state.tickets.filter(t=>t.status==='Completed').length;
+  const skipped=state.tickets.filter(t=>t.status==='Skipped').length;
+  document.getElementById('stat-total').textContent=total;
+  document.getElementById('stat-pending').textContent=total-done-skipped;
+  document.getElementById('stat-completed').textContent=done;
+  document.getElementById('ticket-count-badge').textContent=total;
 }
-
 function renderRotation() {
-  const wt = state.workingToday;
-  if (!wt.length) {
-    ['rot-curr-init','rot-curr-name','rot-next-init','rot-next-name','header-next'].forEach(id => {
-      document.getElementById(id).textContent = '—';
-    });
-    document.getElementById('preview-assignee').textContent = 'Add members first';
-    document.getElementById('modal-assignee').textContent   = 'Add members first';
+  const wt=state.workingToday;
+  if(!wt.length){
+    ['rot-curr-init','rot-curr-name','rot-next-init','rot-next-name','header-next'].forEach(id=>document.getElementById(id).textContent='—');
+    document.getElementById('preview-assignee').textContent='Add members first';
+    document.getElementById('modal-assignee').textContent='Add members first';
     return;
   }
-  const si   = state.rotationIndex % wt.length;
-  const curr = wt[si];
-  const next = wt[(si + 1) % wt.length];
-  document.getElementById('rot-curr-name').textContent  = curr;
-  document.getElementById('rot-curr-init').textContent  = curr[0];
-  document.getElementById('rot-next-name').textContent  = next;
-  document.getElementById('rot-next-init').textContent  = next[0];
-  document.getElementById('header-next').textContent    = curr;
+  const si=state.rotationIndex%wt.length;
+  const curr=wt[si],next=wt[(si+1)%wt.length];
+  document.getElementById('rot-curr-name').textContent=curr;
+  document.getElementById('rot-curr-init').textContent=curr[0];
+  document.getElementById('rot-next-name').textContent=next;
+  document.getElementById('rot-next-init').textContent=next[0];
+  document.getElementById('header-next').textContent=curr;
 }
-
 function renderPreview() {
-  const wt = state.workingToday;
-  if (!wt.length) {
-    document.getElementById('preview-assignee').textContent = 'Add members first';
-    document.getElementById('modal-assignee').textContent   = 'Add members first';
-    return;
-  }
-  const n = wt[state.rotationIndex % wt.length];
-  document.getElementById('preview-assignee').textContent = n;
-  document.getElementById('modal-assignee').textContent   = n;
+  const wt=state.workingToday;
+  if(!wt.length){document.getElementById('preview-assignee').textContent='Add members first';document.getElementById('modal-assignee').textContent='Add members first';return;}
+  const n=wt[state.rotationIndex%wt.length];
+  document.getElementById('preview-assignee').textContent=n;
+  document.getElementById('modal-assignee').textContent=n;
 }
 
+// ── SIDEBAR: current person ALWAYS shown first ───────────────────
 function renderSidebar() {
-  const el = document.getElementById('sidebar-rotation');
-  const wt = state.workingToday;
-  el.innerHTML = '';
-  if (!wt.length) {
-    el.innerHTML = `<p class="text-xs text-slate-600 px-3 italic">No one added yet</p>`;
-    return;
-  }
-  wt.forEach((name, i) => {
-    const si     = state.rotationIndex % wt.length;
-    const isCurr = i === si;
-    const isNext = i === (si + 1) % wt.length;
-    const cnt    = state.tickets.filter(t => t.assignee === name).length;
-    const clr    = memberColor(name);
-    const div    = document.createElement('div');
-    div.className = `rotation-item flex items-center gap-2 px-3 py-1.5 rounded-lg border border-transparent ${isCurr ? 'active' : isNext ? 'next-up' : ''}`;
-    div.innerHTML = `
+  const el=document.getElementById('sidebar-rotation');
+  const wt=state.workingToday;
+  el.innerHTML='';
+  if(!wt.length){el.innerHTML=`<p class="text-xs text-slate-600 px-3 italic">No one added yet</p>`;return;}
+  const si=state.rotationIndex%wt.length;
+  // Build ordered list starting from current index (wraps around)
+  for(let i=0;i<wt.length;i++){
+    const idx=(si+i)%wt.length;
+    const name=wt[idx];
+    const isCurr=i===0;
+    const isNext=i===1;
+    const cnt=state.tickets.filter(t=>t.assignee===name).length;
+    const clr=memberColor(name);
+    const div=document.createElement('div');
+    div.className=`rotation-item flex items-center gap-2 px-3 py-1.5 rounded-lg border border-transparent ${isCurr?'active':isNext?'next-up':''}`;
+    div.innerHTML=`
       <div class="w-6 h-6 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">${name[0]}</div>
-      <span class="text-xs ${isCurr ? 'text-indigo-300 font-semibold' : isNext ? 'text-amber-400' : 'text-slate-400'} truncate flex-1">${name}</span>
-      <span class="text-[10px] font-mono ${isCurr ? 'text-indigo-400' : 'text-slate-600'}">${cnt}</span>
-      ${isCurr ? '<div class="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0 pending-dot"></div>' : ''}
+      <span class="text-xs ${isCurr?'text-indigo-300 font-semibold':isNext?'text-amber-400':'text-slate-400'} truncate flex-1">${name}</span>
+      <span class="text-[10px] font-mono ${isCurr?'text-indigo-400':'text-slate-600'}">${cnt}</span>
+      ${isCurr?'<div class="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0 pending-dot"></div>':''}
     `;
     el.appendChild(div);
-  });
-}
-
-// ─── ROW HTML ────────────────────────────────────────────────────
-function rowHTML(t, cols) {
-  const tc   = TYPE_CFG[t.type] || TYPE_CFG['Inquiry'];
-  const done = t.status === 'Completed';
-  const skipped = t.status === 'Skipped';
-  const clr  = memberColor(t.assignee || '?');
-
-  // Status badge
-  let statusBadge;
-  if (done) {
-    statusBadge = `<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Completed</span>`;
-  } else if (skipped) {
-    statusBadge = `
-      <div>
-        <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-500/10 text-slate-400 border border-slate-500/20">
-          ⏭ Skipped
-        </span>
-        ${t.skipReason ? `<p class="text-[10px] text-slate-600 mt-0.5 font-mono truncate max-w-[120px]" title="${t.skipReason}">${t.skipReason}</p>` : ''}
-      </div>`;
-  } else {
-    statusBadge = `<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20"><div class="w-1.5 h-1.5 rounded-full bg-amber-400 pending-dot"></div>Pending</span>`;
   }
-
-  // Action buttons
-  const doneBtn = `
-    <button onclick="markComplete('${t._id}')"
-      class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${done ? 'bg-slate-700 text-slate-400 hover:bg-slate-600' : 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/20'}">
-      ${done ? '↩ Reopen' : '✓ Done'}
-    </button>`;
-
-  // Skip button — only for Dispute tickets that are Pending
-  const skipBtn = (!done && !skipped && t.type === 'Dispute')
-    ? `<button onclick="openSkipModal('${t._id}')"
-        class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20 ml-1.5">
-        ⏭ Skip
-      </button>`
-    : (skipped
-      ? `<button onclick="markComplete('${t._id}')"
-          class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-slate-700 text-slate-400 hover:bg-slate-600">
-          ↩ Reopen
-        </button>`
-      : '');
-
-  return `
-    <tr class="ticket-row border-b border-white/5 ${skipped ? 'opacity-60' : ''}">
-      <td class="px-6 py-4 text-xs font-mono text-slate-400">${t.id||'—'}</td>
-      <td class="px-6 py-4">
-        <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${tc.bg} ${tc.color} border ${tc.border}">
-          ${tc.icon} ${t.type}
-        </span>
-      </td>
-      <td class="px-6 py-4 text-sm text-white font-medium max-w-xs truncate">${t.title}</td>
-      <td class="px-6 py-4">
-        <div class="flex items-center gap-2">
-          <div class="w-6 h-6 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white">${(t.assignee||'?')[0]}</div>
-          <span class="text-sm text-white font-medium">${t.assignee||'—'}</span>
-        </div>
-      </td>
-      ${cols===7 ? `<td class="px-6 py-4 text-xs text-slate-500 font-mono">${t.date||'—'}</td>` : ''}
-      <td class="px-6 py-4">${statusBadge}</td>
-      <td class="px-6 py-4">
-        <div class="flex items-center flex-wrap gap-1">
-          ${!skipped ? doneBtn : ''}
-          ${skipBtn}
-        </div>
-      </td>
-    </tr>`;
 }
 
+// ── ROW HTML ─────────────────────────────────────────────────────
+function rowHTML(t,cols) {
+  const tc=TYPE_CFG[t.type]||TYPE_CFG['Inquiry'];
+  const done=t.status==='Completed', skipped=t.status==='Skipped';
+  const clr=memberColor(t.assignee||'?');
+  let statusBadge;
+  if(done) statusBadge=`<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Completed</span>`;
+  else if(skipped) statusBadge=`<div><span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-500/10 text-slate-400 border border-slate-500/20">⏭ Skipped</span>${t.skipReason?`<p class="text-[10px] text-slate-600 mt-0.5 font-mono truncate max-w-[120px]" title="${t.skipReason}">${t.skipReason}</p>`:''}</div>`;
+  else statusBadge=`<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20"><div class="w-1.5 h-1.5 rounded-full bg-amber-400 pending-dot"></div>Pending</span>`;
+
+  const doneBtn=!skipped
+    ?`<button onclick="markComplete('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${done?'bg-slate-700 text-slate-400 hover:bg-slate-600':'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/20'}">${done?'↩ Reopen':'✓ Done'}</button>`
+    :`<button onclick="markComplete('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-slate-700 text-slate-400 hover:bg-slate-600">↩ Reopen</button>`;
+
+  const skipBtn=(!done&&!skipped&&t.type==='Dispute')
+    ?`<button onclick="openSkipModal('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20">⏭ Skip</button>`:'';
+
+  // ✏️ Edit button — always shown
+  const editBtn=`<button onclick="openEditModal('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20">✏ Edit</button>`;
+
+  return `<tr class="ticket-row border-b border-white/5 ${skipped?'opacity-60':''}">
+    <td class="px-6 py-4 text-xs font-mono text-slate-400">${t.id||'—'}</td>
+    <td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${tc.bg} ${tc.color} border ${tc.border}">${tc.icon} ${t.type}</span></td>
+    <td class="px-6 py-4 text-sm text-white font-medium max-w-xs truncate">${t.title}</td>
+    <td class="px-6 py-4"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white">${(t.assignee||'?')[0]}</div><span class="text-sm text-white font-medium">${t.assignee||'—'}</span></div></td>
+    ${cols===7?`<td class="px-6 py-4 text-xs text-slate-500 font-mono">${t.date||'—'}</td>`:''}
+    <td class="px-6 py-4">${statusBadge}</td>
+    <td class="px-6 py-4"><div class="flex items-center flex-wrap gap-1">${doneBtn}${skipBtn}${editBtn}</div></td>
+  </tr>`;
+}
 function renderRecentTable() {
-  const tbody = document.getElementById('recent-table-body');
-  const r = state.tickets.slice(0,5);
-  tbody.innerHTML = r.length
-    ? r.map(t => rowHTML(t,6)).join('')
-    : `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-600 text-sm">No tickets yet. Create your first!</td></tr>`;
+  const tbody=document.getElementById('recent-table-body');
+  const r=state.tickets.slice(0,5);
+  tbody.innerHTML=r.length?r.map(t=>rowHTML(t,6)).join(''):`<tr><td colspan="6" class="px-6 py-12 text-center text-slate-600 text-sm">No tickets yet. Create your first!</td></tr>`;
 }
-
 function renderAllTable() {
-  const tbody = document.getElementById('all-table-body');
-  let list = state.tickets;
-  if (state.filter !== 'all') list = list.filter(t => t.status === state.filter);
-  if (state.search) list = list.filter(t =>
-    (t.title||'').toLowerCase().includes(state.search)    ||
-    (t.assignee||'').toLowerCase().includes(state.search) ||
-    (t.type||'').toLowerCase().includes(state.search)     ||
-    (t.id||'').toLowerCase().includes(state.search)
-  );
-  tbody.innerHTML = list.length
-    ? list.map(t => rowHTML(t,7)).join('')
-    : `<tr><td colspan="7" class="px-6 py-16 text-center text-slate-600 text-sm">No tickets match.</td></tr>`;
+  const tbody=document.getElementById('all-table-body');
+  let list=state.tickets;
+  if(state.filter!=='all')list=list.filter(t=>t.status===state.filter);
+  if(state.search)list=list.filter(t=>(t.title||'').toLowerCase().includes(state.search)||(t.assignee||'').toLowerCase().includes(state.search)||(t.type||'').toLowerCase().includes(state.search)||(t.id||'').toLowerCase().includes(state.search));
+  tbody.innerHTML=list.length?list.map(t=>rowHTML(t,7)).join(''):`<tr><td colspan="7" class="px-6 py-16 text-center text-slate-600 text-sm">No tickets match.</td></tr>`;
 }
-
 function renderActivityLog() {
-  const el = document.getElementById('activity-log');
-  const LC = {'Dispute':'border-rose-500/50','Partner Portal':'border-blue-500/50','Inquiry':'border-violet-500/50'};
-  el.innerHTML = state.activityLog.length
-    ? state.activityLog.slice(0,8).map((a,i) => `
-        <div class="log-item ${LC[a.type]||'border-indigo-500/50'} pl-3" style="animation:slideIn 0.4s ${i*0.05}s ease both">
-          <p class="text-xs text-white font-medium font-mono">${a.msg}</p>
-          <p class="text-[10px] text-slate-500">${a.type} · ${a.time}</p>
-        </div>`).join('')
-    : `<div class="text-center text-slate-600 text-xs py-8">No activity yet</div>`;
+  const el=document.getElementById('activity-log');
+  const LC={'Dispute':'border-rose-500/50','Partner Portal':'border-blue-500/50','Inquiry':'border-violet-500/50'};
+  el.innerHTML=state.activityLog.length
+    ?state.activityLog.slice(0,8).map((a,i)=>`<div class="log-item ${LC[a.type]||'border-indigo-500/50'} pl-3" style="animation:slideIn 0.4s ${i*0.05}s ease both"><p class="text-xs text-white font-medium font-mono">${a.msg}</p><p class="text-[10px] text-slate-500">${a.type} · ${a.time}</p></div>`).join('')
+    :`<div class="text-center text-slate-600 text-xs py-8">No activity yet</div>`;
 }
-
 function renderTeamStats() {
-  const el  = document.getElementById('team-stats-grid');
-  const allNames = [...new Set([...state.workingToday, ...state.tickets.map(t=>t.assignee).filter(Boolean)])];
-  if (!allNames.length) { el.innerHTML = `<p class="text-xs text-slate-600 text-center py-4">No data yet.</p>`; return; }
-  const max = Math.max(...allNames.map(n => state.tickets.filter(t=>t.assignee===n).length), 1);
-  el.innerHTML = allNames.map(name => {
-    const total   = state.tickets.filter(t => t.assignee===name).length;
-    const done    = state.tickets.filter(t => t.assignee===name && t.status==='Completed').length;
-    const skipped = state.tickets.filter(t => t.assignee===name && t.status==='Skipped').length;
-    const pct     = Math.round((total/max)*100);
-    const clr     = memberColor(name);
-    const isOn    = state.workingToday.includes(name);
-    return `
-      <div class="flex items-center gap-4">
-        <div class="w-8 h-8 rounded-full ${clr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0">${name[0]}</div>
-        <div class="flex-1">
-          <div class="flex items-center justify-between mb-1">
-            <div class="flex items-center gap-2">
-              <span class="text-sm font-semibold text-white">${name}</span>
-              ${isOn ? '<span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20">ON DUTY</span>' : ''}
-            </div>
-            <div class="flex items-center gap-3">
-              <span class="text-xs text-emerald-400 font-mono">${done} done</span>
-              ${skipped ? `<span class="text-xs text-slate-500 font-mono">${skipped} skipped</span>` : ''}
-              <span class="text-xs text-slate-400 font-mono">${total} total</span>
-            </div>
+  const el=document.getElementById('team-stats-grid');
+  const allNames=[...new Set([...state.workingToday,...state.tickets.map(t=>t.assignee).filter(Boolean)])];
+  if(!allNames.length){el.innerHTML=`<p class="text-xs text-slate-600 text-center py-4">No data yet.</p>`;return;}
+  const max=Math.max(...allNames.map(n=>state.tickets.filter(t=>t.assignee===n).length),1);
+  el.innerHTML=allNames.map(name=>{
+    const total=state.tickets.filter(t=>t.assignee===name).length;
+    const done=state.tickets.filter(t=>t.assignee===name&&t.status==='Completed').length;
+    const skipped=state.tickets.filter(t=>t.assignee===name&&t.status==='Skipped').length;
+    const pct=Math.round((total/max)*100);
+    const clr=memberColor(name);
+    const isOn=state.workingToday.includes(name);
+    return `<div class="flex items-center gap-4">
+      <div class="w-8 h-8 rounded-full ${clr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0">${name[0]}</div>
+      <div class="flex-1">
+        <div class="flex items-center justify-between mb-1">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-white">${name}</span>
+            ${isOn?'<span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20">ON DUTY</span>':''}
           </div>
-          <div class="h-1.5 bg-white/5 rounded-full overflow-hidden">
-            <div class="h-full bar-fill rounded-full ${clr} opacity-70" style="width:${pct}%"></div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs text-emerald-400 font-mono">${done} done</span>
+            ${skipped?`<span class="text-xs text-slate-500 font-mono">${skipped} skipped</span>`:''}
+            <span class="text-xs text-slate-400 font-mono">${total} total</span>
           </div>
         </div>
-      </div>`;
+        <div class="h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full bar-fill rounded-full ${clr} opacity-70" style="width:${pct}%"></div></div>
+      </div>
+    </div>`;
   }).join('');
 }
 
-// ─── NAV ─────────────────────────────────────────────────────────
+// ── NAV ──────────────────────────────────────────────────────────
 function showSection(name) {
-  ['dashboard','tickets','team'].forEach(s => {
-    document.getElementById('section-'+s).classList.toggle('hidden', s!==name);
-    document.getElementById('nav-'+s).className = s===name
-      ? 'nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all bg-indigo-600/20 text-indigo-300 border border-indigo-500/20'
-      : 'nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5';
+  ['dashboard','tickets','team'].forEach(s=>{
+    document.getElementById('section-'+s).classList.toggle('hidden',s!==name);
+    document.getElementById('nav-'+s).className=s===name
+      ?'nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all bg-indigo-600/20 text-indigo-300 border border-indigo-500/20'
+      :'nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5';
   });
-  document.getElementById('page-title').textContent = {dashboard:'Dashboard',tickets:'All Tickets',team:'Team Stats'}[name];
+  document.getElementById('page-title').textContent={dashboard:'Dashboard',tickets:'All Tickets',team:'Team Stats'}[name];
 }
-
 function filterTickets(f) {
-  state.filter = f;
-  ['all','Pending','Completed','Skipped'].forEach(x => {
-    const btn = document.getElementById('filter-'+x);
-    if (!btn) return;
-    btn.className = x===f
-      ? 'filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-indigo-600 text-white'
-      : 'filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white';
+  state.filter=f;
+  ['all','Pending','Completed','Skipped'].forEach(x=>{
+    const btn=document.getElementById('filter-'+x);
+    if(!btn)return;
+    btn.className=x===f?'filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-indigo-600 text-white':'filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white';
   });
   renderAllTable();
 }
-
-function searchTickets() {
-  state.search = document.getElementById('search-input').value.toLowerCase();
-  renderAllTable();
-}
-
-function openModal() {
-  renderPreview();
-  const m = document.getElementById('modal');
-  m.classList.remove('hidden'); m.classList.add('flex');
-  setTimeout(() => document.getElementById('modal-title').focus(), 60);
-}
-function closeModal() {
-  const m = document.getElementById('modal');
-  m.classList.add('hidden'); m.classList.remove('flex');
-}
-
-function showToast(msg, sub = 'Saved to Firebase') {
-  document.getElementById('toast-msg').textContent = msg;
-  document.getElementById('toast-sub').textContent = sub;
-  const t = document.getElementById('toast');
+function searchTickets(){state.search=document.getElementById('search-input').value.toLowerCase();renderAllTable();}
+function openModal(){renderPreview();const m=document.getElementById('modal');m.classList.remove('hidden');m.classList.add('flex');setTimeout(()=>document.getElementById('modal-title').focus(),60);}
+function closeModal(){const m=document.getElementById('modal');m.classList.add('hidden');m.classList.remove('flex');}
+function showToast(msg,sub='Saved to Firebase'){
+  document.getElementById('toast-msg').textContent=msg;
+  document.getElementById('toast-sub').textContent=sub;
+  const t=document.getElementById('toast');
   t.classList.remove('hidden');
-  setTimeout(() => t.classList.add('hidden'), 3800);
+  setTimeout(()=>t.classList.add('hidden'),3800);
 }
-
-function setSubmitting(v) {
-  state.submitting = v;
-  ['submit-btn','modal-submit-btn'].forEach(id => {
-    const b = document.getElementById(id); if(!b) return;
-    b.disabled=v; b.style.opacity=v?'0.6':'1'; b.style.cursor=v?'not-allowed':'pointer';
-    if(v) b.innerHTML = `<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Saving…`;
-    else   b.innerHTML = `<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Submit Ticket`;
+function setSubmitting(v){
+  state.submitting=v;
+  ['submit-btn','modal-submit-btn'].forEach(id=>{
+    const b=document.getElementById(id);if(!b)return;
+    b.disabled=v;b.style.opacity=v?'0.6':'1';b.style.cursor=v?'not-allowed':'pointer';
+    if(v)b.innerHTML=`<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Saving…`;
+    else b.innerHTML=`<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Submit Ticket`;
   });
 }
-
-function toggleDark() {
-  state.darkMode = !state.darkMode;
-  document.documentElement.classList.toggle('dark', state.darkMode);
-  document.getElementById('dark-label').textContent = state.darkMode ? 'Light Mode' : 'Dark Mode';
-}
-
-document.addEventListener('keydown', e => {
-  if (e.key==='Escape') { closeModal(); closeConfirmModal(); closeSkipModal(); }
-  if (e.key==='Enter' && !document.getElementById('modal').classList.contains('hidden')) submitTicketModal();
+function toggleDark(){state.darkMode=!state.darkMode;document.documentElement.classList.toggle('dark',state.darkMode);document.getElementById('dark-label').textContent=state.darkMode?'Light Mode':'Dark Mode';}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeModal();closeConfirmModal();closeSkipModal();closeEditModal();closeSkipRotationModal();}
+  if(e.key==='Enter'&&!document.getElementById('modal').classList.contains('hidden'))submitTicketModal();
 });
-
 init();
 </script>
 </body>
