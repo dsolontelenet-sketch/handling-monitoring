@@ -4,84 +4,90 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Dispute Monitoring Dashboard</title>
-<link rel="icon" href="data:image/svg+xml,
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
-<rect width='100' height='100' rx='20' fill='violet'/>
-<text x='50' y='65' font-size='60' text-anchor='middle' fill='white' font-family='Arial'>H</text>
-<text x='85' y='25' font-size='20'>⚠</text>
-</svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='violet'/><text x='50' y='65' font-size='60' text-anchor='middle' fill='white' font-family='Arial'>H</text><text x='85' y='25' font-size='20'>⚠</text></svg>">
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-  tailwind.config = {
-    darkMode:'class',
-    theme:{ extend:{ fontFamily:{ sans:['Sora','sans-serif'], mono:['JetBrains Mono','monospace'] } } }
-  }
+  tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Sora','sans-serif'],mono:['JetBrains Mono','monospace']}}}}
 </script>
 <style>
-  :root { --glow: 0 0 28px rgba(99,102,241,0.22); }
-  *{ box-sizing:border-box; }
-  body{ font-family:'Sora',sans-serif; }
-  .glass{ background:rgba(15,23,42,0.72); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border:1px solid rgba(99,102,241,0.14); }
-  .glass-light{ background:rgba(255,255,255,0.04); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.07); }
-  .bg-mesh{ background:#020817; background-image: radial-gradient(ellipse 60% 50% at 10% 20%,rgba(99,102,241,0.11) 0%,transparent 60%), radial-gradient(ellipse 50% 60% at 90% 80%,rgba(16,185,129,0.06) 0%,transparent 60%), radial-gradient(ellipse 40% 40% at 50% 50%,rgba(59,130,246,0.05) 0%,transparent 60%); }
-  @keyframes pulse-ring{ 0%{transform:scale(1);opacity:1} 100%{transform:scale(1.6);opacity:0} }
-  .pulse-ring::before{ content:'';position:absolute;inset:-4px;border-radius:9999px; border:2px solid rgba(99,102,241,0.5); animation:pulse-ring 2s ease-out infinite; }
-  @keyframes slideIn{ from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-  .slide-in{ animation:slideIn 0.35s ease forwards; }
-  @keyframes statusPulse{ 0%,100%{opacity:1} 50%{opacity:0.45} }
-  .pending-dot{ animation:statusPulse 2s ease-in-out infinite; }
-  .bar-fill{ transition:width 0.8s cubic-bezier(0.4,0,0.2,1); }
-  .ticket-row:hover{ background:rgba(99,102,241,0.055)!important; box-shadow:inset 3px 0 0 rgba(99,102,241,0.55); }
-  .ticket-row{ transition:all 0.18s ease; }
-  .card-glow:hover{ box-shadow:var(--glow); border-color:rgba(99,102,241,0.28); }
-  .card-glow{ transition:all 0.3s ease; }
-  ::-webkit-scrollbar{ width:4px;height:4px; }
-  ::-webkit-scrollbar-track{ background:transparent; }
-  ::-webkit-scrollbar-thumb{ background:rgba(99,102,241,0.35);border-radius:2px; }
-  .form-input:focus{ outline:none; border-color:rgba(99,102,241,0.6); box-shadow:0 0 0 3px rgba(99,102,241,0.11); }
-  @keyframes notifPop{ 0%{transform:translateX(120%);opacity:0} 15%{transform:translateX(0);opacity:1} 80%{transform:translateX(0);opacity:1} 100%{transform:translateX(120%);opacity:0} }
-  .notif-pop{ animation:notifPop 3.5s ease forwards; }
-  @keyframes warnPop{ 0%{transform:translateX(120%);opacity:0} 15%{transform:translateX(0);opacity:1} 80%{transform:translateX(0);opacity:1} 100%{transform:translateX(120%);opacity:0} }
-  .warn-pop{ animation:warnPop 4s ease forwards; }
-  .rotation-item{ transition:all 0.25s ease; }
-  .rotation-item.active{ background:rgba(99,102,241,0.18); border-color:rgba(99,102,241,0.45); transform:scale(1.02); }
-  .rotation-item.next-up{ background:rgba(245,158,11,0.07); border-color:rgba(245,158,11,0.28); }
-  .log-item{ border-left:2px solid; }
-  #loading-overlay{ position:fixed;inset:0;z-index:999;background:#020817; display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px; transition:opacity 0.4s ease; }
-  @keyframes spin{ to{transform:rotate(360deg)} }
-  .spinner{ width:42px;height:42px; border:3px solid rgba(99,102,241,0.14); border-top-color:#6366f1;border-radius:50%; animation:spin 0.75s linear infinite; }
-  #fb-status{ position:fixed;bottom:14px;right:14px;z-index:40; display:flex;align-items:center;gap:6px; background:rgba(15,23,42,0.88);border:1px solid rgba(99,102,241,0.18); padding:5px 12px;border-radius:999px;backdrop-filter:blur(8px); font-size:11px;font-family:'JetBrains Mono',monospace;color:#94a3b8; }
-  .fb-dot{ width:7px;height:7px;border-radius:50%;flex-shrink:0; }
-  .fb-dot.connected{ background:#10b981;box-shadow:0 0 6px #10b981; }
-  .fb-dot.connecting{ background:#f59e0b;animation:statusPulse 1s ease infinite; }
-  .fb-dot.error{ background:#ef4444; }
-  .wt-pill{ display:inline-flex;align-items:center;gap:6px; background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.22); border-radius:9999px;padding:4px 10px 4px 8px; font-size:12px;font-weight:600;color:#c7d2fe; transition:all 0.2s ease; }
-  .wt-pill:hover{ background:rgba(99,102,241,0.18); }
-  .wt-pill .del-btn{ width:16px;height:16px;border-radius:50%; background:rgba(239,68,68,0.15);border:none;cursor:pointer; display:flex;align-items:center;justify-content:center; color:#f87171;transition:all 0.15s ease;font-size:11px; }
-  .wt-pill .del-btn:hover{ background:rgba(239,68,68,0.35);color:#fff; }
-  #add-dropdown{ position:fixed; z-index:9999; background:rgba(10,16,36,0.98); border:1px solid rgba(99,102,241,0.25); border-radius:14px; box-shadow:0 24px 48px rgba(0,0,0,0.65), 0 0 0 1px rgba(99,102,241,0.08); max-height:260px;overflow-y:auto; min-width:260px; display:none; backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); }
-  #add-dropdown.open{ display:block; }
-  @keyframes fadeSlide{ from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
-  #add-dropdown.open{ animation:fadeSlide 0.18s ease forwards; }
-  .member-chip{ display:flex;align-items:center;padding:9px 12px; cursor:pointer;border-radius:8px;transition:background 0.15s; font-size:13px;color:#cbd5e1;gap:10px; }
-  .member-chip:hover{ background:rgba(99,102,241,0.14); }
-  .member-chip.already{ opacity:0.32;pointer-events:none; }
-  .modal-overlay{ position:fixed;inset:0;z-index:200; display:none;align-items:center;justify-content:center;padding:16px; }
-  .modal-overlay.open{ display:flex; }
-  .modal-backdrop{ position:absolute;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px); }
-  .modal-card{ position:relative;z-index:1; background:rgba(10,16,36,0.98); border:1px solid rgba(99,102,241,0.25); border-radius:20px; box-shadow:0 32px 64px rgba(0,0,0,0.7); padding:28px 28px 24px; width:100%;max-width:420px; animation:slideIn 0.25s ease; }
-  /* Stats view toggle */
-  .stats-tab{ transition:all 0.2s ease; }
-  .stats-tab.active{ background:rgba(99,102,241,0.2); color:#a5b4fc; border-color:rgba(99,102,241,0.4); }
-  /* Duplicate warning shake */
-  @keyframes shake{ 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
-  .shake{ animation:shake 0.4s ease; }
-  /* History day accordion */
-  .history-day-header{ cursor:pointer; transition:background 0.15s; }
-  .history-day-header:hover{ background:rgba(99,102,241,0.06); }
+  :root{--glow:0 0 28px rgba(99,102,241,0.22);}
+  *{box-sizing:border-box;}
+  body{font-family:'Sora',sans-serif;}
+  .glass{background:rgba(15,23,42,0.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(99,102,241,0.14);}
+  .glass-light{background:rgba(255,255,255,0.04);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.07);}
+  .bg-mesh{background:#020817;background-image:radial-gradient(ellipse 60% 50% at 10% 20%,rgba(99,102,241,0.11) 0%,transparent 60%),radial-gradient(ellipse 50% 60% at 90% 80%,rgba(16,185,129,0.06) 0%,transparent 60%),radial-gradient(ellipse 40% 40% at 50% 50%,rgba(59,130,246,0.05) 0%,transparent 60%);}
+  @keyframes pulse-ring{0%{transform:scale(1);opacity:1}100%{transform:scale(1.6);opacity:0}}
+  .pulse-ring::before{content:'';position:absolute;inset:-4px;border-radius:9999px;border:2px solid rgba(99,102,241,0.5);animation:pulse-ring 2s ease-out infinite;}
+  @keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .slide-in{animation:slideIn 0.35s ease forwards;}
+  @keyframes statusPulse{0%,100%{opacity:1}50%{opacity:0.45}}
+  .pending-dot{animation:statusPulse 2s ease-in-out infinite;}
+  .bar-fill{transition:width 0.8s cubic-bezier(0.4,0,0.2,1);}
+  .ticket-row:hover{background:rgba(99,102,241,0.055)!important;box-shadow:inset 3px 0 0 rgba(99,102,241,0.55);}
+  .ticket-row{transition:all 0.18s ease;}
+  .card-glow:hover{box-shadow:var(--glow);border-color:rgba(99,102,241,0.28);}
+  .card-glow{transition:all 0.3s ease;}
+  ::-webkit-scrollbar{width:4px;height:4px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:rgba(99,102,241,0.35);border-radius:2px;}
+  .form-input:focus{outline:none;border-color:rgba(99,102,241,0.6);box-shadow:0 0 0 3px rgba(99,102,241,0.11);}
+  @keyframes notifPop{0%{transform:translateX(120%);opacity:0}15%{transform:translateX(0);opacity:1}80%{transform:translateX(0);opacity:1}100%{transform:translateX(120%);opacity:0}}
+  .notif-pop{animation:notifPop 3.5s ease forwards;}
+  @keyframes warnPop{0%{transform:translateX(120%);opacity:0}15%{transform:translateX(0);opacity:1}80%{transform:translateX(0);opacity:1}100%{transform:translateX(120%);opacity:0}}
+  .warn-pop{animation:warnPop 4s ease forwards;}
+  .rotation-item{transition:all 0.25s ease;}
+  .rotation-item.active{background:rgba(99,102,241,0.18);border-color:rgba(99,102,241,0.45);transform:scale(1.02);}
+  .rotation-item.next-up{background:rgba(245,158,11,0.07);border-color:rgba(245,158,11,0.28);}
+  .log-item{border-left:2px solid;}
+  #loading-overlay{position:fixed;inset:0;z-index:999;background:#020817;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity 0.4s ease;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spinner{width:42px;height:42px;border:3px solid rgba(99,102,241,0.14);border-top-color:#6366f1;border-radius:50%;animation:spin 0.75s linear infinite;}
+  #fb-status{position:fixed;bottom:14px;right:14px;z-index:40;display:flex;align-items:center;gap:6px;background:rgba(15,23,42,0.88);border:1px solid rgba(99,102,241,0.18);padding:5px 12px;border-radius:999px;backdrop-filter:blur(8px);font-size:11px;font-family:'JetBrains Mono',monospace;color:#94a3b8;}
+  .fb-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .fb-dot.connected{background:#10b981;box-shadow:0 0 6px #10b981;}
+  .fb-dot.connecting{background:#f59e0b;animation:statusPulse 1s ease infinite;}
+  .fb-dot.error{background:#ef4444;}
+  .wt-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.22);border-radius:9999px;padding:4px 10px 4px 8px;font-size:12px;font-weight:600;color:#c7d2fe;transition:all 0.2s ease;}
+  .wt-pill:hover{background:rgba(99,102,241,0.18);}
+  .wt-pill .del-btn{width:16px;height:16px;border-radius:50%;background:rgba(239,68,68,0.15);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#f87171;transition:all 0.15s ease;font-size:11px;}
+  .wt-pill .del-btn:hover{background:rgba(239,68,68,0.35);color:#fff;}
+  #add-dropdown{position:fixed;z-index:9999;background:rgba(10,16,36,0.98);border:1px solid rgba(99,102,241,0.25);border-radius:14px;box-shadow:0 24px 48px rgba(0,0,0,0.65),0 0 0 1px rgba(99,102,241,0.08);max-height:260px;overflow-y:auto;min-width:260px;display:none;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
+  #add-dropdown.open{display:block;}
+  @keyframes fadeSlide{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+  #add-dropdown.open{animation:fadeSlide 0.18s ease forwards;}
+  .member-chip{display:flex;align-items:center;padding:9px 12px;cursor:pointer;border-radius:8px;transition:background 0.15s;font-size:13px;color:#cbd5e1;gap:10px;}
+  .member-chip:hover{background:rgba(99,102,241,0.14);}
+  .member-chip.already{opacity:0.32;pointer-events:none;}
+  .modal-overlay{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;padding:16px;}
+  .modal-overlay.open{display:flex;}
+  .modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);}
+  .modal-card{position:relative;z-index:1;background:rgba(10,16,36,0.98);border:1px solid rgba(99,102,241,0.25);border-radius:20px;box-shadow:0 32px 64px rgba(0,0,0,0.7);padding:28px 28px 24px;width:100%;max-width:420px;animation:slideIn 0.25s ease;}
+  .stats-tab{transition:all 0.2s ease;}
+  .stats-tab.active{background:rgba(99,102,241,0.2);color:#a5b4fc;border-color:rgba(99,102,241,0.4);}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+  .shake{animation:shake 0.4s ease;}
+  .history-day-header{cursor:pointer;transition:background 0.15s;}
+  .history-day-header:hover{background:rgba(99,102,241,0.06);}
+
+  /* ── CHAT ── */
+  .chat-bubble{transition:background 0.15s;}
+  .chat-bubble:hover .msg-actions{opacity:1;pointer-events:auto;}
+  .msg-actions{opacity:0;pointer-events:none;transition:opacity 0.15s ease;}
+  .bubble-own{background:rgba(99,102,241,0.18);border:1px solid rgba(99,102,241,0.28);}
+  .bubble-other{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);}
+  @keyframes msgIn{from{opacity:0;transform:translateY(6px) scale(0.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+  .msg-in{animation:msgIn 0.2s ease forwards;}
+  #chat-scroll{scroll-behavior:smooth;}
+  .name-pill{cursor:pointer;transition:all 0.15s;}
+  .name-pill:hover{background:rgba(99,102,241,0.18);}
+  .name-pill.active-name{background:rgba(99,102,241,0.25);border-color:rgba(99,102,241,0.5);}
+  #name-picker-dropdown{position:absolute;top: calc(100% + 8px);left:0;z-index:60;background:rgba(8,12,30,0.98);border:1px solid rgba(99,102,241,0.25);border-radius:14px;box-shadow:0 -20px 48px rgba(0,0,0,0.6);min-width:190px;max-height:240px;overflow-y:auto;display:none;backdrop-filter:blur(20px);}
+  #name-picker-dropdown.open{display:block;animation:fadeSlide 0.15s ease forwards;}
+  .edit-bar{background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);}
 </style>
 </head>
 <body class="bg-mesh min-h-screen text-slate-100 dark">
@@ -93,26 +99,22 @@
   <p class="text-xs text-slate-600">handlingdisputes.firebaseapp.com</p>
 </div>
 
-<!-- FIREBASE BADGE -->
 <div id="fb-status">
   <div class="fb-dot connecting" id="fb-dot"></div>
   <span id="fb-label">Connecting…</span>
 </div>
 
-<!-- SUCCESS TOAST -->
+<!-- TOAST -->
 <div id="toast" class="fixed top-5 right-5 z-50 hidden">
   <div class="notif-pop glass rounded-xl px-5 py-3 flex items-center gap-3 shadow-2xl border border-indigo-500/30">
     <div class="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
       <svg class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
     </div>
-    <div>
-      <p class="text-xs text-slate-400" id="toast-sub">Saved to Firebase</p>
-      <p class="text-sm font-semibold text-white" id="toast-msg"></p>
-    </div>
+    <div><p class="text-xs text-slate-400" id="toast-sub">Saved to Firebase</p><p class="text-sm font-semibold text-white" id="toast-msg"></p></div>
   </div>
 </div>
 
-<!-- ⚠️ DUPLICATE WARNING TOAST -->
+<!-- DUP TOAST -->
 <div id="dup-toast" class="fixed top-5 right-5 z-50 hidden">
   <div class="warn-pop rounded-xl px-5 py-3 flex items-center gap-3 shadow-2xl border border-rose-500/40" style="background:rgba(20,5,5,0.95)">
     <div class="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center flex-shrink-0">
@@ -120,7 +122,7 @@
     </div>
     <div>
       <p class="text-xs text-rose-400 font-semibold">Duplicate Ticket Detected</p>
-      <p class="text-sm font-semibold text-white" id="dup-toast-msg">This ticket was already submitted today.</p>
+      <p class="text-sm font-semibold text-white" id="dup-toast-msg"></p>
       <p class="text-[11px] text-slate-400 mt-0.5" id="dup-toast-detail"></p>
     </div>
   </div>
@@ -131,20 +133,12 @@
   <div class="modal-backdrop" onclick="closeConfirmModal()"></div>
   <div class="modal-card">
     <div class="flex items-center gap-3 mb-4">
-      <div class="w-10 h-10 rounded-xl bg-rose-500/15 flex items-center justify-center flex-shrink-0">
-        <svg class="w-5 h-5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-      </div>
-      <div>
-        <h3 class="text-base font-bold text-white">Remove Member?</h3>
-        <p class="text-xs text-slate-500">This action will also reset their rotation slot.</p>
-      </div>
+      <div class="w-10 h-10 rounded-xl bg-rose-500/15 flex items-center justify-center flex-shrink-0"><svg class="w-5 h-5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg></div>
+      <div><h3 class="text-base font-bold text-white">Remove Member?</h3><p class="text-xs text-slate-500">This action will also reset their rotation slot.</p></div>
     </div>
     <div class="glass-light rounded-xl px-4 py-3 mb-5 flex items-center gap-3">
       <div id="confirm-avatar" class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">?</div>
-      <div>
-        <p class="text-sm font-semibold text-white" id="confirm-name-display">—</p>
-        <p class="text-xs text-slate-500">Will be removed from today's working list</p>
-      </div>
+      <div><p class="text-sm font-semibold text-white" id="confirm-name-display">—</p><p class="text-xs text-slate-500">Will be removed from today's working list</p></div>
     </div>
     <div class="flex gap-3">
       <button onclick="closeConfirmModal()" class="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-semibold py-2.5 rounded-xl transition-all border border-white/10">Cancel</button>
@@ -158,13 +152,8 @@
   <div class="modal-backdrop" onclick="closeSkipModal()"></div>
   <div class="modal-card">
     <div class="flex items-center gap-3 mb-4">
-      <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center flex-shrink-0">
-        <svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      </div>
-      <div>
-        <h3 class="text-base font-bold text-white">Skip This Dispute?</h3>
-        <p class="text-xs text-slate-500">Please provide a reason for skipping.</p>
-      </div>
+      <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center flex-shrink-0"><svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+      <div><h3 class="text-base font-bold text-white">Skip This Dispute?</h3><p class="text-xs text-slate-500">Please provide a reason for skipping.</p></div>
     </div>
     <div class="glass-light rounded-xl px-4 py-3 mb-4 flex items-center gap-3">
       <span class="text-xs font-mono text-rose-400 bg-rose-500/10 px-2 py-1 rounded-full border border-rose-500/20 flex-shrink-0">⚡ Dispute</span>
@@ -185,15 +174,12 @@
       <input id="skip-reason-input" type="text" placeholder="Enter custom reason…" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 placeholder-slate-600 transition-all hidden" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmSkip();}"/>
     </div>
     <div class="mb-5">
-      <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Additional Note <span class="text-slate-600 normal-case tracking-normal">(optional)</span></label>
+      <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Additional Note <span class="text-slate-600 normal-case">(optional)</span></label>
       <textarea id="skip-note" rows="2" placeholder="Any extra context…" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 placeholder-slate-600 transition-all resize-none"></textarea>
     </div>
     <div class="flex gap-3">
       <button onclick="closeSkipModal()" class="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-semibold py-2.5 rounded-xl transition-all border border-white/10">Cancel</button>
-      <button onclick="confirmSkip()" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8"/></svg>
-        Confirm Skip
-      </button>
+      <button onclick="confirmSkip()" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8"/></svg>Confirm Skip</button>
     </div>
   </div>
 </div>
@@ -203,49 +189,19 @@
   <div class="modal-backdrop" onclick="closeEditModal()"></div>
   <div class="modal-card" style="max-width:480px;">
     <div class="flex items-center gap-3 mb-5">
-      <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center flex-shrink-0">
-        <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-      </div>
-      <div>
-        <h3 class="text-base font-bold text-white">Edit Ticket</h3>
-        <p class="text-xs text-slate-500 font-mono" id="edit-ticket-id-label">—</p>
-      </div>
-      <button onclick="closeEditModal()" class="ml-auto text-slate-500 hover:text-white transition-colors">
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
+      <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center flex-shrink-0"><svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></div>
+      <div><h3 class="text-base font-bold text-white">Edit Ticket</h3><p class="text-xs text-slate-500 font-mono" id="edit-ticket-id-label">—</p></div>
+      <button onclick="closeEditModal()" class="ml-auto text-slate-500 hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
     </div>
     <div class="space-y-4">
-      <div>
-        <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Ticket Type</label>
-        <select id="edit-type" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 appearance-none cursor-pointer transition-all">
-          <option value="Dispute">⚡ Dispute</option>
-          <option value="Partner Portal">🔗 Partner Portal</option>
-          <option value="Inquiry">💬 Inquiry</option>
-        </select>
-      </div>
-      <div>
-        <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Ticket Title</label>
-        <input id="edit-title" type="text" placeholder="Describe the issue…" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 placeholder-slate-600 transition-all" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmEditTicket();}"/>
-      </div>
-      <div>
-        <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Assigned To</label>
-        <select id="edit-assignee" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 appearance-none cursor-pointer transition-all"></select>
-      </div>
-      <div>
-        <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Status</label>
-        <select id="edit-status" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 appearance-none cursor-pointer transition-all">
-          <option value="Pending">Pending</option>
-          <option value="Completed">Completed</option>
-          <option value="Skipped">Skipped</option>
-        </select>
-      </div>
+      <div><label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Ticket Type</label><select id="edit-type" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 appearance-none cursor-pointer transition-all"><option value="Dispute">⚡ Dispute</option><option value="Partner Portal">🔗 Partner Portal</option><option value="Inquiry">💬 Inquiry</option></select></div>
+      <div><label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Ticket Title</label><input id="edit-title" type="text" placeholder="Describe the issue…" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 placeholder-slate-600 transition-all" onkeydown="if(event.key==='Enter'){event.preventDefault();confirmEditTicket();}"/></div>
+      <div><label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Assigned To</label><select id="edit-assignee" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 appearance-none cursor-pointer transition-all"></select></div>
+      <div><label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Status</label><select id="edit-status" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 appearance-none cursor-pointer transition-all"><option value="Pending">Pending</option><option value="Completed">Completed</option><option value="Skipped">Skipped</option></select></div>
     </div>
     <div class="flex gap-3 mt-6">
       <button onclick="closeEditModal()" class="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-semibold py-2.5 rounded-xl transition-all border border-white/10">Cancel</button>
-      <button onclick="confirmEditTicket()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-        Save Changes
-      </button>
+      <button onclick="confirmEditTicket()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Save Changes</button>
     </div>
   </div>
 </div>
@@ -255,37 +211,35 @@
   <div class="modal-backdrop" onclick="closeSkipRotationModal()"></div>
   <div class="modal-card" style="max-width:400px;">
     <div class="flex items-center gap-3 mb-4">
-      <div class="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center flex-shrink-0">
-        <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-      </div>
-      <div>
-        <h3 class="text-base font-bold text-white">Skip Current Person?</h3>
-        <p class="text-xs text-slate-500">Move to the next person in rotation without assigning a ticket.</p>
-      </div>
+      <div class="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center flex-shrink-0"><svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+      <div><h3 class="text-base font-bold text-white">Skip Current Person?</h3><p class="text-xs text-slate-500">Move to the next person without assigning a ticket.</p></div>
     </div>
     <div class="glass-light rounded-xl px-4 py-3 mb-5 flex items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div id="skip-rot-curr-avatar" class="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">?</div>
-        <div>
-          <p class="text-[10px] text-slate-500 uppercase tracking-wider">Skipping</p>
-          <p class="text-sm font-bold text-white" id="skip-rot-curr-name">—</p>
-        </div>
-      </div>
+      <div class="flex items-center gap-3"><div id="skip-rot-curr-avatar" class="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">?</div><div><p class="text-[10px] text-slate-500 uppercase tracking-wider">Skipping</p><p class="text-sm font-bold text-white" id="skip-rot-curr-name">—</p></div></div>
       <svg class="w-5 h-5 text-slate-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-      <div class="flex items-center gap-3">
-        <div>
-          <p class="text-[10px] text-slate-500 uppercase tracking-wider text-right">Next Up</p>
-          <p class="text-sm font-bold text-indigo-300 text-right" id="skip-rot-next-name">—</p>
-        </div>
-        <div id="skip-rot-next-avatar" class="w-9 h-9 rounded-full bg-amber-500 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">?</div>
-      </div>
+      <div class="flex items-center gap-3"><div><p class="text-[10px] text-slate-500 uppercase tracking-wider text-right">Next Up</p><p class="text-sm font-bold text-indigo-300 text-right" id="skip-rot-next-name">—</p></div><div id="skip-rot-next-avatar" class="w-9 h-9 rounded-full bg-amber-500 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">?</div></div>
     </div>
     <div class="flex gap-3">
       <button onclick="closeSkipRotationModal()" class="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-semibold py-2.5 rounded-xl transition-all border border-white/10">Cancel</button>
-      <button onclick="confirmSkipRotation()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8"/></svg>
-        Yes, Skip
-      </button>
+      <button onclick="confirmSkipRotation()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8"/></svg>Yes, Skip</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE MESSAGE MODAL -->
+<div id="del-msg-modal" class="modal-overlay">
+  <div class="modal-backdrop" onclick="closeDelMsgModal()"></div>
+  <div class="modal-card" style="max-width:380px;">
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-10 h-10 rounded-xl bg-rose-500/15 flex items-center justify-center flex-shrink-0"><svg class="w-5 h-5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></div>
+      <div><h3 class="text-base font-bold text-white">Delete Message?</h3><p class="text-xs text-slate-500">This cannot be undone.</p></div>
+    </div>
+    <div class="glass-light rounded-xl px-4 py-3 mb-5">
+      <p class="text-xs text-slate-400 italic truncate" id="del-msg-preview">—</p>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="closeDelMsgModal()" class="flex-1 bg-white/5 hover:bg-white/10 text-slate-300 text-sm font-semibold py-2.5 rounded-xl transition-all border border-white/10">Cancel</button>
+      <button onclick="confirmDelMsg()" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white text-sm font-semibold py-2.5 rounded-xl transition-all">Delete</button>
     </div>
   </div>
 </div>
@@ -297,28 +251,25 @@
   <aside class="w-64 flex-shrink-0 glass border-r border-indigo-500/10 flex flex-col h-full z-10">
     <div class="px-6 py-5 border-b border-white/5">
       <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-900/50">
-          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-        </div>
-        <div>
-          <p class="text-sm font-bold text-white tracking-tight">DisputeOps</p>
-          <p class="text-[10px] text-indigo-400 font-mono uppercase tracking-widest">Firebase Live</p>
-        </div>
+        <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-900/50"><svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></div>
+        <div><p class="text-sm font-bold text-white tracking-tight">DisputeOps</p><p class="text-[10px] text-indigo-400 font-mono uppercase tracking-widest">Firebase Live</p></div>
       </div>
     </div>
     <nav class="px-3 py-4 space-y-1">
       <button onclick="showSection('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all bg-indigo-600/20 text-indigo-300 border border-indigo-500/20">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-        Dashboard
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>Dashboard
       </button>
       <button onclick="showSection('tickets')" id="nav-tickets" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-        All Tickets
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>All Tickets
         <span id="ticket-count-badge" class="ml-auto bg-indigo-600 text-white text-[10px] font-mono px-1.5 py-0.5 rounded-full">0</span>
       </button>
       <button onclick="showSection('team')" id="nav-team" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        Team Stats
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Team Stats
+      </button>
+      <!-- CHAT NAV -->
+      <button onclick="showSection('chat')" id="nav-chat" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>Team Chat
+        <span id="chat-badge" class="ml-auto hidden bg-rose-500 text-white text-[10px] font-mono px-1.5 py-0.5 rounded-full animate-pulse">!</span>
       </button>
     </nav>
     <div class="px-3 mt-1">
@@ -326,7 +277,6 @@
       <div id="sidebar-rotation" class="space-y-0.5"></div>
     </div>
     <div class="mt-auto px-4 py-4 border-t border-white/5">
-      <!-- Today's date key badge in sidebar -->
       <div class="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/15">
         <svg class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
         <span class="text-[10px] text-emerald-400 font-mono" id="sidebar-today-key">—</span>
@@ -339,8 +289,8 @@
   </aside>
 
   <!-- MAIN -->
-  <main class="flex-1 overflow-y-auto">
-    <header class="sticky top-0 z-10 glass border-b border-white/5 px-8 py-4 flex items-center justify-between">
+  <main class="flex-1 overflow-hidden flex flex-col">
+    <header class="sticky top-0 z-10 glass border-b border-white/5 px-8 py-4 flex items-center justify-between flex-shrink-0">
       <div>
         <h1 id="page-title" class="text-lg font-bold text-white">Dashboard</h1>
         <p class="text-xs text-slate-500 font-mono" id="current-date"></p>
@@ -352,180 +302,66 @@
           <span id="header-next" class="text-xs font-bold text-indigo-300 font-mono">—</span>
         </div>
         <button onclick="openModal()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all shadow-lg shadow-indigo-900/40">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-          New Ticket
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>New Ticket
         </button>
       </div>
     </header>
 
+    <!-- SCROLLABLE CONTENT WRAPPER -->
+    <div class="flex-1 overflow-y-auto" id="main-scroll">
+
     <!-- DASHBOARD -->
     <div id="section-dashboard" class="p-8 space-y-5">
       <div class="grid grid-cols-4 gap-4">
-        <!-- Today's stats only -->
-        <div class="glass rounded-2xl p-5 card-glow">
-          <div class="flex items-start justify-between mb-3">
-            <div class="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center"><svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
-            <span class="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full">TODAY</span>
-          </div>
-          <p class="text-3xl font-bold text-white font-mono" id="stat-total">—</p>
-          <p class="text-xs text-slate-500 mt-1">Today's Tickets</p>
-        </div>
-        <div class="glass rounded-2xl p-5 card-glow">
-          <div class="flex items-start justify-between mb-3">
-            <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center"><svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-            <span class="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">OPEN</span>
-          </div>
-          <p class="text-3xl font-bold text-white font-mono" id="stat-pending">—</p>
-          <p class="text-xs text-slate-500 mt-1">Pending Today</p>
-        </div>
-        <div class="glass rounded-2xl p-5 card-glow">
-          <div class="flex items-start justify-between mb-3">
-            <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center"><svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
-            <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">DONE</span>
-          </div>
-          <p class="text-3xl font-bold text-white font-mono" id="stat-completed">—</p>
-          <p class="text-xs text-slate-500 mt-1">Completed Today</p>
-        </div>
-        <div class="glass rounded-2xl p-5 card-glow">
-          <div class="flex items-start justify-between mb-3">
-            <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center"><svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div>
-            <span class="text-[10px] font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">ON DUTY</span>
-          </div>
-          <p class="text-3xl font-bold text-white font-mono" id="stat-working">—</p>
-          <p class="text-xs text-slate-500 mt-1">Working Today</p>
-        </div>
+        <div class="glass rounded-2xl p-5 card-glow"><div class="flex items-start justify-between mb-3"><div class="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center"><svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div><span class="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full">TODAY</span></div><p class="text-3xl font-bold text-white font-mono" id="stat-total">—</p><p class="text-xs text-slate-500 mt-1">Today's Tickets</p></div>
+        <div class="glass rounded-2xl p-5 card-glow"><div class="flex items-start justify-between mb-3"><div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center"><svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><span class="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">OPEN</span></div><p class="text-3xl font-bold text-white font-mono" id="stat-pending">—</p><p class="text-xs text-slate-500 mt-1">Pending Today</p></div>
+        <div class="glass rounded-2xl p-5 card-glow"><div class="flex items-start justify-between mb-3"><div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center"><svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">DONE</span></div><p class="text-3xl font-bold text-white font-mono" id="stat-completed">—</p><p class="text-xs text-slate-500 mt-1">Completed Today</p></div>
+        <div class="glass rounded-2xl p-5 card-glow"><div class="flex items-start justify-between mb-3"><div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center"><svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div><span class="text-[10px] font-mono text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">ON DUTY</span></div><p class="text-3xl font-bold text-white font-mono" id="stat-working">—</p><p class="text-xs text-slate-500 mt-1">Working Today</p></div>
       </div>
-
-      <!-- WORKING TODAY -->
       <div class="glass rounded-2xl p-6 card-glow">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h3 class="text-sm font-bold text-white">Working Today</h3>
-            <p class="text-xs text-slate-500 mt-0.5">Rotation uses only members listed here · Changes sync instantly</p>
-          </div>
-          <span id="wt-count" class="text-xs font-mono text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">0 members</span>
-        </div>
-        <div class="flex flex-wrap items-center gap-2 min-h-[40px]" id="wt-pills">
-          <span class="text-xs text-slate-600 italic">No members yet…</span>
-        </div>
+        <div class="flex items-center justify-between mb-4"><div><h3 class="text-sm font-bold text-white">Working Today</h3><p class="text-xs text-slate-500 mt-0.5">Rotation uses only members listed here · Changes sync instantly</p></div><span id="wt-count" class="text-xs font-mono text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">0 members</span></div>
+        <div class="flex flex-wrap items-center gap-2 min-h-[40px]" id="wt-pills"><span class="text-xs text-slate-600 italic">No members yet…</span></div>
         <div class="mt-4 flex gap-2 items-center" id="add-member-wrapper">
-          <div class="relative flex-1">
-            <input id="custom-name-input" type="text" placeholder="Type a name or pick from the list…"
-              class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 placeholder-slate-600 transition-all"
-              onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomName();}"
-              oninput="filterDropdown(this.value)"
-              onfocus="openDropdown()"
-              autocomplete="off"/>
-          </div>
-          <button onclick="addCustomName()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all flex-shrink-0">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-            Add
-          </button>
+          <div class="relative flex-1"><input id="custom-name-input" type="text" placeholder="Type a name or pick from the list…" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 placeholder-slate-600 transition-all" onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomName();}" oninput="filterDropdown(this.value)" onfocus="openDropdown()" autocomplete="off"/></div>
+          <button onclick="addCustomName()" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all flex-shrink-0"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Add</button>
         </div>
         <p class="text-[11px] text-slate-600 mt-2">💡 Tip: Removing a person resets them from the rotation queue.</p>
       </div>
-
-      <!-- 3-col -->
       <div class="grid grid-cols-3 gap-4">
-        <!-- New ticket -->
         <div class="glass rounded-2xl p-6 card-glow">
           <h3 class="text-sm font-bold text-white mb-1">New Ticket</h3>
           <p class="text-xs text-slate-500 mb-5">Auto-assigns · saved to Firestore</p>
           <div class="space-y-3">
-            <div>
-              <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-1.5">Ticket Type</label>
-              <select id="ticket-type" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-3 py-2.5 appearance-none cursor-pointer transition-all">
-                <option value="Dispute">⚡ Dispute</option>
-                <option value="Partner Portal">🔗 Partner Portal</option>
-                <option value="Inquiry">💬 Inquiry</option>
-              </select>
-            </div>
+            <div><label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-1.5">Ticket Type</label><select id="ticket-type" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-3 py-2.5 appearance-none cursor-pointer transition-all"><option value="Dispute">⚡ Dispute</option><option value="Partner Portal">🔗 Partner Portal</option><option value="Inquiry">💬 Inquiry</option></select></div>
             <div>
               <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-1.5">Ticket Title</label>
               <input id="ticket-title" type="text" placeholder="Describe the issue…" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-3 py-2.5 placeholder-slate-600 transition-all"/>
+              <div id="inline-dup-warning" class="hidden mt-2 flex items-center gap-2 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2"><svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg><span id="inline-dup-text"></span></div>
             </div>
-            <div class="pt-1">
-              <div class="glass-light rounded-xl px-4 py-3 flex items-center justify-between mb-3">
-                <span class="text-xs text-slate-400">Will assign to:</span>
-                <span id="preview-assignee" class="text-sm font-bold text-indigo-300 font-mono">—</span>
-              </div>
-              <button id="submit-btn" onclick="submitTicket()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm py-2.5 rounded-xl transition-all flex items-center justify-center gap-2">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                Submit Ticket
-              </button>
-            </div>
+            <div class="pt-1"><div class="glass-light rounded-xl px-4 py-3 flex items-center justify-between mb-3"><span class="text-xs text-slate-400">Will assign to:</span><span id="preview-assignee" class="text-sm font-bold text-indigo-300 font-mono">—</span></div><button id="submit-btn" onclick="submitTicket()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm py-2.5 rounded-xl transition-all flex items-center justify-center gap-2"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>Submit Ticket</button></div>
           </div>
         </div>
-
-        <!-- ROTATION STATUS -->
         <div class="glass rounded-2xl p-6 card-glow flex flex-col">
-          <div class="flex items-center justify-between mb-1">
-            <h3 class="text-sm font-bold text-white">Rotation Status</h3>
-            <button onclick="openSkipRotationModal()" title="Skip current person in rotation"
-              class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/25 border border-indigo-500/25 transition-all">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              Skip Person
-            </button>
-          </div>
+          <div class="flex items-center justify-between mb-1"><h3 class="text-sm font-bold text-white">Rotation Status</h3><button onclick="openSkipRotationModal()" class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/25 border border-indigo-500/25 transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Skip Person</button></div>
           <p class="text-xs text-slate-500 mb-4">Based on today's active members</p>
           <div class="flex-1 flex flex-col items-center justify-center gap-4">
-            <div class="text-center">
-              <div class="relative inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-600/20 border-2 border-indigo-500 mb-2 pulse-ring">
-                <span id="rot-curr-init" class="text-xl font-bold text-indigo-300 font-mono">—</span>
-              </div>
-              <div class="flex items-center justify-center gap-1.5 mb-0.5">
-                <div class="w-1.5 h-1.5 rounded-full bg-indigo-400 pending-dot"></div>
-                <p class="text-[11px] text-slate-400 uppercase tracking-wider">Handling Next</p>
-              </div>
-              <p id="rot-curr-name" class="text-base font-bold text-white">—</p>
-            </div>
-            <div class="flex flex-col items-center gap-1">
-              <div class="w-px h-4 bg-slate-700"></div>
-              <svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-              <div class="w-px h-4 bg-slate-700"></div>
-            </div>
-            <div class="text-center">
-              <div class="relative inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/10 border-2 border-amber-500/30 mb-2">
-                <span id="rot-next-init" class="text-base font-bold text-amber-400/70 font-mono">—</span>
-              </div>
-              <p class="text-[11px] text-slate-500 uppercase tracking-wider mb-0.5">On Deck</p>
-              <p id="rot-next-name" class="text-sm font-semibold text-slate-400">—</p>
-            </div>
+            <div class="text-center"><div class="relative inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-600/20 border-2 border-indigo-500 mb-2 pulse-ring"><span id="rot-curr-init" class="text-xl font-bold text-indigo-300 font-mono">—</span></div><div class="flex items-center justify-center gap-1.5 mb-0.5"><div class="w-1.5 h-1.5 rounded-full bg-indigo-400 pending-dot"></div><p class="text-[11px] text-slate-400 uppercase tracking-wider">Handling Next</p></div><p id="rot-curr-name" class="text-base font-bold text-white">—</p></div>
+            <div class="flex flex-col items-center gap-1"><div class="w-px h-4 bg-slate-700"></div><svg class="w-4 h-4 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg><div class="w-px h-4 bg-slate-700"></div></div>
+            <div class="text-center"><div class="relative inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-500/10 border-2 border-amber-500/30 mb-2"><span id="rot-next-init" class="text-base font-bold text-amber-400/70 font-mono">—</span></div><p class="text-[11px] text-slate-500 uppercase tracking-wider mb-0.5">On Deck</p><p id="rot-next-name" class="text-sm font-semibold text-slate-400">—</p></div>
           </div>
         </div>
-
-        <!-- Activity log -->
         <div class="glass rounded-2xl p-6 card-glow flex flex-col">
           <h3 class="text-sm font-bold text-white mb-1">Activity Log</h3>
           <p class="text-xs text-slate-500 mb-4">Real-time · Firestore</p>
-          <div id="activity-log" class="flex-1 space-y-2 overflow-y-auto max-h-60">
-            <div class="text-center text-slate-600 text-xs py-8">Loading…</div>
-          </div>
+          <div id="activity-log" class="flex-1 space-y-2 overflow-y-auto max-h-60"><div class="text-center text-slate-600 text-xs py-8">Loading…</div></div>
         </div>
       </div>
-
-      <!-- Recent tickets (TODAY only) -->
       <div class="glass rounded-2xl overflow-hidden card-glow">
         <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between">
-          <div>
-            <h3 class="text-sm font-bold text-white">Today's Tickets</h3>
-            <p class="text-xs text-slate-500 mt-0.5">Showing tickets from today only · <span id="recent-date-label" class="text-indigo-400 font-mono">—</span></p>
-          </div>
+          <div><h3 class="text-sm font-bold text-white">Today's Tickets</h3><p class="text-xs text-slate-500 mt-0.5">Showing today only · <span id="recent-date-label" class="text-indigo-400 font-mono">—</span></p></div>
           <button onclick="showSection('tickets')" class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-medium">View all →</button>
         </div>
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead><tr class="border-b border-white/5">
-              <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">ID</th>
-              <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Type</th>
-              <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Title</th>
-              <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Assigned</th>
-              <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Status</th>
-              <th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Action</th>
-            </tr></thead>
-            <tbody id="recent-table-body"><tr><td colspan="6" class="px-6 py-12 text-center text-slate-600 text-sm">Connecting…</td></tr></tbody>
-          </table>
-        </div>
+        <div class="overflow-x-auto"><table class="w-full"><thead><tr class="border-b border-white/5"><th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">ID</th><th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Type</th><th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Title</th><th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Assigned</th><th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Status</th><th class="px-6 py-3 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Action</th></tr></thead><tbody id="recent-table-body"><tr><td colspan="6" class="px-6 py-12 text-center text-slate-600 text-sm">Connecting…</td></tr></tbody></table></div>
       </div>
     </div>
 
@@ -533,84 +369,92 @@
     <div id="section-tickets" class="p-8 space-y-6 hidden">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <button onclick="filterTickets('all')"       id="filter-all"       class="filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-indigo-600 text-white">All</button>
-          <button onclick="filterTickets('Pending')"   id="filter-Pending"   class="filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white">Pending</button>
+          <button onclick="filterTickets('all')" id="filter-all" class="filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-indigo-600 text-white">All</button>
+          <button onclick="filterTickets('Pending')" id="filter-Pending" class="filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white">Pending</button>
           <button onclick="filterTickets('Completed')" id="filter-Completed" class="filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white">Completed</button>
-          <button onclick="filterTickets('Skipped')"   id="filter-Skipped"   class="filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white">Skipped</button>
+          <button onclick="filterTickets('Skipped')" id="filter-Skipped" class="filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white">Skipped</button>
         </div>
         <div class="flex items-center gap-3">
-          <!-- Date filter for all tickets -->
-          <div class="flex items-center gap-2">
-            <label class="text-xs text-slate-500">Date:</label>
-            <select id="date-filter" onchange="renderAllTable()" class="form-input bg-slate-800/60 border border-white/10 text-white text-xs rounded-lg px-3 py-1.5 appearance-none cursor-pointer transition-all">
-              <option value="all">All dates</option>
-              <option value="today" selected>Today only</option>
-            </select>
-          </div>
-          <div class="relative">
-            <input id="search-input" oninput="searchTickets()" type="text" placeholder="Search tickets…" class="form-input bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2 pl-9 w-56 placeholder-slate-600 transition-all"/>
-            <svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-          </div>
+          <div class="flex items-center gap-2"><label class="text-xs text-slate-500">Date:</label><select id="date-filter" onchange="renderAllTable()" class="form-input bg-slate-800/60 border border-white/10 text-white text-xs rounded-lg px-3 py-1.5 appearance-none cursor-pointer transition-all"><option value="all">All dates</option><option value="today" selected>Today only</option></select></div>
+          <div class="relative"><input id="search-input" oninput="searchTickets()" type="text" placeholder="Search tickets…" class="form-input bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2 pl-9 w-56 placeholder-slate-600 transition-all"/><svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg></div>
         </div>
       </div>
-      <div class="glass rounded-2xl overflow-hidden card-glow">
-        <div class="overflow-x-auto">
-          <table class="w-full">
-            <thead><tr class="border-b border-white/5">
-              <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">ID</th>
-              <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Type</th>
-              <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Title</th>
-              <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Assigned To</th>
-              <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Date</th>
-              <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Status</th>
-              <th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Action</th>
-            </tr></thead>
-            <tbody id="all-table-body"><tr><td colspan="7" class="px-6 py-16 text-center text-slate-600 text-sm">Loading…</td></tr></tbody>
-          </table>
-        </div>
-      </div>
+      <div class="glass rounded-2xl overflow-hidden card-glow"><div class="overflow-x-auto"><table class="w-full"><thead><tr class="border-b border-white/5"><th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">ID</th><th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Type</th><th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Title</th><th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Assigned To</th><th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Date</th><th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Status</th><th class="px-6 py-4 text-left text-[11px] uppercase tracking-widest text-slate-500 font-semibold">Action</th></tr></thead><tbody id="all-table-body"><tr><td colspan="7" class="px-6 py-16 text-center text-slate-600 text-sm">Loading…</td></tr></tbody></table></div></div>
     </div>
 
-    <!-- TEAM STATS — daily reset, history preserved -->
+    <!-- TEAM STATS -->
     <div id="section-team" class="p-8 space-y-6 hidden">
-
-      <!-- Today vs History toggle -->
       <div class="flex items-center gap-3">
-        <button onclick="setStatsView('today')" id="stats-tab-today"
-          class="stats-tab active text-xs font-semibold px-4 py-2 rounded-full border border-white/10 text-slate-300 flex items-center gap-2">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-          Today's Performance
-        </button>
-        <button onclick="setStatsView('history')" id="stats-tab-history"
-          class="stats-tab text-xs font-semibold px-4 py-2 rounded-full border border-white/10 text-slate-400 hover:text-white flex items-center gap-2">
-          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          History
-        </button>
+        <button onclick="setStatsView('today')" id="stats-tab-today" class="stats-tab active text-xs font-semibold px-4 py-2 rounded-full border border-white/10 text-slate-300 flex items-center gap-2"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>Today's Performance</button>
+        <button onclick="setStatsView('history')" id="stats-tab-history" class="stats-tab text-xs font-semibold px-4 py-2 rounded-full border border-white/10 text-slate-400 hover:text-white flex items-center gap-2"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>History</button>
       </div>
-
-      <!-- TODAY PERFORMANCE PANEL -->
       <div id="stats-today-panel" class="glass rounded-2xl p-6 card-glow">
-        <div class="flex items-center justify-between mb-1">
-          <h3 class="text-sm font-bold text-white">Today's Team Performance</h3>
-          <div class="flex items-center gap-2">
-            <div class="w-2 h-2 rounded-full bg-emerald-400 pending-dot"></div>
-            <span class="text-xs text-emerald-400 font-mono" id="stats-today-date-label">—</span>
-          </div>
-        </div>
-        <p class="text-xs text-slate-500 mb-6">Resets automatically every new day · Yesterday's data is preserved in History</p>
+        <div class="flex items-center justify-between mb-1"><h3 class="text-sm font-bold text-white">Today's Team Performance</h3><div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-emerald-400 pending-dot"></div><span class="text-xs text-emerald-400 font-mono" id="stats-today-date-label">—</span></div></div>
+        <p class="text-xs text-slate-500 mb-6">Resets automatically every new day · Yesterday's data preserved in History</p>
         <div id="team-stats-grid" class="space-y-4"></div>
       </div>
-
-      <!-- HISTORY PANEL -->
       <div id="stats-history-panel" class="hidden space-y-4">
-        <div class="glass rounded-2xl p-6 card-glow">
-          <h3 class="text-sm font-bold text-white mb-1">Historical Performance</h3>
-          <p class="text-xs text-slate-500 mb-6">All-time data grouped by day · No data is ever deleted</p>
-          <div id="history-stats-container" class="space-y-4"></div>
+        <div class="glass rounded-2xl p-6 card-glow"><h3 class="text-sm font-bold text-white mb-1">Historical Performance</h3><p class="text-xs text-slate-500 mb-6">All-time data grouped by day · No data is ever deleted</p><div id="history-stats-container" class="space-y-4"></div></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════ TEAM CHAT ═══════════════════════ -->
+    <div id="section-chat" class="hidden flex flex-col" style="height:calc(100vh - 73px);">
+
+      <!-- Chat top bar -->
+      <div class="px-8 py-4 border-b border-white/5 flex items-center justify-between flex-shrink-0" style="background:rgba(15,23,42,0.5)">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center">
+            <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+          </div>
+          <div>
+            <p class="text-sm font-bold text-white">Team Chat</p>
+            <div class="flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full bg-emerald-400 pending-dot"></div><p class="text-[10px] text-emerald-400 font-mono">Live · Firebase RTDB</p></div>
+          </div>
+        </div>
+        <!-- Name picker -->
+        <div class="relative">
+          <button id="name-picker-btn" onclick="toggleNamePicker()" class="flex items-center gap-2 glass-light border border-white/10 hover:border-indigo-500/40 rounded-xl px-4 py-2 text-sm transition-all">
+            <div id="my-avatar" class="w-6 h-6 rounded-full bg-slate-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">?</div>
+            <span id="my-name-label" class="text-slate-300 font-medium">Select your name</span>
+            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+          </button>
+          <div id="name-picker-dropdown" class="px-2 py-2"></div>
         </div>
       </div>
 
+      <!-- Messages -->
+      <div id="chat-scroll" class="flex-1 overflow-y-auto px-8 py-5 space-y-2">
+        <div class="flex items-center justify-center py-12">
+          <div class="flex items-center gap-2"><div class="w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin"></div><span class="text-xs text-slate-600">Loading messages…</span></div>
+        </div>
+      </div>
+
+      <!-- Compose area -->
+      <div class="flex-shrink-0 px-8 py-4 border-t border-white/5" style="background:rgba(15,23,42,0.6)">
+        <!-- Edit mode bar -->
+        <div id="edit-bar" class="edit-bar hidden mb-3 rounded-xl px-4 py-2 flex items-center gap-3">
+          <svg class="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          <div class="flex-1 min-w-0"><p class="text-xs font-semibold text-blue-400">Editing message</p><p class="text-xs text-slate-400 truncate" id="edit-preview">—</p></div>
+          <button onclick="cancelEdit()" class="text-slate-500 hover:text-white transition-colors"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+        <div class="flex items-end gap-3">
+          <textarea id="chat-input" rows="1"
+            placeholder="Type a message… (Enter to send, Shift+Enter for new line)"
+            class="flex-1 form-input bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-3 placeholder-slate-600 transition-all resize-none overflow-y-auto"
+            style="min-height:46px;max-height:120px;"
+            onkeydown="chatKeydown(event)"
+            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+          <button onclick="sendMsg()" class="flex-shrink-0 w-11 h-11 bg-indigo-600 hover:bg-indigo-500 rounded-xl flex items-center justify-center transition-all shadow-lg shadow-indigo-900/40">
+            <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+          </button>
+        </div>
+        <p class="text-[10px] text-slate-600 text-center mt-2">Messages sync across all team members in real-time via Firebase</p>
+      </div>
     </div>
+    <!-- ═══════════════════════════════════════════════════════════ -->
+
+    </div><!-- end main-scroll -->
   </main>
 </div>
 
@@ -618,770 +462,391 @@
 <div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
   <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal()"></div>
   <div class="relative glass rounded-2xl p-8 w-full max-w-md shadow-2xl border border-indigo-500/20 slide-in">
-    <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors">
-      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-    </button>
+    <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
     <h2 class="text-lg font-bold text-white mb-1">Create New Ticket</h2>
     <p class="text-xs text-slate-500 mb-6">Auto-assigned from today's rotation · Saved to Firebase</p>
     <div class="space-y-4">
-      <div>
-        <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Ticket Type</label>
-        <select id="modal-type" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-3 appearance-none transition-all">
-          <option value="Dispute">⚡ Dispute</option>
-          <option value="Partner Portal">🔗 Partner Portal</option>
-          <option value="Inquiry">💬 Inquiry</option>
-        </select>
-      </div>
+      <div><label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Ticket Type</label><select id="modal-type" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-3 appearance-none transition-all"><option value="Dispute">⚡ Dispute</option><option value="Partner Portal">🔗 Partner Portal</option><option value="Inquiry">💬 Inquiry</option></select></div>
       <div>
         <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Ticket Title</label>
         <input id="modal-title" type="text" placeholder="Describe the issue briefly…" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-3 placeholder-slate-600 transition-all"/>
-        <!-- Duplicate indicator inside modal -->
-        <div id="modal-dup-warning" class="hidden mt-2 flex items-center gap-2 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
-          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-          <span id="modal-dup-text">A ticket with this title already exists today.</span>
-        </div>
+        <div id="modal-dup-warning" class="hidden mt-2 flex items-center gap-2 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2"><svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg><span id="modal-dup-text"></span></div>
       </div>
-      <div class="glass-light rounded-xl px-4 py-3 flex items-center justify-between">
-        <span class="text-xs text-slate-400">Auto-assigned to:</span>
-        <span id="modal-assignee" class="text-sm font-bold text-indigo-300 font-mono">—</span>
-      </div>
-      <button id="modal-submit-btn" onclick="submitTicketModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm py-3 rounded-xl transition-all flex items-center justify-center gap-2">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-        Submit &amp; Save to Firebase
-      </button>
+      <div class="glass-light rounded-xl px-4 py-3 flex items-center justify-between"><span class="text-xs text-slate-400">Auto-assigned to:</span><span id="modal-assignee" class="text-sm font-bold text-indigo-300 font-mono">—</span></div>
+      <button id="modal-submit-btn" onclick="submitTicketModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm py-3 rounded-xl transition-all flex items-center justify-center gap-2"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Submit &amp; Save to Firebase</button>
     </div>
   </div>
 </div>
 
 <!-- MEMBER DROPDOWN -->
 <div id="add-dropdown">
-  <div class="px-4 pt-3 pb-1 border-b border-white/5">
-    <p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Default Team</p>
-  </div>
+  <div class="px-4 pt-3 pb-1 border-b border-white/5"><p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Default Team</p></div>
   <div id="dropdown-list" class="px-2 py-2"></div>
 </div>
 
 <script>
-const firebaseConfig = {
+// ── FIREBASE INIT ─────────────────────────────────────────────────
+const firebaseConfig={
   apiKey:"AIzaSyCsoYyepyJGIqbdW-QfWUZjJozmxrx2oWk",
   authDomain:"handlingdisputes.firebaseapp.com",
   projectId:"handlingdisputes",
   storageBucket:"handlingdisputes.firebasestorage.app",
   messagingSenderId:"891854791293",
   appId:"1:891854791293:web:70bf2ee2c964a144228714",
-  measurementId:"G-7RMGHXLD9R"
+  measurementId:"G-7RMGHXLD9R",
+  databaseURL:"https://handlingdisputes-default-rtdb.firebaseio.com"
 };
 firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const db=firebase.firestore();
+const rtdb=firebase.database();
 db.enablePersistence().catch(()=>{});
-const ticketsCol = db.collection('tickets');
-const metaDoc    = db.collection('meta').doc('rotation');
+const ticketsCol=db.collection('tickets');
+const metaDoc=db.collection('meta').doc('rotation');
+const chatRef=rtdb.ref('chat/messages');
 
-const DEFAULT_TEAM = ['Kent','Johnny','Reysel','Jashmier','Keone','Diovic','Ralph','Myca'];
-const TYPE_CFG = {
-  'Dispute':        {color:'text-rose-400',   bg:'bg-rose-500/10',   border:'border-rose-500/20',   icon:'⚡'},
-  'Partner Portal': {color:'text-blue-400',   bg:'bg-blue-500/10',   border:'border-blue-500/20',   icon:'🔗'},
-  'Inquiry':        {color:'text-violet-400', bg:'bg-violet-500/10', border:'border-violet-500/20', icon:'💬'},
-};
-const COLOR_POOL = ['bg-indigo-500','bg-blue-500','bg-violet-500','bg-fuchsia-500','bg-rose-500','bg-amber-500','bg-emerald-500','bg-teal-500','bg-cyan-500','bg-pink-500','bg-orange-500','bg-lime-500'];
-function memberColor(name) {
-  const code = [...name].reduce((a,c)=>a+c.charCodeAt(0),0);
-  return COLOR_POOL[code % COLOR_POOL.length];
-}
+const DEFAULT_TEAM=['Kent','Johnny','Reysel','Jashmier','Keone','Diovic','Ralph','Myca'];
+const TYPE_CFG={'Dispute':{color:'text-rose-400',bg:'bg-rose-500/10',border:'border-rose-500/20',icon:'⚡'},'Partner Portal':{color:'text-blue-400',bg:'bg-blue-500/10',border:'border-blue-500/20',icon:'🔗'},'Inquiry':{color:'text-violet-400',bg:'bg-violet-500/10',border:'border-violet-500/20',icon:'💬'}};
+const COLOR_POOL=['bg-indigo-500','bg-blue-500','bg-violet-500','bg-fuchsia-500','bg-rose-500','bg-amber-500','bg-emerald-500','bg-teal-500','bg-cyan-500','bg-pink-500','bg-orange-500','bg-lime-500'];
+function memberColor(n){const c=[...n].reduce((a,ch)=>a+ch.charCodeAt(0),0);return COLOR_POOL[c%COLOR_POOL.length];}
 
-// ── DATE KEY — YYYY-MM-DD in local time ─────────────────────────
-function todayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-function formatDayLabel(key) {
-  // key = "YYYY-MM-DD"
-  const [y,m,d] = key.split('-').map(Number);
-  const dt = new Date(y, m-1, d);
-  const today = new Date(); today.setHours(0,0,0,0);
-  const diff = Math.round((today - dt) / 86400000);
-  const label = dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
-  if(diff === 0) return `Today · ${label}`;
-  if(diff === 1) return `Yesterday · ${label}`;
-  return label;
-}
+function todayKey(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function formatDayLabel(key){const[y,m,d]=key.split('-').map(Number);const dt=new Date(y,m-1,d);const today=new Date();today.setHours(0,0,0,0);const diff=Math.round((today-dt)/86400000);const label=dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});if(diff===0)return`Today · ${label}`;if(diff===1)return`Yesterday · ${label}`;return label;}
 
-let state = {
-  tickets:[], rotationIndex:0, workingToday:[], activityLog:[],
-  filter:'all', dateFilter:'today', search:'', darkMode:true,
-  submitting:false, loaded:false,
-  pendingRemoveName:null, pendingSkipId:null, pendingEditId:null,
-  statsView:'today',
+let state={
+  tickets:[],rotationIndex:0,workingToday:[],activityLog:[],
+  filter:'all',dateFilter:'today',search:'',darkMode:true,submitting:false,loaded:false,
+  pendingRemoveName:null,pendingSkipId:null,pendingEditId:null,statsView:'today',
+  // chat
+  myName:localStorage.getItem('dops_name')||'',
+  chatMessages:{},editingKey:null,pendingDelKey:null,chatOpen:false,lastSeenTs:parseInt(localStorage.getItem('dops_chat_seen')||'0'),
 };
 
-function setFbStatus(cls, label) {
-  document.getElementById('fb-dot').className = 'fb-dot '+cls;
-  document.getElementById('fb-label').textContent = label;
-}
-function hideLoader() {
-  const el = document.getElementById('loading-overlay');
-  el.style.opacity = '0';
-  setTimeout(()=>el.style.display='none', 400);
-}
+function setFbStatus(cls,label){document.getElementById('fb-dot').className='fb-dot '+cls;document.getElementById('fb-label').textContent=label;}
+function hideLoader(){const el=document.getElementById('loading-overlay');el.style.opacity='0';setTimeout(()=>el.style.display='none',400);}
 
-async function init() {
-  const tk = todayKey();
-  document.getElementById('current-date').textContent =
-    new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  document.getElementById('sidebar-today-key').textContent = tk;
-  document.getElementById('recent-date-label').textContent = tk;
-  document.getElementById('stats-today-date-label').textContent = formatDayLabel(tk);
+async function init(){
+  const tk=todayKey();
+  document.getElementById('current-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('sidebar-today-key').textContent=tk;
+  document.getElementById('recent-date-label').textContent=tk;
+  document.getElementById('stats-today-date-label').textContent=formatDayLabel(tk);
 
-  // Populate date filter select with unique dates as they load
-  const dateFilterEl = document.getElementById('date-filter');
+  if(state.myName)applyName(state.myName);
 
-  const snap = await metaDoc.get().catch(()=>null);
-  if (!snap||!snap.exists) {
-    await metaDoc.set({rotationIndex:0,workingToday:DEFAULT_TEAM.slice(),activityLog:[]}).catch(console.error);
-  }
-  metaDoc.onSnapshot(snap=>{
-    if(!snap.exists)return;
-    const d=snap.data();
-    state.rotationIndex=d.rotationIndex??0;
-    state.workingToday=d.workingToday??[];
-    state.activityLog=d.activityLog??[];
-    renderWorkingToday(); renderRotation(); renderSidebar(); renderActivityLog(); renderPreview(); renderDropdown('');
+  const snap=await metaDoc.get().catch(()=>null);
+  if(!snap||!snap.exists){await metaDoc.set({rotationIndex:0,workingToday:DEFAULT_TEAM.slice(),activityLog:[]}).catch(console.error);}
+  metaDoc.onSnapshot(s=>{
+    if(!s.exists)return;
+    const d=s.data();
+    state.rotationIndex=d.rotationIndex??0;state.workingToday=d.workingToday??[];state.activityLog=d.activityLog??[];
+    renderWorkingToday();renderRotation();renderSidebar();renderActivityLog();renderPreview();renderDropdown('');renderNamePicker();
     document.getElementById('stat-working').textContent=state.workingToday.length;
   },err=>{console.error(err);setFbStatus('error','Sync error');});
 
-  ticketsCol.orderBy('ts','desc').onSnapshot(snap=>{
-    state.tickets=snap.docs.map(d=>({_id:d.id,...d.data()}));
-    // Populate date filter dynamically
-    populateDateFilter();
-    renderStats();
-    renderRecentTable();
-    renderAllTable();
-    renderTeamStats();
-    renderSidebar();
+  ticketsCol.orderBy('ts','desc').onSnapshot(s=>{
+    state.tickets=s.docs.map(d=>({_id:d.id,...d.data()}));
+    populateDateFilter();renderStats();renderRecentTable();renderAllTable();renderTeamStats();renderSidebar();
     if(!state.loaded){state.loaded=true;hideLoader();setFbStatus('connected','🔴 Live · Firestore');}
   },err=>{console.error(err);setFbStatus('error','Connection failed');hideLoader();});
 
-  // Live duplicate check in modal title input
-  document.getElementById('modal-title').addEventListener('input', function(){
-    checkDuplicateInline(this.value, 'modal-dup-warning', 'modal-dup-text');
+  // RTDB chat listener
+  chatRef.orderByChild('ts').limitToLast(200).on('value',snap=>{
+    const raw=snap.val()||{};
+    state.chatMessages=raw;
+    renderChat();
+    // badge for new messages when chat not open
+    if(!state.chatOpen){
+      const newCount=Object.values(raw).filter(m=>m.ts>state.lastSeenTs).length;
+      const badge=document.getElementById('chat-badge');
+      if(newCount>0){badge.textContent=newCount;badge.classList.remove('hidden');}
+      else badge.classList.add('hidden');
+    }
   });
-  document.getElementById('ticket-title').addEventListener('input', function(){
-    checkDuplicateInline(this.value, 'inline-dup-warning', 'inline-dup-text');
+
+  document.getElementById('modal-title').addEventListener('input',function(){checkDupInline(this.value,'modal-dup-warning','modal-dup-text');});
+  document.getElementById('ticket-title').addEventListener('input',function(){checkDupInline(this.value,'inline-dup-warning','inline-dup-text');});
+
+  // close name picker on outside click
+  document.addEventListener('click',e=>{
+    const btn=document.getElementById('name-picker-btn');const dd=document.getElementById('name-picker-dropdown');
+    if(!btn.contains(e.target)&&!dd.contains(e.target))dd.classList.remove('open');
+    const inp=document.getElementById('custom-name-input');const add=document.getElementById('add-dropdown');const addBtn=document.querySelector('#add-member-wrapper button');
+    if(!add.contains(e.target)&&e.target!==inp&&e.target!==addBtn)closeDropdown();
   });
+  window.addEventListener('scroll',()=>{if(document.getElementById('add-dropdown').classList.contains('open'))positionDropdown();},true);
+  window.addEventListener('resize',()=>{if(document.getElementById('add-dropdown').classList.contains('open'))positionDropdown();});
 }
 
-// ── DUPLICATE DETECTION ──────────────────────────────────────────
-function isDuplicateToday(title, excludeId) {
-  const normalized = title.trim().toLowerCase();
-  if (!normalized) return null;
-  const tk = todayKey();
-  return state.tickets.find(t =>
-    t._id !== excludeId &&
-    (t.dateKey === tk || (!t.dateKey && t.date === new Date().toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'}))) &&
-    (t.title||'').trim().toLowerCase() === normalized
-  ) || null;
-}
+// ── DUPLICATE ─────────────────────────────────────────────────────
+function isDupToday(title,excludeId){const n=title.trim().toLowerCase();if(!n)return null;const tk=todayKey();return state.tickets.find(t=>t._id!==excludeId&&t.dateKey===tk&&(t.title||'').trim().toLowerCase()===n)||null;}
+function checkDupInline(val,wid,tid){const dup=isDupToday(val);const w=document.getElementById(wid);if(!w)return;if(dup&&val.trim()){w.classList.remove('hidden');w.classList.add('flex');const te=document.getElementById(tid);if(te)te.textContent=`Already submitted today — assigned to ${dup.assignee} (${dup.id})`;}else{w.classList.add('hidden');w.classList.remove('flex');}}
+function showDupToast(dup){document.getElementById('dup-toast-msg').textContent=`"${dup.title}" already exists today.`;document.getElementById('dup-toast-detail').textContent=`${dup.id} · ${dup.assignee} · ${dup.status}`;const t=document.getElementById('dup-toast');t.classList.remove('hidden');['ticket-title','modal-title'].forEach(id=>{const el=document.getElementById(id);if(el){el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),450);}});setTimeout(()=>t.classList.add('hidden'),4200);}
 
-function checkDuplicateInline(val, warningId, textId) {
-  const dup = isDuplicateToday(val);
-  const warningEl = document.getElementById(warningId);
-  if (!warningEl) return;
-  if (dup && val.trim()) {
-    warningEl.classList.remove('hidden');
-    warningEl.classList.add('flex');
-    const textEl = document.getElementById(textId);
-    if (textEl) textEl.textContent = `Already submitted today — assigned to ${dup.assignee} (${dup.id})`;
-  } else {
-    warningEl.classList.add('hidden');
-    warningEl.classList.remove('flex');
-  }
-}
+// ── DATE FILTER ───────────────────────────────────────────────────
+function populateDateFilter(){const el=document.getElementById('date-filter');const all=[...new Set(state.tickets.map(t=>t.dateKey).filter(Boolean))].sort().reverse();const tk=todayKey();let html=`<option value="all">All dates</option><option value="today" ${state.dateFilter==='today'?'selected':''}>Today only (${tk})</option>`;all.forEach(d=>{if(d!==tk)html+=`<option value="${d}" ${state.dateFilter===d?'selected':''}>${formatDayLabel(d)}</option>`;});el.innerHTML=html;}
 
-function showDupToast(dup) {
-  document.getElementById('dup-toast-msg').textContent = `"${dup.title}" already exists today.`;
-  document.getElementById('dup-toast-detail').textContent = `${dup.id} · Assigned to ${dup.assignee} · ${dup.status}`;
-  const t = document.getElementById('dup-toast');
-  t.classList.remove('hidden');
-  // shake the input fields
-  ['ticket-title','modal-title'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el){el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),450);}
-  });
-  setTimeout(()=>t.classList.add('hidden'), 4200);
-}
-
-// ── POPULATE DATE FILTER ─────────────────────────────────────────
-function populateDateFilter() {
-  const el = document.getElementById('date-filter');
-  const allDates = [...new Set(state.tickets.map(t => t.dateKey).filter(Boolean))].sort().reverse();
-  const tk = todayKey();
-  // Keep 'all' and 'today' options, then add specific past dates
-  let html = `<option value="all">All dates</option><option value="today" ${state.dateFilter==='today'?'selected':''}>Today only (${tk})</option>`;
-  allDates.forEach(d => {
-    if (d !== tk) html += `<option value="${d}" ${state.dateFilter===d?'selected':''}>${formatDayLabel(d)}</option>`;
-  });
-  el.innerHTML = html;
-}
-
-// ── WORKING TODAY ────────────────────────────────────────────────
-function addCustomName() {
-  const input=document.getElementById('custom-name-input');
-  const name=input.value.trim();
-  if(!name)return;
-  addMember(name);
-  input.value='';
-  closeDropdown();
-}
-function addMember(name) {
-  name=name.trim();
-  if(!name)return;
-  if(state.workingToday.map(n=>n.toLowerCase()).includes(name.toLowerCase())){showToast(`${name} is already on the list`,'Already added');return;}
-  metaDoc.update({workingToday:[...state.workingToday,name]}).catch(console.error);
-  closeDropdown();
-}
-function removeMember(name) {
-  state.pendingRemoveName=name;
-  const clr=memberColor(name);
-  const av=document.getElementById('confirm-avatar');
-  av.className=`w-8 h-8 rounded-full ${clr} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;
-  av.textContent=name[0].toUpperCase();
-  document.getElementById('confirm-name-display').textContent=name;
-  document.getElementById('confirm-modal').classList.add('open');
-}
+// ── WORKING TODAY ──────────────────────────────────────────────────
+function addCustomName(){const input=document.getElementById('custom-name-input');const name=input.value.trim();if(!name)return;addMember(name);input.value='';closeDropdown();}
+function addMember(name){name=name.trim();if(!name)return;if(state.workingToday.map(n=>n.toLowerCase()).includes(name.toLowerCase())){showToast(`${name} is already on the list`,'Already added');return;}metaDoc.update({workingToday:[...state.workingToday,name]}).catch(console.error);closeDropdown();}
+function removeMember(name){state.pendingRemoveName=name;const clr=memberColor(name);const av=document.getElementById('confirm-avatar');av.className=`w-8 h-8 rounded-full ${clr} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;av.textContent=name[0].toUpperCase();document.getElementById('confirm-name-display').textContent=name;document.getElementById('confirm-modal').classList.add('open');}
 function closeConfirmModal(){state.pendingRemoveName=null;document.getElementById('confirm-modal').classList.remove('open');}
-function confirmRemoveMember() {
-  const name=state.pendingRemoveName;
-  if(!name)return;
-  closeConfirmModal();
-  const updated=state.workingToday.filter(n=>n!==name);
-  const newIdx=updated.length>0?state.rotationIndex%updated.length:0;
-  metaDoc.update({workingToday:updated,rotationIndex:newIdx}).catch(console.error);
-  showToast(`${name} removed from today's list`,'Member removed');
-}
+function confirmRemoveMember(){const name=state.pendingRemoveName;if(!name)return;closeConfirmModal();const updated=state.workingToday.filter(n=>n!==name);const newIdx=updated.length>0?state.rotationIndex%updated.length:0;metaDoc.update({workingToday:updated,rotationIndex:newIdx}).catch(console.error);showToast(`${name} removed`,'Member removed');}
+function renderWorkingToday(){const c=document.getElementById('wt-pills');const wt=state.workingToday;document.getElementById('wt-count').textContent=`${wt.length} member${wt.length!==1?'s':''}`;if(!wt.length){c.innerHTML=`<span class="text-xs text-slate-600 italic">No members added yet.</span>`;return;}c.innerHTML=wt.map((name,i)=>{const isCurr=i===(state.rotationIndex%wt.length);const clr=memberColor(name);return`<div class="wt-pill ${isCurr?'ring-1 ring-indigo-500':''}"><div class="w-5 h-5 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">${name[0].toUpperCase()}</div><span>${name}</span>${isCurr?'<span class="text-[9px] font-mono text-indigo-400 bg-indigo-500/15 px-1.5 py-0.5 rounded-full">NEXT</span>':''}<button class="del-btn" onclick="removeMember('${name.replace(/'/g,"\\'")}');event.stopPropagation();">✕</button></div>`;}).join('');}
 
-function renderWorkingToday() {
-  const container=document.getElementById('wt-pills');
-  const wt=state.workingToday;
-  document.getElementById('wt-count').textContent=`${wt.length} member${wt.length!==1?'s':''}`;
-  if(!wt.length){container.innerHTML=`<span class="text-xs text-slate-600 italic">No members added yet — add someone above.</span>`;return;}
-  container.innerHTML=wt.map((name,i)=>{
-    const isCurr=i===(state.rotationIndex%wt.length);
-    const clr=memberColor(name);
-    return `<div class="wt-pill ${isCurr?'ring-1 ring-indigo-500':''}" title="${isCurr?'Currently assigned next':''}">
-      <div class="w-5 h-5 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">${name[0].toUpperCase()}</div>
-      <span>${name}</span>
-      ${isCurr?'<span class="text-[9px] font-mono text-indigo-400 bg-indigo-500/15 px-1.5 py-0.5 rounded-full">NEXT</span>':''}
-      <button class="del-btn" onclick="removeMember('${name.replace(/'/g,"\\'")}');event.stopPropagation();" title="Remove ${name}">✕</button>
-    </div>`;
-  }).join('');
-}
-
-// ── SKIP ROTATION ────────────────────────────────────────────────
-function openSkipRotationModal() {
-  const wt=state.workingToday;
-  if(!wt.length){showToast('No members in rotation','Nothing to skip');return;}
-  const si=state.rotationIndex%wt.length;
-  const curr=wt[si];
-  const next=wt[(si+1)%wt.length];
-  const cClr=memberColor(curr), nClr=memberColor(next);
-  const ca=document.getElementById('skip-rot-curr-avatar');
-  ca.className=`w-9 h-9 rounded-full ${cClr} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;
-  ca.textContent=curr[0].toUpperCase();
-  document.getElementById('skip-rot-curr-name').textContent=curr;
-  const na=document.getElementById('skip-rot-next-avatar');
-  na.className=`w-9 h-9 rounded-full ${nClr} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;
-  na.textContent=next[0].toUpperCase();
-  document.getElementById('skip-rot-next-name').textContent=next;
-  document.getElementById('skip-rotation-modal').classList.add('open');
-}
+// ── SKIP ROTATION ──────────────────────────────────────────────────
+function openSkipRotationModal(){const wt=state.workingToday;if(!wt.length){showToast('No members','Nothing to skip');return;}const si=state.rotationIndex%wt.length;const curr=wt[si];const next=wt[(si+1)%wt.length];const ca=document.getElementById('skip-rot-curr-avatar');ca.className=`w-9 h-9 rounded-full ${memberColor(curr)} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;ca.textContent=curr[0].toUpperCase();document.getElementById('skip-rot-curr-name').textContent=curr;const na=document.getElementById('skip-rot-next-avatar');na.className=`w-9 h-9 rounded-full ${memberColor(next)} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;na.textContent=next[0].toUpperCase();document.getElementById('skip-rot-next-name').textContent=next;document.getElementById('skip-rotation-modal').classList.add('open');}
 function closeSkipRotationModal(){document.getElementById('skip-rotation-modal').classList.remove('open');}
-async function confirmSkipRotation() {
-  const wt=state.workingToday;
-  if(!wt.length)return;
-  const si=state.rotationIndex%wt.length;
-  const skipped=wt[si];
-  const newIdx=(si+1)%wt.length;
-  closeSkipRotationModal();
-  await metaDoc.update({rotationIndex:newIdx}).catch(console.error);
-  showToast(`Skipped ${skipped} → now ${wt[newIdx]}`,'Rotation Advanced');
-}
+async function confirmSkipRotation(){const wt=state.workingToday;if(!wt.length)return;const si=state.rotationIndex%wt.length;const skipped=wt[si];const ni=(si+1)%wt.length;closeSkipRotationModal();await metaDoc.update({rotationIndex:ni}).catch(console.error);showToast(`Skipped ${skipped} → ${wt[ni]}`,'Rotation Advanced');}
 
-// ── SKIP DISPUTE ─────────────────────────────────────────────────
-function openSkipModal(fid) {
-  const t=state.tickets.find(x=>x._id===fid);
-  if(!t)return;
-  state.pendingSkipId=fid;
-  document.getElementById('skip-ticket-title').textContent=t.title||'—';
-  document.getElementById('skip-ticket-id').textContent=t.id||'—';
-  document.getElementById('skip-reason-select').value='';
-  document.getElementById('skip-reason-input').value='';
-  document.getElementById('skip-reason-input').classList.add('hidden');
-  document.getElementById('skip-note').value='';
-  document.getElementById('skip-modal').classList.add('open');
-  setTimeout(()=>document.getElementById('skip-reason-select').focus(),60);
-}
+// ── SKIP DISPUTE ───────────────────────────────────────────────────
+function openSkipModal(fid){const t=state.tickets.find(x=>x._id===fid);if(!t)return;state.pendingSkipId=fid;document.getElementById('skip-ticket-title').textContent=t.title||'—';document.getElementById('skip-ticket-id').textContent=t.id||'—';document.getElementById('skip-reason-select').value='';document.getElementById('skip-reason-input').value='';document.getElementById('skip-reason-input').classList.add('hidden');document.getElementById('skip-note').value='';document.getElementById('skip-modal').classList.add('open');setTimeout(()=>document.getElementById('skip-reason-select').focus(),60);}
 function closeSkipModal(){state.pendingSkipId=null;document.getElementById('skip-modal').classList.remove('open');}
-function handleSkipReasonSelect(val) {
-  const ci=document.getElementById('skip-reason-input');
-  if(val==='Other'){ci.classList.remove('hidden');ci.focus();}
-  else{ci.classList.add('hidden');ci.value='';}
-}
-async function confirmSkip() {
-  const fid=state.pendingSkipId;
-  if(!fid)return;
-  const sv=document.getElementById('skip-reason-select').value;
-  const cv=document.getElementById('skip-reason-input').value.trim();
-  const note=document.getElementById('skip-note').value.trim();
-  const reason=sv==='Other'?cv:sv;
-  if(!reason){document.getElementById('skip-reason-select').style.borderColor='rgba(239,68,68,0.6)';setTimeout(()=>document.getElementById('skip-reason-select').style.borderColor='',1500);return;}
-  const t=state.tickets.find(x=>x._id===fid);
-  closeSkipModal();
-  await ticketsCol.doc(fid).update({status:'Skipped',skipReason:reason,skipNote:note||null}).catch(e=>alert(e.message));
-  showToast(`${t?.id||'Ticket'} skipped — ${reason}`,'Dispute Skipped');
-}
+function handleSkipReasonSelect(val){const ci=document.getElementById('skip-reason-input');if(val==='Other'){ci.classList.remove('hidden');ci.focus();}else{ci.classList.add('hidden');ci.value='';}}
+async function confirmSkip(){const fid=state.pendingSkipId;if(!fid)return;const sv=document.getElementById('skip-reason-select').value;const cv=document.getElementById('skip-reason-input').value.trim();const note=document.getElementById('skip-note').value.trim();const reason=sv==='Other'?cv:sv;if(!reason){document.getElementById('skip-reason-select').style.borderColor='rgba(239,68,68,0.6)';setTimeout(()=>document.getElementById('skip-reason-select').style.borderColor='',1500);return;}const t=state.tickets.find(x=>x._id===fid);closeSkipModal();await ticketsCol.doc(fid).update({status:'Skipped',skipReason:reason,skipNote:note||null}).catch(e=>alert(e.message));showToast(`${t?.id||'Ticket'} skipped`,'Dispute Skipped');}
 
-// ── EDIT TICKET ──────────────────────────────────────────────────
-function openEditModal(fid) {
-  const t=state.tickets.find(x=>x._id===fid);
-  if(!t)return;
-  state.pendingEditId=fid;
-  document.getElementById('edit-ticket-id-label').textContent=t.id||'—';
-  document.getElementById('edit-title').value=t.title||'';
-  document.getElementById('edit-type').value=t.type||'Dispute';
-  document.getElementById('edit-status').value=t.status||'Pending';
-  const allNames=[...new Set([...state.workingToday,...state.tickets.map(x=>x.assignee).filter(Boolean)])];
-  if(t.assignee&&!allNames.includes(t.assignee))allNames.push(t.assignee);
-  const sel=document.getElementById('edit-assignee');
-  sel.innerHTML=allNames.map(n=>`<option value="${n}"${n===t.assignee?' selected':''}>${n}</option>`).join('');
-  document.getElementById('edit-modal').classList.add('open');
-  setTimeout(()=>document.getElementById('edit-title').focus(),60);
-}
+// ── EDIT TICKET ────────────────────────────────────────────────────
+function openEditModal(fid){const t=state.tickets.find(x=>x._id===fid);if(!t)return;state.pendingEditId=fid;document.getElementById('edit-ticket-id-label').textContent=t.id||'—';document.getElementById('edit-title').value=t.title||'';document.getElementById('edit-type').value=t.type||'Dispute';document.getElementById('edit-status').value=t.status||'Pending';const all=[...new Set([...state.workingToday,...state.tickets.map(x=>x.assignee).filter(Boolean)])];if(t.assignee&&!all.includes(t.assignee))all.push(t.assignee);document.getElementById('edit-assignee').innerHTML=all.map(n=>`<option value="${n}"${n===t.assignee?' selected':''}>${n}</option>`).join('');document.getElementById('edit-modal').classList.add('open');setTimeout(()=>document.getElementById('edit-title').focus(),60);}
 function closeEditModal(){state.pendingEditId=null;document.getElementById('edit-modal').classList.remove('open');}
-async function confirmEditTicket() {
-  const fid=state.pendingEditId;
-  if(!fid)return;
-  const title=document.getElementById('edit-title').value.trim();
-  const type=document.getElementById('edit-type').value;
-  const assignee=document.getElementById('edit-assignee').value;
-  const status=document.getElementById('edit-status').value;
-  if(!title){document.getElementById('edit-title').style.borderColor='rgba(239,68,68,0.6)';setTimeout(()=>document.getElementById('edit-title').style.borderColor='',1500);return;}
-  closeEditModal();
-  const updates={title,type,assignee,status};
-  if(status!=='Skipped'){updates.skipReason=null;updates.skipNote=null;}
-  await ticketsCol.doc(fid).update(updates).catch(e=>alert(e.message));
-  showToast('Ticket updated successfully','Changes Saved');
-}
+async function confirmEditTicket(){const fid=state.pendingEditId;if(!fid)return;const title=document.getElementById('edit-title').value.trim();const type=document.getElementById('edit-type').value;const assignee=document.getElementById('edit-assignee').value;const status=document.getElementById('edit-status').value;if(!title){document.getElementById('edit-title').style.borderColor='rgba(239,68,68,0.6)';setTimeout(()=>document.getElementById('edit-title').style.borderColor='',1500);return;}closeEditModal();const updates={title,type,assignee,status};if(status!=='Skipped'){updates.skipReason=null;updates.skipNote=null;}await ticketsCol.doc(fid).update(updates).catch(e=>alert(e.message));showToast('Ticket updated','Changes Saved');}
 
-// ── DROPDOWN ─────────────────────────────────────────────────────
-function renderDropdown(query) {
-  const list=document.getElementById('dropdown-list');
-  const q=query.toLowerCase().trim();
-  const filtered=DEFAULT_TEAM.filter(n=>q===''||n.toLowerCase().includes(q));
-  if(!filtered.length){list.innerHTML=`<p class="text-xs text-slate-600 px-3 py-3 text-center">No matches</p>`;return;}
-  const alreadySet=state.workingToday.map(n=>n.toLowerCase());
-  list.innerHTML=filtered.map(n=>{
-    const already=alreadySet.includes(n.toLowerCase());
-    const clr=memberColor(n);
-    return `<div class="member-chip ${already?'already':''}" onclick="addMember('${n}');event.stopPropagation();">
-      <div class="w-7 h-7 rounded-full ${clr} flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">${n[0]}</div>
-      <span class="flex-1 font-medium">${n}</span>
-      ${already?'<span class="text-[10px] text-slate-500 font-mono bg-white/5 px-2 py-0.5 rounded-full">added</span>':'<span class="text-[10px] text-indigo-400 font-mono bg-indigo-500/10 px-2 py-0.5 rounded-full">+ add</span>'}
-    </div>`;
-  }).join('');
-}
+// ── DROPDOWN ───────────────────────────────────────────────────────
+function renderDropdown(query){const list=document.getElementById('dropdown-list');const q=query.toLowerCase().trim();const filtered=DEFAULT_TEAM.filter(n=>q===''||n.toLowerCase().includes(q));if(!filtered.length){list.innerHTML=`<p class="text-xs text-slate-600 px-3 py-3 text-center">No matches</p>`;return;}const alreadySet=state.workingToday.map(n=>n.toLowerCase());list.innerHTML=filtered.map(n=>{const already=alreadySet.includes(n.toLowerCase());const clr=memberColor(n);return`<div class="member-chip ${already?'already':''}" onclick="addMember('${n}');event.stopPropagation();"><div class="w-7 h-7 rounded-full ${clr} flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">${n[0]}</div><span class="flex-1 font-medium">${n}</span>${already?'<span class="text-[10px] text-slate-500 font-mono bg-white/5 px-2 py-0.5 rounded-full">added</span>':'<span class="text-[10px] text-indigo-400 font-mono bg-indigo-500/10 px-2 py-0.5 rounded-full">+ add</span>'}</div>`;}).join('');}
 function filterDropdown(val){renderDropdown(val);positionDropdown();}
-function positionDropdown() {
-  const input=document.getElementById('custom-name-input');
-  const dd=document.getElementById('add-dropdown');
-  const rect=input.getBoundingClientRect();
-  dd.style.top=(rect.bottom+6)+'px';dd.style.left=rect.left+'px';dd.style.width=rect.width+'px';
-}
+function positionDropdown(){const input=document.getElementById('custom-name-input');const dd=document.getElementById('add-dropdown');const rect=input.getBoundingClientRect();dd.style.top=(rect.bottom+6)+'px';dd.style.left=rect.left+'px';dd.style.width=rect.width+'px';}
 function openDropdown(){renderDropdown(document.getElementById('custom-name-input').value);positionDropdown();document.getElementById('add-dropdown').classList.add('open');}
 function closeDropdown(){document.getElementById('add-dropdown').classList.remove('open');}
-document.addEventListener('click',e=>{
-  const input=document.getElementById('custom-name-input');
-  const dd=document.getElementById('add-dropdown');
-  const addBtn=document.querySelector('#add-member-wrapper button');
-  if(!dd.contains(e.target)&&e.target!==input&&e.target!==addBtn)closeDropdown();
-});
-window.addEventListener('scroll',()=>{if(document.getElementById('add-dropdown').classList.contains('open'))positionDropdown();},true);
-window.addEventListener('resize',()=>{if(document.getElementById('add-dropdown').classList.contains('open'))positionDropdown();});
 
-// ── CREATE TICKET (with duplicate check + dateKey) ───────────────
-async function createTicket(type, title) {
-  title = title.trim();
-  if (!title) { alert('Please enter a ticket title.'); return false; }
-  if (!state.workingToday.length) { alert('No members in Working Today!'); return false; }
-  if (state.submitting) return false;
-
-  // ── DUPLICATE CHECK ──────────────────────────────────────────
-  const dup = isDuplicateToday(title);
-  if (dup) {
-    showDupToast(dup);
-    return false;
-  }
-
-  setSubmitting(true);
-  let ticketId, assignee;
-  try {
-    await db.runTransaction(async tx => {
-      const metaSnap  = await tx.get(metaDoc);
-      const curIdx    = metaSnap.exists ? (metaSnap.data().rotationIndex ?? 0) : 0;
-      const curWorking= metaSnap.exists ? (metaSnap.data().workingToday ?? []) : [];
-      const curLog    = metaSnap.exists ? (metaSnap.data().activityLog  ?? []) : [];
-      if (!curWorking.length) throw new Error('No members in Working Today.');
-      const safeIdx = curIdx % curWorking.length;
-      assignee = curWorking[safeIdx];
-      const nextIdx = (safeIdx + 1) % curWorking.length;
-      const latestSnap = await ticketsCol.orderBy('seqNum','desc').limit(1).get();
-      const lastSeq = latestSnap.empty ? 0 : (latestSnap.docs[0].data().seqNum || 0);
-      const newSeq  = lastSeq + 1;
-      ticketId = 'TKT-' + String(newSeq).padStart(4,'0');
-      const now = new Date();
-      const dateStr = now.toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'});
-      const timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-      // ── dateKey added for daily reset tracking ──
-      const dk = todayKey();
-      const ticket = {
-        id:ticketId, seqNum:newSeq, type, title, assignee,
-        date:dateStr, time:timeStr, dateKey:dk,
-        status:'Pending', ts:firebase.firestore.FieldValue.serverTimestamp()
-      };
-      const logEntry = {msg:`${ticketId} → ${assignee}`, type, time:timeStr, ts:Date.now()};
-      const newLog = [logEntry, ...curLog].slice(0,20);
-      tx.set(ticketsCol.doc(), ticket);
-      tx.set(metaDoc, {rotationIndex:nextIdx, workingToday:curWorking, activityLog:newLog});
+// ── CREATE TICKET ──────────────────────────────────────────────────
+async function createTicket(type,title){
+  title=title.trim();
+  if(!title){alert('Please enter a ticket title.');return false;}
+  if(!state.workingToday.length){alert('No members in Working Today!');return false;}
+  if(state.submitting)return false;
+  const dup=isDupToday(title);if(dup){showDupToast(dup);return false;}
+  setSubmitting(true);let ticketId,assignee;
+  try{
+    await db.runTransaction(async tx=>{
+      const ms=await tx.get(metaDoc);
+      const ci=ms.exists?(ms.data().rotationIndex??0):0;const cw=ms.exists?(ms.data().workingToday??[]):[];const cl=ms.exists?(ms.data().activityLog??[]):[];
+      if(!cw.length)throw new Error('No members.');
+      const si=ci%cw.length;assignee=cw[si];const ni=(si+1)%cw.length;
+      const ls=await ticketsCol.orderBy('seqNum','desc').limit(1).get();
+      const seq=ls.empty?0:(ls.docs[0].data().seqNum||0);const ns=seq+1;ticketId='TKT-'+String(ns).padStart(4,'0');
+      const now=new Date();const ds=now.toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'});const ts2=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});const dk=todayKey();
+      tx.set(ticketsCol.doc(),{id:ticketId,seqNum:ns,type,title,assignee,date:ds,time:ts2,dateKey:dk,status:'Pending',ts:firebase.firestore.FieldValue.serverTimestamp()});
+      tx.set(metaDoc,{rotationIndex:ni,workingToday:cw,activityLog:[{msg:`${ticketId} → ${assignee}`,type,time:ts2,ts:Date.now()},...cl].slice(0,20)});
     });
-    showToast(`${ticketId} assigned to ${assignee}`);
-    setSubmitting(false);
-    return true;
-  } catch(err) {
-    console.error(err);
-    setSubmitting(false);
-    let msg = 'Failed: '+err.message;
-    if (err.code==='permission-denied') msg='Permission denied — update your Firestore Security Rules.';
-    alert(msg);
-    return false;
-  }
+    showToast(`${ticketId} assigned to ${assignee}`);setSubmitting(false);return true;
+  }catch(err){console.error(err);setSubmitting(false);alert('Failed: '+err.message);return false;}
+}
+async function markComplete(fid){const t=state.tickets.find(x=>x._id===fid);if(!t)return;const ns=t.status==='Completed'?'Pending':'Completed';const u={status:ns};if(ns==='Pending'){u.skipReason=null;u.skipNote=null;}await ticketsCol.doc(fid).update(u).catch(e=>alert(e.message));}
+async function submitTicket(){const ok=await createTicket(document.getElementById('ticket-type').value,document.getElementById('ticket-title').value);if(ok){document.getElementById('ticket-title').value='';checkDupInline('','inline-dup-warning','inline-dup-text');}}
+async function submitTicketModal(){const ok=await createTicket(document.getElementById('modal-type').value,document.getElementById('modal-title').value);if(ok){document.getElementById('modal-title').value='';document.getElementById('modal-dup-warning').classList.add('hidden');closeModal();}}
+
+// ── RENDER ─────────────────────────────────────────────────────────
+function renderStats(){const tk=todayKey();const tt=state.tickets.filter(t=>t.dateKey===tk);const total=tt.length,done=tt.filter(t=>t.status==='Completed').length,skipped=tt.filter(t=>t.status==='Skipped').length;document.getElementById('stat-total').textContent=total;document.getElementById('stat-pending').textContent=total-done-skipped;document.getElementById('stat-completed').textContent=done;document.getElementById('ticket-count-badge').textContent=state.tickets.length;}
+function renderRotation(){const wt=state.workingToday;if(!wt.length){['rot-curr-init','rot-curr-name','rot-next-init','rot-next-name','header-next'].forEach(id=>document.getElementById(id).textContent='—');document.getElementById('preview-assignee').textContent='Add members first';document.getElementById('modal-assignee').textContent='Add members first';return;}const si=state.rotationIndex%wt.length;const curr=wt[si],next=wt[(si+1)%wt.length];document.getElementById('rot-curr-name').textContent=curr;document.getElementById('rot-curr-init').textContent=curr[0];document.getElementById('rot-next-name').textContent=next;document.getElementById('rot-next-init').textContent=next[0];document.getElementById('header-next').textContent=curr;}
+function renderPreview(){const wt=state.workingToday;if(!wt.length){document.getElementById('preview-assignee').textContent='Add members first';document.getElementById('modal-assignee').textContent='Add members first';return;}const n=wt[state.rotationIndex%wt.length];document.getElementById('preview-assignee').textContent=n;document.getElementById('modal-assignee').textContent=n;}
+function renderSidebar(){const el=document.getElementById('sidebar-rotation');const wt=state.workingToday;el.innerHTML='';if(!wt.length){el.innerHTML=`<p class="text-xs text-slate-600 px-3 italic">No one added yet</p>`;return;}const si=state.rotationIndex%wt.length;const tk=todayKey();for(let i=0;i<wt.length;i++){const idx=(si+i)%wt.length;const name=wt[idx];const isCurr=i===0,isNext=i===1;const cnt=state.tickets.filter(t=>t.assignee===name&&t.dateKey===tk).length;const clr=memberColor(name);const div=document.createElement('div');div.className=`rotation-item flex items-center gap-2 px-3 py-1.5 rounded-lg border border-transparent ${isCurr?'active':isNext?'next-up':''}`;div.innerHTML=`<div class="w-6 h-6 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">${name[0]}</div><span class="text-xs ${isCurr?'text-indigo-300 font-semibold':isNext?'text-amber-400':'text-slate-400'} truncate flex-1">${name}</span><span class="text-[10px] font-mono ${isCurr?'text-indigo-400':'text-slate-600'}">${cnt}</span>${isCurr?'<div class="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0 pending-dot"></div>':''}`;el.appendChild(div);}}
+function rowHTML(t,cols){const tc=TYPE_CFG[t.type]||TYPE_CFG['Inquiry'];const done=t.status==='Completed',skipped=t.status==='Skipped';const clr=memberColor(t.assignee||'?');const dup=state.tickets.find(x=>x._id!==t._id&&x.dateKey===t.dateKey&&(x.title||'').trim().toLowerCase()===(t.title||'').trim().toLowerCase());const dupB=dup?`<span class="ml-1 text-[9px] font-mono text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-full border border-rose-500/20">DUP</span>`:'';let sb;if(done)sb=`<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Completed</span>`;else if(skipped)sb=`<div><span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-500/10 text-slate-400 border border-slate-500/20">⏭ Skipped</span>${t.skipReason?`<p class="text-[10px] text-slate-600 mt-0.5 font-mono truncate max-w-[120px]">${t.skipReason}</p>`:''}</div>`;else sb=`<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20"><div class="w-1.5 h-1.5 rounded-full bg-amber-400 pending-dot"></div>Pending</span>`;const db2=!skipped?`<button onclick="markComplete('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${done?'bg-slate-700 text-slate-400 hover:bg-slate-600':'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/20'}">${done?'↩ Reopen':'✓ Done'}</button>`:`<button onclick="markComplete('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-slate-700 text-slate-400 hover:bg-slate-600">↩ Reopen</button>`;const skpB=(!done&&!skipped&&t.type==='Dispute')?`<button onclick="openSkipModal('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20">⏭ Skip</button>`:'';const editB=`<button onclick="openEditModal('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20">✏ Edit</button>`;return`<tr class="ticket-row border-b border-white/5 ${skipped?'opacity-60':''}"><td class="px-6 py-4 text-xs font-mono text-slate-400">${t.id||'—'}</td><td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${tc.bg} ${tc.color} border ${tc.border}">${tc.icon} ${t.type}</span></td><td class="px-6 py-4 text-sm text-white font-medium max-w-xs truncate">${t.title}${dupB}</td><td class="px-6 py-4"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white">${(t.assignee||'?')[0]}</div><span class="text-sm text-white font-medium">${t.assignee||'—'}</span></div></td>${cols===7?`<td class="px-6 py-4 text-xs text-slate-500 font-mono">${t.date||'—'}</td>`:''}<td class="px-6 py-4">${sb}</td><td class="px-6 py-4"><div class="flex items-center flex-wrap gap-1">${db2}${skpB}${editB}</div></td></tr>`;}
+function renderRecentTable(){const tbody=document.getElementById('recent-table-body');const tk=todayKey();const r=state.tickets.filter(t=>t.dateKey===tk).slice(0,5);tbody.innerHTML=r.length?r.map(t=>rowHTML(t,6)).join(''):`<tr><td colspan="6" class="px-6 py-12 text-center text-slate-600 text-sm">No tickets yet today.</td></tr>`;}
+function renderAllTable(){const tbody=document.getElementById('all-table-body');const dfVal=document.getElementById('date-filter')?.value||'today';state.dateFilter=dfVal;let list=state.tickets;if(dfVal==='today'){const tk=todayKey();list=list.filter(t=>t.dateKey===tk);}else if(dfVal!=='all')list=list.filter(t=>t.dateKey===dfVal);if(state.filter!=='all')list=list.filter(t=>t.status===state.filter);if(state.search)list=list.filter(t=>(t.title||'').toLowerCase().includes(state.search)||(t.assignee||'').toLowerCase().includes(state.search)||(t.type||'').toLowerCase().includes(state.search)||(t.id||'').toLowerCase().includes(state.search));tbody.innerHTML=list.length?list.map(t=>rowHTML(t,7)).join(''):`<tr><td colspan="7" class="px-6 py-16 text-center text-slate-600 text-sm">No tickets match.</td></tr>`;}
+function renderActivityLog(){const el=document.getElementById('activity-log');const LC={'Dispute':'border-rose-500/50','Partner Portal':'border-blue-500/50','Inquiry':'border-violet-500/50'};el.innerHTML=state.activityLog.length?state.activityLog.slice(0,8).map((a,i)=>`<div class="log-item ${LC[a.type]||'border-indigo-500/50'} pl-3" style="animation:slideIn 0.4s ${i*0.05}s ease both"><p class="text-xs text-white font-medium font-mono">${a.msg}</p><p class="text-[10px] text-slate-500">${a.type} · ${a.time}</p></div>`).join(''):`<div class="text-center text-slate-600 text-xs py-8">No activity yet</div>`;}
+function setStatsView(view){state.statsView=view;document.getElementById('stats-tab-today').classList.toggle('active',view==='today');document.getElementById('stats-tab-history').classList.toggle('active',view==='history');document.getElementById('stats-today-panel').classList.toggle('hidden',view!=='today');document.getElementById('stats-history-panel').classList.toggle('hidden',view!=='history');if(view==='history')renderHistoryStats();}
+function renderTeamStats(){const el=document.getElementById('team-stats-grid');const tk=todayKey();const tt=state.tickets.filter(t=>t.dateKey===tk);const names=[...new Set([...state.workingToday,...tt.map(t=>t.assignee).filter(Boolean)])];if(!names.length){el.innerHTML=`<div class="text-center py-8"><p class="text-xs text-slate-600">No tickets yet today.</p></div>`;return;}const max=Math.max(...names.map(n=>tt.filter(t=>t.assignee===n).length),1);el.innerHTML=names.map(name=>{const total=tt.filter(t=>t.assignee===name).length;const done=tt.filter(t=>t.assignee===name&&t.status==='Completed').length;const skipped=tt.filter(t=>t.assignee===name&&t.status==='Skipped').length;const pending=total-done-skipped;const pct=Math.round((total/max)*100);const clr=memberColor(name);const isOn=state.workingToday.includes(name);return`<div class="flex items-center gap-4 p-3 rounded-xl hover:bg-white/3 transition-colors"><div class="w-9 h-9 rounded-full ${clr} flex items-center justify-center text-sm font-bold text-white flex-shrink-0">${name[0]}</div><div class="flex-1"><div class="flex items-center justify-between mb-1.5"><div class="flex items-center gap-2"><span class="text-sm font-semibold text-white">${name}</span>${isOn?'<span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20">ON DUTY</span>':''}</div><div class="flex items-center gap-3"><span class="text-xs text-emerald-400 font-mono">${done} done</span>${pending?`<span class="text-xs text-amber-400 font-mono">${pending} pending</span>`:''} ${skipped?`<span class="text-xs text-slate-500 font-mono">${skipped} skip</span>`:''}<span class="text-xs text-slate-400 font-mono font-bold">${total} total</span></div></div><div class="h-2 bg-white/5 rounded-full overflow-hidden"><div class="h-full bar-fill rounded-full ${clr} opacity-70" style="width:${pct}%"></div></div></div></div>`;}).join('');}
+function renderHistoryStats(){const el=document.getElementById('history-stats-container');const groups={};state.tickets.forEach(t=>{const k=t.dateKey||'unknown';if(!groups[k])groups[k]=[];groups[k].push(t);});const keys=Object.keys(groups).sort().reverse();if(!keys.length){el.innerHTML=`<p class="text-xs text-slate-600 text-center py-4">No historical data yet.</p>`;return;}const tk=todayKey();el.innerHTML=keys.map(key=>{const dt=groups[key];const isToday=key===tk;const names=[...new Set(dt.map(t=>t.assignee).filter(Boolean))];const dDone=dt.filter(t=>t.status==='Completed').length;return`<div class="border border-white/5 rounded-xl overflow-hidden"><div class="history-day-header px-5 py-3 flex items-center justify-between" onclick="toggleHistoryDay('${key}')"><div class="flex items-center gap-3">${isToday?'<div class="w-2 h-2 rounded-full bg-emerald-400 pending-dot"></div>':'<div class="w-2 h-2 rounded-full bg-slate-600"></div>'}<span class="text-sm font-semibold text-white">${formatDayLabel(key)}</span>${isToday?'<span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">LIVE</span>':''}</div><div class="flex items-center gap-4"><span class="text-xs text-emerald-400 font-mono">${dDone}/${dt.length} done</span><svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></div></div><div id="hist-body-${key}" class="hidden px-5 pb-4 pt-1 space-y-2 border-t border-white/5">${names.map(name=>{const t2=dt.filter(t=>t.assignee===name).length;const d2=dt.filter(t=>t.assignee===name&&t.status==='Completed').length;const s2=dt.filter(t=>t.assignee===name&&t.status==='Skipped').length;const m2=Math.max(...names.map(n=>dt.filter(t=>t.assignee===n).length),1);const p2=Math.round((t2/m2)*100);const c2=memberColor(name);return`<div class="flex items-center gap-3 py-1"><div class="w-7 h-7 rounded-full ${c2} flex items-center justify-center text-xs font-bold text-white flex-shrink-0">${name[0]}</div><div class="flex-1"><div class="flex items-center justify-between mb-1"><span class="text-xs font-semibold text-white">${name}</span><div class="flex gap-3"><span class="text-[11px] text-emerald-400 font-mono">${d2} done</span>${s2?`<span class="text-[11px] text-slate-500 font-mono">${s2} skip</span>`:''}<span class="text-[11px] text-slate-400 font-mono font-bold">${t2} total</span></div></div><div class="h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full ${c2} opacity-60" style="width:${p2}%"></div></div></div></div>`;}).join('')}</div></div>`;}).join('');}
+function toggleHistoryDay(key){const el=document.getElementById(`hist-body-${key}`);if(el)el.classList.toggle('hidden');}
+
+// ══════════════════════════════════════════════════════════════════
+// TEAM CHAT  –  Firebase Realtime Database
+// ══════════════════════════════════════════════════════════════════
+
+function renderNamePicker(){
+  const dd=document.getElementById('name-picker-dropdown');
+  const names=[...new Set([...DEFAULT_TEAM,...state.workingToday])];
+  dd.innerHTML=names.map(n=>{const clr=memberColor(n);const sel=n===state.myName;return`<div class="member-chip ${sel?'already':''}" onclick="pickName('${n}')"><div class="w-7 h-7 rounded-full ${clr} flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">${n[0]}</div><span class="flex-1 font-medium">${n}</span>${sel?'<svg class="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>':''}</div>`;}).join('');
+}
+function toggleNamePicker(){renderNamePicker();document.getElementById('name-picker-dropdown').classList.toggle('open');}
+function pickName(name){
+  state.myName=name;localStorage.setItem('dops_name',name);
+  applyName(name);
+  document.getElementById('name-picker-dropdown').classList.remove('open');
+}
+function applyName(name){
+  const clr=memberColor(name);
+  const av=document.getElementById('my-avatar');
+  av.className=`w-6 h-6 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0`;
+  av.textContent=name[0].toUpperCase();
+  document.getElementById('my-name-label').textContent=name;
 }
 
-async function markComplete(fid) {
-  const t=state.tickets.find(x=>x._id===fid);
-  if(!t)return;
-  const newStatus=t.status==='Completed'?'Pending':'Completed';
-  const updates={status:newStatus};
-  if(newStatus==='Pending'){updates.skipReason=null;updates.skipNote=null;}
-  await ticketsCol.doc(fid).update(updates).catch(e=>alert(e.message));
-}
-async function submitTicket() {
-  const ok=await createTicket(document.getElementById('ticket-type').value,document.getElementById('ticket-title').value);
-  if(ok){document.getElementById('ticket-title').value='';checkDuplicateInline('','inline-dup-warning','inline-dup-text');}
-}
-async function submitTicketModal() {
-  const ok=await createTicket(document.getElementById('modal-type').value,document.getElementById('modal-title').value);
-  if(ok){
-    document.getElementById('modal-title').value='';
-    document.getElementById('modal-dup-warning').classList.add('hidden');
-    closeModal();
-  }
+function esc(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
+
+function chatTimeStr(ts){
+  const d=new Date(ts);const now=new Date();
+  const diffDays=Math.floor((now-d)/86400000);
+  const t=d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  if(diffDays===0)return t;
+  if(diffDays===1)return`Yesterday ${t}`;
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+t;
 }
 
-// ── RENDER STATS (today only for dashboard) ──────────────────────
-function renderStats() {
-  const tk = todayKey();
-  const todayTickets = state.tickets.filter(t => t.dateKey === tk || (!t.dateKey && t.date === new Date().toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})));
-  const total   = todayTickets.length;
-  const done    = todayTickets.filter(t=>t.status==='Completed').length;
-  const skipped = todayTickets.filter(t=>t.status==='Skipped').length;
-  document.getElementById('stat-total').textContent    = total;
-  document.getElementById('stat-pending').textContent  = total - done - skipped;
-  document.getElementById('stat-completed').textContent= done;
-  document.getElementById('ticket-count-badge').textContent = state.tickets.length; // all-time in nav badge
-}
+function renderChat(){
+  const el=document.getElementById('chat-scroll');
+  const msgs=state.chatMessages;
+  const keys=Object.keys(msgs).sort((a,b)=>(msgs[a].ts||0)-(msgs[b].ts||0));
 
-function renderRotation() {
-  const wt=state.workingToday;
-  if(!wt.length){
-    ['rot-curr-init','rot-curr-name','rot-next-init','rot-next-name','header-next'].forEach(id=>document.getElementById(id).textContent='—');
-    document.getElementById('preview-assignee').textContent='Add members first';
-    document.getElementById('modal-assignee').textContent='Add members first';
+  if(!keys.length){
+    el.innerHTML=`<div class="flex flex-col items-center justify-center gap-3 py-20"><div class="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center"><svg class="w-7 h-7 text-indigo-400/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div><p class="text-sm text-slate-500 font-semibold">No messages yet</p><p class="text-xs text-slate-600">Be the first to say something to the team!</p></div>`;
     return;
   }
-  const si=state.rotationIndex%wt.length;
-  const curr=wt[si],next=wt[(si+1)%wt.length];
-  document.getElementById('rot-curr-name').textContent=curr;
-  document.getElementById('rot-curr-init').textContent=curr[0];
-  document.getElementById('rot-next-name').textContent=next;
-  document.getElementById('rot-next-init').textContent=next[0];
-  document.getElementById('header-next').textContent=curr;
-}
-function renderPreview() {
-  const wt=state.workingToday;
-  if(!wt.length){document.getElementById('preview-assignee').textContent='Add members first';document.getElementById('modal-assignee').textContent='Add members first';return;}
-  const n=wt[state.rotationIndex%wt.length];
-  document.getElementById('preview-assignee').textContent=n;
-  document.getElementById('modal-assignee').textContent=n;
-}
 
-function renderSidebar() {
-  const el=document.getElementById('sidebar-rotation');
-  const wt=state.workingToday;
-  el.innerHTML='';
-  if(!wt.length){el.innerHTML=`<p class="text-xs text-slate-600 px-3 italic">No one added yet</p>`;return;}
-  const si=state.rotationIndex%wt.length;
-  for(let i=0;i<wt.length;i++){
-    const idx=(si+i)%wt.length;
-    const name=wt[idx];
-    const isCurr=i===0;
-    const isNext=i===1;
-    const tk=todayKey();
-    const cnt=state.tickets.filter(t=>t.assignee===name&&t.dateKey===tk).length;
-    const clr=memberColor(name);
-    const div=document.createElement('div');
-    div.className=`rotation-item flex items-center gap-2 px-3 py-1.5 rounded-lg border border-transparent ${isCurr?'active':isNext?'next-up':''}`;
-    div.innerHTML=`
-      <div class="w-6 h-6 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">${name[0]}</div>
-      <span class="text-xs ${isCurr?'text-indigo-300 font-semibold':isNext?'text-amber-400':'text-slate-400'} truncate flex-1">${name}</span>
-      <span class="text-[10px] font-mono ${isCurr?'text-indigo-400':'text-slate-600'}">${cnt}</span>
-      ${isCurr?'<div class="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0 pending-dot"></div>':''}
+  const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<80;
+  let html='';let prevDate='';
+
+  keys.forEach(key=>{
+    const m=msgs[key];
+    const dateLabel=new Date(m.ts||Date.now()).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    if(dateLabel!==prevDate){
+      html+=`<div class="flex items-center gap-3 py-3"><div class="flex-1 h-px bg-white/5"></div><span class="text-[10px] text-slate-600 font-mono uppercase tracking-wider px-3 flex-shrink-0">${dateLabel}</span><div class="flex-1 h-px bg-white/5"></div></div>`;
+      prevDate=dateLabel;
+    }
+    const isOwn=m.sender===state.myName;
+    const clr=memberColor(m.sender||'?');
+    const editedBadge=m.edited?`<span class="text-[9px] text-slate-600 ml-1">(edited)</span>`:'';
+
+    // Action buttons  (edit only for own; delete for everyone)
+    const actBtns=`
+      ${isOwn?`<button onclick="startEdit('${key}')" title="Edit" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-blue-500/20 text-slate-500 hover:text-blue-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>`:''}
+      <button onclick="openDelMsg('${key}')" title="Delete" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
     `;
-    el.appendChild(div);
-  }
+
+    if(isOwn){
+      html+=`<div class="chat-bubble flex items-end justify-end gap-2 group" data-key="${key}">
+        <div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div>
+        <div class="max-w-[68%]">
+          <div class="bubble-own rounded-2xl rounded-br-sm px-4 py-2.5">
+            <p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p>
+          </div>
+          <p class="text-[10px] text-slate-600 mt-1 text-right font-mono">${chatTimeStr(m.ts)}</p>
+        </div>
+        <div class="w-8 h-8 rounded-full ${clr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mb-5">${(m.sender||'?')[0].toUpperCase()}</div>
+      </div>`;
+    } else {
+      html+=`<div class="chat-bubble flex items-end gap-2 group" data-key="${key}">
+        <div class="w-8 h-8 rounded-full ${clr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mb-5">${(m.sender||'?')[0].toUpperCase()}</div>
+        <div class="max-w-[68%]">
+          <p class="text-[10px] text-slate-500 font-semibold mb-1 ml-1">${esc(m.sender||'Unknown')}</p>
+          <div class="bubble-other rounded-2xl rounded-bl-sm px-4 py-2.5">
+            <p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p>
+          </div>
+          <p class="text-[10px] text-slate-600 mt-1 font-mono ml-1">${chatTimeStr(m.ts)}</p>
+        </div>
+        <div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div>
+      </div>`;
+    }
+  });
+
+  el.innerHTML=html;
+  if(atBottom)el.scrollTop=el.scrollHeight;
 }
 
-// ── ROW HTML ─────────────────────────────────────────────────────
-function rowHTML(t, cols) {
-  const tc=TYPE_CFG[t.type]||TYPE_CFG['Inquiry'];
-  const done=t.status==='Completed', skipped=t.status==='Skipped';
-  const clr=memberColor(t.assignee||'?');
-  // Duplicate badge — show if another ticket today has same title
-  const dup = state.tickets.find(x => x._id !== t._id && x.dateKey === t.dateKey && (x.title||'').trim().toLowerCase() === (t.title||'').trim().toLowerCase());
-  const dupBadge = dup ? `<span class="ml-1 text-[9px] font-mono text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-full border border-rose-500/20" title="Potential duplicate ticket">DUP</span>` : '';
+// Send / edit submit
+async function sendMsg(){
+  if(!state.myName){showToast('Select your name first','No name set');toggleNamePicker();return;}
+  const inp=document.getElementById('chat-input');
+  const text=inp.value.trim();
+  if(!text)return;
 
-  let statusBadge;
-  if(done)       statusBadge=`<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Completed</span>`;
-  else if(skipped) statusBadge=`<div><span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-500/10 text-slate-400 border border-slate-500/20">⏭ Skipped</span>${t.skipReason?`<p class="text-[10px] text-slate-600 mt-0.5 font-mono truncate max-w-[120px]" title="${t.skipReason}">${t.skipReason}</p>`:''}</div>`;
-  else           statusBadge=`<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20"><div class="w-1.5 h-1.5 rounded-full bg-amber-400 pending-dot"></div>Pending</span>`;
-
-  const doneBtn=!skipped
-    ?`<button onclick="markComplete('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${done?'bg-slate-700 text-slate-400 hover:bg-slate-600':'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/20'}">${done?'↩ Reopen':'✓ Done'}</button>`
-    :`<button onclick="markComplete('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-slate-700 text-slate-400 hover:bg-slate-600">↩ Reopen</button>`;
-
-  const skipBtn=(!done&&!skipped&&t.type==='Dispute')
-    ?`<button onclick="openSkipModal('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20">⏭ Skip</button>`:'';
-
-  const editBtn=`<button onclick="openEditModal('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20">✏ Edit</button>`;
-
-  return `<tr class="ticket-row border-b border-white/5 ${skipped?'opacity-60':''}">
-    <td class="px-6 py-4 text-xs font-mono text-slate-400">${t.id||'—'}</td>
-    <td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${tc.bg} ${tc.color} border ${tc.border}">${tc.icon} ${t.type}</span></td>
-    <td class="px-6 py-4 text-sm text-white font-medium max-w-xs truncate">${t.title}${dupBadge}</td>
-    <td class="px-6 py-4"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white">${(t.assignee||'?')[0]}</div><span class="text-sm text-white font-medium">${t.assignee||'—'}</span></div></td>
-    ${cols===7?`<td class="px-6 py-4 text-xs text-slate-500 font-mono">${t.date||'—'}</td>`:''}
-    <td class="px-6 py-4">${statusBadge}</td>
-    <td class="px-6 py-4"><div class="flex items-center flex-wrap gap-1">${doneBtn}${skipBtn}${editBtn}</div></td>
-  </tr>`;
-}
-
-function renderRecentTable() {
-  const tbody=document.getElementById('recent-table-body');
-  const tk=todayKey();
-  const todayOnly=state.tickets.filter(t=>t.dateKey===tk).slice(0,5);
-  tbody.innerHTML=todayOnly.length
-    ?todayOnly.map(t=>rowHTML(t,6)).join('')
-    :`<tr><td colspan="6" class="px-6 py-12 text-center text-slate-600 text-sm">No tickets yet today. Create your first!</td></tr>`;
-}
-
-function renderAllTable() {
-  const tbody=document.getElementById('all-table-body');
-  const dfVal=document.getElementById('date-filter')?.value || 'today';
-  state.dateFilter=dfVal;
-  let list=state.tickets;
-  if(dfVal==='today'){const tk=todayKey();list=list.filter(t=>t.dateKey===tk);}
-  else if(dfVal!=='all'){list=list.filter(t=>t.dateKey===dfVal);}
-  if(state.filter!=='all')list=list.filter(t=>t.status===state.filter);
-  if(state.search)list=list.filter(t=>(t.title||'').toLowerCase().includes(state.search)||(t.assignee||'').toLowerCase().includes(state.search)||(t.type||'').toLowerCase().includes(state.search)||(t.id||'').toLowerCase().includes(state.search));
-  tbody.innerHTML=list.length?list.map(t=>rowHTML(t,7)).join(''):`<tr><td colspan="7" class="px-6 py-16 text-center text-slate-600 text-sm">No tickets match.</td></tr>`;
-}
-
-function renderActivityLog() {
-  const el=document.getElementById('activity-log');
-  const LC={'Dispute':'border-rose-500/50','Partner Portal':'border-blue-500/50','Inquiry':'border-violet-500/50'};
-  el.innerHTML=state.activityLog.length
-    ?state.activityLog.slice(0,8).map((a,i)=>`<div class="log-item ${LC[a.type]||'border-indigo-500/50'} pl-3" style="animation:slideIn 0.4s ${i*0.05}s ease both"><p class="text-xs text-white font-medium font-mono">${a.msg}</p><p class="text-[10px] text-slate-500">${a.type} · ${a.time}</p></div>`).join('')
-    :`<div class="text-center text-slate-600 text-xs py-8">No activity yet</div>`;
-}
-
-// ── TEAM STATS: daily reset (today) + history ────────────────────
-function setStatsView(view) {
-  state.statsView = view;
-  document.getElementById('stats-tab-today').classList.toggle('active', view==='today');
-  document.getElementById('stats-tab-history').classList.toggle('active', view==='history');
-  document.getElementById('stats-today-panel').classList.toggle('hidden', view!=='today');
-  document.getElementById('stats-history-panel').classList.toggle('hidden', view!=='history');
-  if(view==='history') renderHistoryStats();
-}
-
-function renderTeamStats() {
-  // TODAY ONLY — resets automatically because we filter by todayKey()
-  const el=document.getElementById('team-stats-grid');
-  const tk=todayKey();
-  const todayTickets=state.tickets.filter(t=>t.dateKey===tk);
-  const allNames=[...new Set([...state.workingToday,...todayTickets.map(t=>t.assignee).filter(Boolean)])];
-
-  if(!allNames.length){
-    el.innerHTML=`<div class="flex flex-col items-center py-8 gap-3">
-      <div class="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center">
-        <svg class="w-6 h-6 text-indigo-400/50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-      </div>
-      <p class="text-xs text-slate-600 text-center">No tickets yet today.<br>Performance starts fresh each new day.</p>
-    </div>`;
+  if(state.editingKey){
+    // Save edit
+    await chatRef.child(state.editingKey).update({text,edited:true,editedAt:Date.now()}).catch(e=>console.error(e));
+    cancelEdit();
+    inp.value='';inp.style.height='auto';
     return;
   }
 
-  const max=Math.max(...allNames.map(n=>todayTickets.filter(t=>t.assignee===n).length),1);
-  el.innerHTML=allNames.map(name=>{
-    const total  =todayTickets.filter(t=>t.assignee===name).length;
-    const done   =todayTickets.filter(t=>t.assignee===name&&t.status==='Completed').length;
-    const skipped=todayTickets.filter(t=>t.assignee===name&&t.status==='Skipped').length;
-    const pending=total-done-skipped;
-    const pct=Math.round((total/max)*100);
-    const clr=memberColor(name);
-    const isOn=state.workingToday.includes(name);
-    return `<div class="flex items-center gap-4 p-3 rounded-xl hover:bg-white/3 transition-colors">
-      <div class="w-9 h-9 rounded-full ${clr} flex items-center justify-center text-sm font-bold text-white flex-shrink-0">${name[0]}</div>
-      <div class="flex-1">
-        <div class="flex items-center justify-between mb-1.5">
-          <div class="flex items-center gap-2">
-            <span class="text-sm font-semibold text-white">${name}</span>
-            ${isOn?'<span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20">ON DUTY</span>':''}
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="text-xs text-emerald-400 font-mono">${done} done</span>
-            ${pending?`<span class="text-xs text-amber-400 font-mono">${pending} pending</span>`:''}
-            ${skipped?`<span class="text-xs text-slate-500 font-mono">${skipped} skipped</span>`:''}
-            <span class="text-xs text-slate-400 font-mono font-bold">${total} total</span>
-          </div>
-        </div>
-        <div class="h-2 bg-white/5 rounded-full overflow-hidden">
-          <div class="h-full bar-fill rounded-full ${clr} opacity-70" style="width:${pct}%"></div>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+  inp.value='';inp.style.height='auto';
+  await chatRef.push({sender:state.myName,text,ts:Date.now()}).catch(e=>console.error(e));
+  setTimeout(()=>{const el=document.getElementById('chat-scroll');el.scrollTop=el.scrollHeight;},120);
 }
 
-function renderHistoryStats() {
-  const el=document.getElementById('history-stats-container');
-  // Group all tickets by dateKey
-  const groups = {};
-  state.tickets.forEach(t=>{
-    const key=t.dateKey||'unknown';
-    if(!groups[key])groups[key]=[];
-    groups[key].push(t);
-  });
-  const sortedKeys=Object.keys(groups).sort().reverse();
-  if(!sortedKeys.length){el.innerHTML=`<p class="text-xs text-slate-600 text-center py-4">No historical data yet.</p>`;return;}
-
-  const tk=todayKey();
-  el.innerHTML=sortedKeys.map(key=>{
-    const dayTickets=groups[key];
-    const isToday=key===tk;
-    const names=[...new Set(dayTickets.map(t=>t.assignee).filter(Boolean))];
-    const dayDone=dayTickets.filter(t=>t.status==='Completed').length;
-    const dayTotal=dayTickets.length;
-    return `<div class="border border-white/5 rounded-xl overflow-hidden">
-      <div class="history-day-header px-5 py-3 flex items-center justify-between rounded-xl" onclick="toggleHistoryDay('${key}')">
-        <div class="flex items-center gap-3">
-          ${isToday?'<div class="w-2 h-2 rounded-full bg-emerald-400 pending-dot flex-shrink-0"></div>':'<div class="w-2 h-2 rounded-full bg-slate-600 flex-shrink-0"></div>'}
-          <span class="text-sm font-semibold text-white">${formatDayLabel(key)}</span>
-          ${isToday?'<span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">LIVE</span>':''}
-        </div>
-        <div class="flex items-center gap-4">
-          <span class="text-xs text-emerald-400 font-mono">${dayDone}/${dayTotal} done</span>
-          <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-        </div>
-      </div>
-      <div id="hist-body-${key}" class="hidden px-5 pb-4 pt-1 space-y-2 border-t border-white/5">
-        ${names.length?names.map(name=>{
-          const total  =dayTickets.filter(t=>t.assignee===name).length;
-          const done   =dayTickets.filter(t=>t.assignee===name&&t.status==='Completed').length;
-          const skipped=dayTickets.filter(t=>t.assignee===name&&t.status==='Skipped').length;
-          const clr=memberColor(name);
-          const max2=Math.max(...names.map(n=>dayTickets.filter(t=>t.assignee===n).length),1);
-          const pct=Math.round((total/max2)*100);
-          return `<div class="flex items-center gap-3 py-1">
-            <div class="w-7 h-7 rounded-full ${clr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0">${name[0]}</div>
-            <div class="flex-1">
-              <div class="flex items-center justify-between mb-1">
-                <span class="text-xs font-semibold text-white">${name}</span>
-                <div class="flex gap-3">
-                  <span class="text-[11px] text-emerald-400 font-mono">${done} done</span>
-                  ${skipped?`<span class="text-[11px] text-slate-500 font-mono">${skipped} skip</span>`:''}
-                  <span class="text-[11px] text-slate-400 font-mono font-bold">${total} total</span>
-                </div>
-              </div>
-              <div class="h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full ${clr} opacity-60" style="width:${pct}%"></div></div>
-            </div>
-          </div>`;
-        }).join(''):'<p class="text-xs text-slate-600 text-center py-2">No data for this day.</p>'}
-      </div>
-    </div>`;
-  }).join('');
+function chatKeydown(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}
+  if(e.key==='Escape'&&state.editingKey)cancelEdit();
 }
 
-function toggleHistoryDay(key) {
-  const el=document.getElementById(`hist-body-${key}`);
-  if(el) el.classList.toggle('hidden');
+function startEdit(key){
+  const m=state.chatMessages[key];
+  if(!m)return;
+  if(m.sender!==state.myName){showToast('You can only edit your own messages','Not allowed');return;}
+  state.editingKey=key;
+  const inp=document.getElementById('chat-input');
+  inp.value=m.text;inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,120)+'px';inp.focus();
+  document.getElementById('edit-bar').classList.remove('hidden');
+  document.getElementById('edit-preview').textContent=(m.text||'').substring(0,60)+((m.text||'').length>60?'…':'');
+}
+function cancelEdit(){
+  state.editingKey=null;
+  document.getElementById('edit-bar').classList.add('hidden');
+  const inp=document.getElementById('chat-input');inp.value='';inp.style.height='auto';
 }
 
-// ── NAV ──────────────────────────────────────────────────────────
-function showSection(name) {
-  ['dashboard','tickets','team'].forEach(s=>{
-    document.getElementById('section-'+s).classList.toggle('hidden',s!==name);
+function openDelMsg(key){
+  const m=state.chatMessages[key];if(!m)return;
+  state.pendingDelKey=key;
+  document.getElementById('del-msg-preview').textContent=(m.text||'').substring(0,80)+((m.text||'').length>80?'…':'');
+  document.getElementById('del-msg-modal').classList.add('open');
+}
+function closeDelMsgModal(){state.pendingDelKey=null;document.getElementById('del-msg-modal').classList.remove('open');}
+async function confirmDelMsg(){
+  const key=state.pendingDelKey;if(!key)return;
+  closeDelMsgModal();
+  await chatRef.child(key).remove().catch(e=>console.error(e));
+  showToast('Message deleted','Chat');
+}
+
+// ── NAV ────────────────────────────────────────────────────────────
+function showSection(name){
+  ['dashboard','tickets','team','chat'].forEach(s=>{
+    const el=document.getElementById('section-'+s);
+    if(s==='chat'){
+      el.classList.toggle('hidden',s!==name);
+      if(s===name){el.style.display='flex';el.style.flexDirection='column';}
+    } else {
+      el.classList.toggle('hidden',s!==name);
+    }
     document.getElementById('nav-'+s).className=s===name
       ?'nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all bg-indigo-600/20 text-indigo-300 border border-indigo-500/20'
       :'nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5';
   });
-  document.getElementById('page-title').textContent={dashboard:'Dashboard',tickets:'All Tickets',team:'Team Stats'}[name];
-  if(name==='team') renderTeamStats();
-}
+  document.getElementById('page-title').textContent={dashboard:'Dashboard',tickets:'All Tickets',team:'Team Stats',chat:'Team Chat'}[name];
 
-function filterTickets(f) {
-  state.filter=f;
-  ['all','Pending','Completed','Skipped'].forEach(x=>{
-    const btn=document.getElementById('filter-'+x);
-    if(!btn)return;
-    btn.className=x===f?'filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-indigo-600 text-white':'filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white';
-  });
-  renderAllTable();
+  // toggle scroll overflow
+  const ms=document.getElementById('main-scroll');
+  if(name==='chat'){ms.style.overflow='hidden';}else{ms.style.overflow='auto';}
+
+  if(name==='chat'){
+    state.chatOpen=true;
+    state.lastSeenTs=Date.now();localStorage.setItem('dops_chat_seen',state.lastSeenTs.toString());
+    document.getElementById('chat-badge').classList.add('hidden');
+    setTimeout(()=>{const el=document.getElementById('chat-scroll');el.scrollTop=el.scrollHeight;},80);
+  } else {
+    state.chatOpen=false;
+  }
+  if(name==='team')renderTeamStats();
 }
+function filterTickets(f){state.filter=f;['all','Pending','Completed','Skipped'].forEach(x=>{const btn=document.getElementById('filter-'+x);if(!btn)return;btn.className=x===f?'filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-indigo-600 text-white':'filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white';});renderAllTable();}
 function searchTickets(){state.search=document.getElementById('search-input').value.toLowerCase();renderAllTable();}
 function openModal(){renderPreview();const m=document.getElementById('modal');m.classList.remove('hidden');m.classList.add('flex');document.getElementById('modal-dup-warning').classList.add('hidden');setTimeout(()=>document.getElementById('modal-title').focus(),60);}
 function closeModal(){const m=document.getElementById('modal');m.classList.add('hidden');m.classList.remove('flex');}
-function showToast(msg,sub='Saved to Firebase'){
-  document.getElementById('toast-msg').textContent=msg;
-  document.getElementById('toast-sub').textContent=sub;
-  const t=document.getElementById('toast');
-  t.classList.remove('hidden');
-  setTimeout(()=>t.classList.add('hidden'),3800);
-}
-function setSubmitting(v){
-  state.submitting=v;
-  ['submit-btn','modal-submit-btn'].forEach(id=>{
-    const b=document.getElementById(id);if(!b)return;
-    b.disabled=v;b.style.opacity=v?'0.6':'1';b.style.cursor=v?'not-allowed':'pointer';
-    if(v)b.innerHTML=`<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Saving…`;
-    else b.innerHTML=`<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Submit Ticket`;
-  });
-}
+function showToast(msg,sub='Saved to Firebase'){document.getElementById('toast-msg').textContent=msg;document.getElementById('toast-sub').textContent=sub;const t=document.getElementById('toast');t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),3800);}
+function setSubmitting(v){state.submitting=v;['submit-btn','modal-submit-btn'].forEach(id=>{const b=document.getElementById(id);if(!b)return;b.disabled=v;b.style.opacity=v?'0.6':'1';b.style.cursor=v?'not-allowed':'pointer';if(v)b.innerHTML=`<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Saving…`;else b.innerHTML=`<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Submit Ticket`;});}
 function toggleDark(){state.darkMode=!state.darkMode;document.documentElement.classList.toggle('dark',state.darkMode);document.getElementById('dark-label').textContent=state.darkMode?'Light Mode':'Dark Mode';}
-
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeModal();closeConfirmModal();closeSkipModal();closeEditModal();closeSkipRotationModal();}
-  if(e.key==='Enter'&&!document.getElementById('modal').classList.contains('hidden'))submitTicketModal();
+  if(e.key==='Escape'){closeModal();closeConfirmModal();closeSkipModal();closeEditModal();closeSkipRotationModal();closeDelMsgModal();}
+  if(e.key==='Enter'&&!document.getElementById('modal').classList.contains('hidden')&&document.activeElement!==document.getElementById('chat-input'))submitTicketModal();
 });
-
 init();
 </script>
 </body>
