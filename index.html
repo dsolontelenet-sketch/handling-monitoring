@@ -4,7 +4,6 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Dispute Monitoring Dashboard</title>
-
 <link rel="icon" href="data:image/svg+xml,
 <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
 <rect width='100' height='100' rx='20' fill='violet'/>
@@ -45,6 +44,8 @@
   .form-input:focus{ outline:none; border-color:rgba(99,102,241,0.6); box-shadow:0 0 0 3px rgba(99,102,241,0.11); }
   @keyframes notifPop{ 0%{transform:translateX(120%);opacity:0} 15%{transform:translateX(0);opacity:1} 80%{transform:translateX(0);opacity:1} 100%{transform:translateX(120%);opacity:0} }
   .notif-pop{ animation:notifPop 3.5s ease forwards; }
+  @keyframes warnPop{ 0%{transform:translateX(120%);opacity:0} 15%{transform:translateX(0);opacity:1} 80%{transform:translateX(0);opacity:1} 100%{transform:translateX(120%);opacity:0} }
+  .warn-pop{ animation:warnPop 4s ease forwards; }
   .rotation-item{ transition:all 0.25s ease; }
   .rotation-item.active{ background:rgba(99,102,241,0.18); border-color:rgba(99,102,241,0.45); transform:scale(1.02); }
   .rotation-item.next-up{ background:rgba(245,158,11,0.07); border-color:rgba(245,158,11,0.28); }
@@ -72,6 +73,15 @@
   .modal-overlay.open{ display:flex; }
   .modal-backdrop{ position:absolute;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px); }
   .modal-card{ position:relative;z-index:1; background:rgba(10,16,36,0.98); border:1px solid rgba(99,102,241,0.25); border-radius:20px; box-shadow:0 32px 64px rgba(0,0,0,0.7); padding:28px 28px 24px; width:100%;max-width:420px; animation:slideIn 0.25s ease; }
+  /* Stats view toggle */
+  .stats-tab{ transition:all 0.2s ease; }
+  .stats-tab.active{ background:rgba(99,102,241,0.2); color:#a5b4fc; border-color:rgba(99,102,241,0.4); }
+  /* Duplicate warning shake */
+  @keyframes shake{ 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+  .shake{ animation:shake 0.4s ease; }
+  /* History day accordion */
+  .history-day-header{ cursor:pointer; transition:background 0.15s; }
+  .history-day-header:hover{ background:rgba(99,102,241,0.06); }
 </style>
 </head>
 <body class="bg-mesh min-h-screen text-slate-100 dark">
@@ -89,7 +99,7 @@
   <span id="fb-label">Connecting…</span>
 </div>
 
-<!-- TOAST -->
+<!-- SUCCESS TOAST -->
 <div id="toast" class="fixed top-5 right-5 z-50 hidden">
   <div class="notif-pop glass rounded-xl px-5 py-3 flex items-center gap-3 shadow-2xl border border-indigo-500/30">
     <div class="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
@@ -98,6 +108,20 @@
     <div>
       <p class="text-xs text-slate-400" id="toast-sub">Saved to Firebase</p>
       <p class="text-sm font-semibold text-white" id="toast-msg"></p>
+    </div>
+  </div>
+</div>
+
+<!-- ⚠️ DUPLICATE WARNING TOAST -->
+<div id="dup-toast" class="fixed top-5 right-5 z-50 hidden">
+  <div class="warn-pop rounded-xl px-5 py-3 flex items-center gap-3 shadow-2xl border border-rose-500/40" style="background:rgba(20,5,5,0.95)">
+    <div class="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center flex-shrink-0">
+      <svg class="w-4 h-4 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    </div>
+    <div>
+      <p class="text-xs text-rose-400 font-semibold">Duplicate Ticket Detected</p>
+      <p class="text-sm font-semibold text-white" id="dup-toast-msg">This ticket was already submitted today.</p>
+      <p class="text-[11px] text-slate-400 mt-0.5" id="dup-toast-detail"></p>
     </div>
   </div>
 </div>
@@ -174,7 +198,7 @@
   </div>
 </div>
 
-<!-- ✏️ EDIT TICKET MODAL (NEW) -->
+<!-- EDIT TICKET MODAL -->
 <div id="edit-modal" class="modal-overlay">
   <div class="modal-backdrop" onclick="closeEditModal()"></div>
   <div class="modal-card" style="max-width:480px;">
@@ -226,7 +250,7 @@
   </div>
 </div>
 
-<!-- ⏭ SKIP ROTATION MODAL (NEW) -->
+<!-- SKIP ROTATION MODAL -->
 <div id="skip-rotation-modal" class="modal-overlay">
   <div class="modal-backdrop" onclick="closeSkipRotationModal()"></div>
   <div class="modal-card" style="max-width:400px;">
@@ -297,12 +321,16 @@
         Team Stats
       </button>
     </nav>
-    <!-- Sidebar rotation — current person always FIRST -->
     <div class="px-3 mt-1">
       <p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold px-3 mb-2">Today's Rotation</p>
       <div id="sidebar-rotation" class="space-y-0.5"></div>
     </div>
     <div class="mt-auto px-4 py-4 border-t border-white/5">
+      <!-- Today's date key badge in sidebar -->
+      <div class="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/15">
+        <svg class="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <span class="text-[10px] text-emerald-400 font-mono" id="sidebar-today-key">—</span>
+      </div>
       <button onclick="toggleDark()" class="w-full flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors py-2 px-3 rounded-lg hover:bg-white/5">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
         <span id="dark-label">Light Mode</span>
@@ -333,13 +361,14 @@
     <!-- DASHBOARD -->
     <div id="section-dashboard" class="p-8 space-y-5">
       <div class="grid grid-cols-4 gap-4">
+        <!-- Today's stats only -->
         <div class="glass rounded-2xl p-5 card-glow">
           <div class="flex items-start justify-between mb-3">
             <div class="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center"><svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
-            <span class="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full">TOTAL</span>
+            <span class="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full">TODAY</span>
           </div>
           <p class="text-3xl font-bold text-white font-mono" id="stat-total">—</p>
-          <p class="text-xs text-slate-500 mt-1">All Tickets</p>
+          <p class="text-xs text-slate-500 mt-1">Today's Tickets</p>
         </div>
         <div class="glass rounded-2xl p-5 card-glow">
           <div class="flex items-start justify-between mb-3">
@@ -347,7 +376,7 @@
             <span class="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">OPEN</span>
           </div>
           <p class="text-3xl font-bold text-white font-mono" id="stat-pending">—</p>
-          <p class="text-xs text-slate-500 mt-1">Pending</p>
+          <p class="text-xs text-slate-500 mt-1">Pending Today</p>
         </div>
         <div class="glass rounded-2xl p-5 card-glow">
           <div class="flex items-start justify-between mb-3">
@@ -355,7 +384,7 @@
             <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">DONE</span>
           </div>
           <p class="text-3xl font-bold text-white font-mono" id="stat-completed">—</p>
-          <p class="text-xs text-slate-500 mt-1">Completed</p>
+          <p class="text-xs text-slate-500 mt-1">Completed Today</p>
         </div>
         <div class="glass rounded-2xl p-5 card-glow">
           <div class="flex items-start justify-between mb-3">
@@ -428,11 +457,10 @@
           </div>
         </div>
 
-        <!-- ROTATION STATUS with Skip button -->
+        <!-- ROTATION STATUS -->
         <div class="glass rounded-2xl p-6 card-glow flex flex-col">
           <div class="flex items-center justify-between mb-1">
             <h3 class="text-sm font-bold text-white">Rotation Status</h3>
-            <!-- ⏭ NEW: Skip rotation button -->
             <button onclick="openSkipRotationModal()" title="Skip current person in rotation"
               class="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/25 border border-indigo-500/25 transition-all">
               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -476,10 +504,13 @@
         </div>
       </div>
 
-      <!-- Recent tickets -->
+      <!-- Recent tickets (TODAY only) -->
       <div class="glass rounded-2xl overflow-hidden card-glow">
         <div class="px-6 py-4 border-b border-white/5 flex items-center justify-between">
-          <h3 class="text-sm font-bold text-white">Recent Tickets</h3>
+          <div>
+            <h3 class="text-sm font-bold text-white">Today's Tickets</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Showing tickets from today only · <span id="recent-date-label" class="text-indigo-400 font-mono">—</span></p>
+          </div>
           <button onclick="showSection('tickets')" class="text-xs text-indigo-400 hover:text-indigo-300 transition-colors font-medium">View all →</button>
         </div>
         <div class="overflow-x-auto">
@@ -507,9 +538,19 @@
           <button onclick="filterTickets('Completed')" id="filter-Completed" class="filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white">Completed</button>
           <button onclick="filterTickets('Skipped')"   id="filter-Skipped"   class="filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white">Skipped</button>
         </div>
-        <div class="relative">
-          <input id="search-input" oninput="searchTickets()" type="text" placeholder="Search tickets…" class="form-input bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2 pl-9 w-56 placeholder-slate-600 transition-all"/>
-          <svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <div class="flex items-center gap-3">
+          <!-- Date filter for all tickets -->
+          <div class="flex items-center gap-2">
+            <label class="text-xs text-slate-500">Date:</label>
+            <select id="date-filter" onchange="renderAllTable()" class="form-input bg-slate-800/60 border border-white/10 text-white text-xs rounded-lg px-3 py-1.5 appearance-none cursor-pointer transition-all">
+              <option value="all">All dates</option>
+              <option value="today" selected>Today only</option>
+            </select>
+          </div>
+          <div class="relative">
+            <input id="search-input" oninput="searchTickets()" type="text" placeholder="Search tickets…" class="form-input bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2 pl-9 w-56 placeholder-slate-600 transition-all"/>
+            <svg class="w-4 h-4 text-slate-500 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </div>
         </div>
       </div>
       <div class="glass rounded-2xl overflow-hidden card-glow">
@@ -530,13 +571,45 @@
       </div>
     </div>
 
-    <!-- TEAM STATS -->
+    <!-- TEAM STATS — daily reset, history preserved -->
     <div id="section-team" class="p-8 space-y-6 hidden">
-      <div class="glass rounded-2xl p-6 card-glow">
-        <h3 class="text-sm font-bold text-white mb-1">Team Performance</h3>
-        <p class="text-xs text-slate-500 mb-6">All-time ticket counts from Firestore</p>
-        <div id="team-stats-grid" class="space-y-3"></div>
+
+      <!-- Today vs History toggle -->
+      <div class="flex items-center gap-3">
+        <button onclick="setStatsView('today')" id="stats-tab-today"
+          class="stats-tab active text-xs font-semibold px-4 py-2 rounded-full border border-white/10 text-slate-300 flex items-center gap-2">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          Today's Performance
+        </button>
+        <button onclick="setStatsView('history')" id="stats-tab-history"
+          class="stats-tab text-xs font-semibold px-4 py-2 rounded-full border border-white/10 text-slate-400 hover:text-white flex items-center gap-2">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          History
+        </button>
       </div>
+
+      <!-- TODAY PERFORMANCE PANEL -->
+      <div id="stats-today-panel" class="glass rounded-2xl p-6 card-glow">
+        <div class="flex items-center justify-between mb-1">
+          <h3 class="text-sm font-bold text-white">Today's Team Performance</h3>
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 rounded-full bg-emerald-400 pending-dot"></div>
+            <span class="text-xs text-emerald-400 font-mono" id="stats-today-date-label">—</span>
+          </div>
+        </div>
+        <p class="text-xs text-slate-500 mb-6">Resets automatically every new day · Yesterday's data is preserved in History</p>
+        <div id="team-stats-grid" class="space-y-4"></div>
+      </div>
+
+      <!-- HISTORY PANEL -->
+      <div id="stats-history-panel" class="hidden space-y-4">
+        <div class="glass rounded-2xl p-6 card-glow">
+          <h3 class="text-sm font-bold text-white mb-1">Historical Performance</h3>
+          <p class="text-xs text-slate-500 mb-6">All-time data grouped by day · No data is ever deleted</p>
+          <div id="history-stats-container" class="space-y-4"></div>
+        </div>
+      </div>
+
     </div>
   </main>
 </div>
@@ -562,6 +635,11 @@
       <div>
         <label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Ticket Title</label>
         <input id="modal-title" type="text" placeholder="Describe the issue briefly…" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-3 placeholder-slate-600 transition-all"/>
+        <!-- Duplicate indicator inside modal -->
+        <div id="modal-dup-warning" class="hidden mt-2 flex items-center gap-2 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+          <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          <span id="modal-dup-text">A ticket with this title already exists today.</span>
+        </div>
       </div>
       <div class="glass-light rounded-xl px-4 py-3 flex items-center justify-between">
         <span class="text-xs text-slate-400">Auto-assigned to:</span>
@@ -611,10 +689,29 @@ function memberColor(name) {
   return COLOR_POOL[code % COLOR_POOL.length];
 }
 
+// ── DATE KEY — YYYY-MM-DD in local time ─────────────────────────
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function formatDayLabel(key) {
+  // key = "YYYY-MM-DD"
+  const [y,m,d] = key.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diff = Math.round((today - dt) / 86400000);
+  const label = dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+  if(diff === 0) return `Today · ${label}`;
+  if(diff === 1) return `Yesterday · ${label}`;
+  return label;
+}
+
 let state = {
   tickets:[], rotationIndex:0, workingToday:[], activityLog:[],
-  filter:'all', search:'', darkMode:true, submitting:false, loaded:false,
+  filter:'all', dateFilter:'today', search:'', darkMode:true,
+  submitting:false, loaded:false,
   pendingRemoveName:null, pendingSkipId:null, pendingEditId:null,
+  statsView:'today',
 };
 
 function setFbStatus(cls, label) {
@@ -628,8 +725,16 @@ function hideLoader() {
 }
 
 async function init() {
+  const tk = todayKey();
   document.getElementById('current-date').textContent =
     new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('sidebar-today-key').textContent = tk;
+  document.getElementById('recent-date-label').textContent = tk;
+  document.getElementById('stats-today-date-label').textContent = formatDayLabel(tk);
+
+  // Populate date filter select with unique dates as they load
+  const dateFilterEl = document.getElementById('date-filter');
+
   const snap = await metaDoc.get().catch(()=>null);
   if (!snap||!snap.exists) {
     await metaDoc.set({rotationIndex:0,workingToday:DEFAULT_TEAM.slice(),activityLog:[]}).catch(console.error);
@@ -643,13 +748,82 @@ async function init() {
     renderWorkingToday(); renderRotation(); renderSidebar(); renderActivityLog(); renderPreview(); renderDropdown('');
     document.getElementById('stat-working').textContent=state.workingToday.length;
   },err=>{console.error(err);setFbStatus('error','Sync error');});
+
   ticketsCol.orderBy('ts','desc').onSnapshot(snap=>{
     state.tickets=snap.docs.map(d=>({_id:d.id,...d.data()}));
-    renderStats(); renderRecentTable(); renderAllTable(); renderTeamStats(); renderSidebar();
+    // Populate date filter dynamically
+    populateDateFilter();
+    renderStats();
+    renderRecentTable();
+    renderAllTable();
+    renderTeamStats();
+    renderSidebar();
     if(!state.loaded){state.loaded=true;hideLoader();setFbStatus('connected','🔴 Live · Firestore');}
   },err=>{console.error(err);setFbStatus('error','Connection failed');hideLoader();});
+
+  // Live duplicate check in modal title input
+  document.getElementById('modal-title').addEventListener('input', function(){
+    checkDuplicateInline(this.value, 'modal-dup-warning', 'modal-dup-text');
+  });
+  document.getElementById('ticket-title').addEventListener('input', function(){
+    checkDuplicateInline(this.value, 'inline-dup-warning', 'inline-dup-text');
+  });
 }
 
+// ── DUPLICATE DETECTION ──────────────────────────────────────────
+function isDuplicateToday(title, excludeId) {
+  const normalized = title.trim().toLowerCase();
+  if (!normalized) return null;
+  const tk = todayKey();
+  return state.tickets.find(t =>
+    t._id !== excludeId &&
+    (t.dateKey === tk || (!t.dateKey && t.date === new Date().toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'}))) &&
+    (t.title||'').trim().toLowerCase() === normalized
+  ) || null;
+}
+
+function checkDuplicateInline(val, warningId, textId) {
+  const dup = isDuplicateToday(val);
+  const warningEl = document.getElementById(warningId);
+  if (!warningEl) return;
+  if (dup && val.trim()) {
+    warningEl.classList.remove('hidden');
+    warningEl.classList.add('flex');
+    const textEl = document.getElementById(textId);
+    if (textEl) textEl.textContent = `Already submitted today — assigned to ${dup.assignee} (${dup.id})`;
+  } else {
+    warningEl.classList.add('hidden');
+    warningEl.classList.remove('flex');
+  }
+}
+
+function showDupToast(dup) {
+  document.getElementById('dup-toast-msg').textContent = `"${dup.title}" already exists today.`;
+  document.getElementById('dup-toast-detail').textContent = `${dup.id} · Assigned to ${dup.assignee} · ${dup.status}`;
+  const t = document.getElementById('dup-toast');
+  t.classList.remove('hidden');
+  // shake the input fields
+  ['ticket-title','modal-title'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),450);}
+  });
+  setTimeout(()=>t.classList.add('hidden'), 4200);
+}
+
+// ── POPULATE DATE FILTER ─────────────────────────────────────────
+function populateDateFilter() {
+  const el = document.getElementById('date-filter');
+  const allDates = [...new Set(state.tickets.map(t => t.dateKey).filter(Boolean))].sort().reverse();
+  const tk = todayKey();
+  // Keep 'all' and 'today' options, then add specific past dates
+  let html = `<option value="all">All dates</option><option value="today" ${state.dateFilter==='today'?'selected':''}>Today only (${tk})</option>`;
+  allDates.forEach(d => {
+    if (d !== tk) html += `<option value="${d}" ${state.dateFilter===d?'selected':''}>${formatDayLabel(d)}</option>`;
+  });
+  el.innerHTML = html;
+}
+
+// ── WORKING TODAY ────────────────────────────────────────────────
 function addCustomName() {
   const input=document.getElementById('custom-name-input');
   const name=input.value.trim();
@@ -684,6 +858,7 @@ function confirmRemoveMember() {
   metaDoc.update({workingToday:updated,rotationIndex:newIdx}).catch(console.error);
   showToast(`${name} removed from today's list`,'Member removed');
 }
+
 function renderWorkingToday() {
   const container=document.getElementById('wt-pills');
   const wt=state.workingToday;
@@ -701,7 +876,7 @@ function renderWorkingToday() {
   }).join('');
 }
 
-// ── SKIP ROTATION (NEW) ──────────────────────────────────────────
+// ── SKIP ROTATION ────────────────────────────────────────────────
 function openSkipRotationModal() {
   const wt=state.workingToday;
   if(!wt.length){showToast('No members in rotation','Nothing to skip');return;}
@@ -731,7 +906,7 @@ async function confirmSkipRotation() {
   showToast(`Skipped ${skipped} → now ${wt[newIdx]}`,'Rotation Advanced');
 }
 
-// ── SKIP DISPUTE ────────────────────────────────────────────────
+// ── SKIP DISPUTE ─────────────────────────────────────────────────
 function openSkipModal(fid) {
   const t=state.tickets.find(x=>x._id===fid);
   if(!t)return;
@@ -765,7 +940,7 @@ async function confirmSkip() {
   showToast(`${t?.id||'Ticket'} skipped — ${reason}`,'Dispute Skipped');
 }
 
-// ── EDIT TICKET (NEW) ────────────────────────────────────────────
+// ── EDIT TICKET ──────────────────────────────────────────────────
 function openEditModal(fid) {
   const t=state.tickets.find(x=>x._id===fid);
   if(!t)return;
@@ -774,7 +949,6 @@ function openEditModal(fid) {
   document.getElementById('edit-title').value=t.title||'';
   document.getElementById('edit-type').value=t.type||'Dispute';
   document.getElementById('edit-status').value=t.status||'Pending';
-  // Build assignee list from all known names
   const allNames=[...new Set([...state.workingToday,...state.tickets.map(x=>x.assignee).filter(Boolean)])];
   if(t.assignee&&!allNames.includes(t.assignee))allNames.push(t.assignee);
   const sel=document.getElementById('edit-assignee');
@@ -798,7 +972,7 @@ async function confirmEditTicket() {
   showToast('Ticket updated successfully','Changes Saved');
 }
 
-// ── DROPDOWN ────────────────────────────────────────────────────
+// ── DROPDOWN ─────────────────────────────────────────────────────
 function renderDropdown(query) {
   const list=document.getElementById('dropdown-list');
   const q=query.toLowerCase().trim();
@@ -833,36 +1007,50 @@ document.addEventListener('click',e=>{
 window.addEventListener('scroll',()=>{if(document.getElementById('add-dropdown').classList.contains('open'))positionDropdown();},true);
 window.addEventListener('resize',()=>{if(document.getElementById('add-dropdown').classList.contains('open'))positionDropdown();});
 
-// ── CREATE TICKET ────────────────────────────────────────────────
-async function createTicket(type,title) {
-  title=title.trim();
-  if(!title){alert('Please enter a ticket title.');return false;}
-  if(!state.workingToday.length){alert('No members in Working Today!');return false;}
-  if(state.submitting)return false;
+// ── CREATE TICKET (with duplicate check + dateKey) ───────────────
+async function createTicket(type, title) {
+  title = title.trim();
+  if (!title) { alert('Please enter a ticket title.'); return false; }
+  if (!state.workingToday.length) { alert('No members in Working Today!'); return false; }
+  if (state.submitting) return false;
+
+  // ── DUPLICATE CHECK ──────────────────────────────────────────
+  const dup = isDuplicateToday(title);
+  if (dup) {
+    showDupToast(dup);
+    return false;
+  }
+
   setSubmitting(true);
-  let ticketId,assignee;
+  let ticketId, assignee;
   try {
-    await db.runTransaction(async tx=>{
-      const metaSnap=await tx.get(metaDoc);
-      const curIdx=metaSnap.exists?(metaSnap.data().rotationIndex??0):0;
-      const curWorking=metaSnap.exists?(metaSnap.data().workingToday??[]):[];
-      const curLog=metaSnap.exists?(metaSnap.data().activityLog??[]):[];
-      if(!curWorking.length)throw new Error('No members in Working Today.');
-      const safeIdx=curIdx%curWorking.length;
-      assignee=curWorking[safeIdx];
-      const nextIdx=(safeIdx+1)%curWorking.length;
-      const latestSnap=await ticketsCol.orderBy('seqNum','desc').limit(1).get();
-      const lastSeq=latestSnap.empty?0:(latestSnap.docs[0].data().seqNum||0);
-      const newSeq=lastSeq+1;
-      ticketId='TKT-'+String(newSeq).padStart(4,'0');
-      const now=new Date();
-      const dateStr=now.toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'});
-      const timeStr=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-      const ticket={id:ticketId,seqNum:newSeq,type,title,assignee,date:dateStr,time:timeStr,status:'Pending',ts:firebase.firestore.FieldValue.serverTimestamp()};
-      const logEntry={msg:`${ticketId} → ${assignee}`,type,time:timeStr,ts:Date.now()};
-      const newLog=[logEntry,...curLog].slice(0,20);
-      tx.set(ticketsCol.doc(),ticket);
-      tx.set(metaDoc,{rotationIndex:nextIdx,workingToday:curWorking,activityLog:newLog});
+    await db.runTransaction(async tx => {
+      const metaSnap  = await tx.get(metaDoc);
+      const curIdx    = metaSnap.exists ? (metaSnap.data().rotationIndex ?? 0) : 0;
+      const curWorking= metaSnap.exists ? (metaSnap.data().workingToday ?? []) : [];
+      const curLog    = metaSnap.exists ? (metaSnap.data().activityLog  ?? []) : [];
+      if (!curWorking.length) throw new Error('No members in Working Today.');
+      const safeIdx = curIdx % curWorking.length;
+      assignee = curWorking[safeIdx];
+      const nextIdx = (safeIdx + 1) % curWorking.length;
+      const latestSnap = await ticketsCol.orderBy('seqNum','desc').limit(1).get();
+      const lastSeq = latestSnap.empty ? 0 : (latestSnap.docs[0].data().seqNum || 0);
+      const newSeq  = lastSeq + 1;
+      ticketId = 'TKT-' + String(newSeq).padStart(4,'0');
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'});
+      const timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+      // ── dateKey added for daily reset tracking ──
+      const dk = todayKey();
+      const ticket = {
+        id:ticketId, seqNum:newSeq, type, title, assignee,
+        date:dateStr, time:timeStr, dateKey:dk,
+        status:'Pending', ts:firebase.firestore.FieldValue.serverTimestamp()
+      };
+      const logEntry = {msg:`${ticketId} → ${assignee}`, type, time:timeStr, ts:Date.now()};
+      const newLog = [logEntry, ...curLog].slice(0,20);
+      tx.set(ticketsCol.doc(), ticket);
+      tx.set(metaDoc, {rotationIndex:nextIdx, workingToday:curWorking, activityLog:newLog});
     });
     showToast(`${ticketId} assigned to ${assignee}`);
     setSubmitting(false);
@@ -870,12 +1058,13 @@ async function createTicket(type,title) {
   } catch(err) {
     console.error(err);
     setSubmitting(false);
-    let msg='Failed: '+err.message;
-    if(err.code==='permission-denied')msg='Permission denied — update your Firestore Security Rules.';
+    let msg = 'Failed: '+err.message;
+    if (err.code==='permission-denied') msg='Permission denied — update your Firestore Security Rules.';
     alert(msg);
     return false;
   }
 }
+
 async function markComplete(fid) {
   const t=state.tickets.find(x=>x._id===fid);
   if(!t)return;
@@ -886,23 +1075,30 @@ async function markComplete(fid) {
 }
 async function submitTicket() {
   const ok=await createTicket(document.getElementById('ticket-type').value,document.getElementById('ticket-title').value);
-  if(ok)document.getElementById('ticket-title').value='';
+  if(ok){document.getElementById('ticket-title').value='';checkDuplicateInline('','inline-dup-warning','inline-dup-text');}
 }
 async function submitTicketModal() {
   const ok=await createTicket(document.getElementById('modal-type').value,document.getElementById('modal-title').value);
-  if(ok){document.getElementById('modal-title').value='';closeModal();}
+  if(ok){
+    document.getElementById('modal-title').value='';
+    document.getElementById('modal-dup-warning').classList.add('hidden');
+    closeModal();
+  }
 }
 
-// ── RENDER ───────────────────────────────────────────────────────
+// ── RENDER STATS (today only for dashboard) ──────────────────────
 function renderStats() {
-  const total=state.tickets.length;
-  const done=state.tickets.filter(t=>t.status==='Completed').length;
-  const skipped=state.tickets.filter(t=>t.status==='Skipped').length;
-  document.getElementById('stat-total').textContent=total;
-  document.getElementById('stat-pending').textContent=total-done-skipped;
-  document.getElementById('stat-completed').textContent=done;
-  document.getElementById('ticket-count-badge').textContent=total;
+  const tk = todayKey();
+  const todayTickets = state.tickets.filter(t => t.dateKey === tk || (!t.dateKey && t.date === new Date().toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})));
+  const total   = todayTickets.length;
+  const done    = todayTickets.filter(t=>t.status==='Completed').length;
+  const skipped = todayTickets.filter(t=>t.status==='Skipped').length;
+  document.getElementById('stat-total').textContent    = total;
+  document.getElementById('stat-pending').textContent  = total - done - skipped;
+  document.getElementById('stat-completed').textContent= done;
+  document.getElementById('ticket-count-badge').textContent = state.tickets.length; // all-time in nav badge
 }
+
 function renderRotation() {
   const wt=state.workingToday;
   if(!wt.length){
@@ -927,20 +1123,19 @@ function renderPreview() {
   document.getElementById('modal-assignee').textContent=n;
 }
 
-// ── SIDEBAR: current person ALWAYS shown first ───────────────────
 function renderSidebar() {
   const el=document.getElementById('sidebar-rotation');
   const wt=state.workingToday;
   el.innerHTML='';
   if(!wt.length){el.innerHTML=`<p class="text-xs text-slate-600 px-3 italic">No one added yet</p>`;return;}
   const si=state.rotationIndex%wt.length;
-  // Build ordered list starting from current index (wraps around)
   for(let i=0;i<wt.length;i++){
     const idx=(si+i)%wt.length;
     const name=wt[idx];
     const isCurr=i===0;
     const isNext=i===1;
-    const cnt=state.tickets.filter(t=>t.assignee===name).length;
+    const tk=todayKey();
+    const cnt=state.tickets.filter(t=>t.assignee===name&&t.dateKey===tk).length;
     const clr=memberColor(name);
     const div=document.createElement('div');
     div.className=`rotation-item flex items-center gap-2 px-3 py-1.5 rounded-lg border border-transparent ${isCurr?'active':isNext?'next-up':''}`;
@@ -955,14 +1150,18 @@ function renderSidebar() {
 }
 
 // ── ROW HTML ─────────────────────────────────────────────────────
-function rowHTML(t,cols) {
+function rowHTML(t, cols) {
   const tc=TYPE_CFG[t.type]||TYPE_CFG['Inquiry'];
   const done=t.status==='Completed', skipped=t.status==='Skipped';
   const clr=memberColor(t.assignee||'?');
+  // Duplicate badge — show if another ticket today has same title
+  const dup = state.tickets.find(x => x._id !== t._id && x.dateKey === t.dateKey && (x.title||'').trim().toLowerCase() === (t.title||'').trim().toLowerCase());
+  const dupBadge = dup ? `<span class="ml-1 text-[9px] font-mono text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-full border border-rose-500/20" title="Potential duplicate ticket">DUP</span>` : '';
+
   let statusBadge;
-  if(done) statusBadge=`<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Completed</span>`;
+  if(done)       statusBadge=`<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Completed</span>`;
   else if(skipped) statusBadge=`<div><span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-500/10 text-slate-400 border border-slate-500/20">⏭ Skipped</span>${t.skipReason?`<p class="text-[10px] text-slate-600 mt-0.5 font-mono truncate max-w-[120px]" title="${t.skipReason}">${t.skipReason}</p>`:''}</div>`;
-  else statusBadge=`<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20"><div class="w-1.5 h-1.5 rounded-full bg-amber-400 pending-dot"></div>Pending</span>`;
+  else           statusBadge=`<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20"><div class="w-1.5 h-1.5 rounded-full bg-amber-400 pending-dot"></div>Pending</span>`;
 
   const doneBtn=!skipped
     ?`<button onclick="markComplete('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${done?'bg-slate-700 text-slate-400 hover:bg-slate-600':'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/20'}">${done?'↩ Reopen':'✓ Done'}</button>`
@@ -971,31 +1170,40 @@ function rowHTML(t,cols) {
   const skipBtn=(!done&&!skipped&&t.type==='Dispute')
     ?`<button onclick="openSkipModal('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20">⏭ Skip</button>`:'';
 
-  // ✏️ Edit button — always shown
   const editBtn=`<button onclick="openEditModal('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20">✏ Edit</button>`;
 
   return `<tr class="ticket-row border-b border-white/5 ${skipped?'opacity-60':''}">
     <td class="px-6 py-4 text-xs font-mono text-slate-400">${t.id||'—'}</td>
     <td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${tc.bg} ${tc.color} border ${tc.border}">${tc.icon} ${t.type}</span></td>
-    <td class="px-6 py-4 text-sm text-white font-medium max-w-xs truncate">${t.title}</td>
+    <td class="px-6 py-4 text-sm text-white font-medium max-w-xs truncate">${t.title}${dupBadge}</td>
     <td class="px-6 py-4"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white">${(t.assignee||'?')[0]}</div><span class="text-sm text-white font-medium">${t.assignee||'—'}</span></div></td>
     ${cols===7?`<td class="px-6 py-4 text-xs text-slate-500 font-mono">${t.date||'—'}</td>`:''}
     <td class="px-6 py-4">${statusBadge}</td>
     <td class="px-6 py-4"><div class="flex items-center flex-wrap gap-1">${doneBtn}${skipBtn}${editBtn}</div></td>
   </tr>`;
 }
+
 function renderRecentTable() {
   const tbody=document.getElementById('recent-table-body');
-  const r=state.tickets.slice(0,5);
-  tbody.innerHTML=r.length?r.map(t=>rowHTML(t,6)).join(''):`<tr><td colspan="6" class="px-6 py-12 text-center text-slate-600 text-sm">No tickets yet. Create your first!</td></tr>`;
+  const tk=todayKey();
+  const todayOnly=state.tickets.filter(t=>t.dateKey===tk).slice(0,5);
+  tbody.innerHTML=todayOnly.length
+    ?todayOnly.map(t=>rowHTML(t,6)).join('')
+    :`<tr><td colspan="6" class="px-6 py-12 text-center text-slate-600 text-sm">No tickets yet today. Create your first!</td></tr>`;
 }
+
 function renderAllTable() {
   const tbody=document.getElementById('all-table-body');
+  const dfVal=document.getElementById('date-filter')?.value || 'today';
+  state.dateFilter=dfVal;
   let list=state.tickets;
+  if(dfVal==='today'){const tk=todayKey();list=list.filter(t=>t.dateKey===tk);}
+  else if(dfVal!=='all'){list=list.filter(t=>t.dateKey===dfVal);}
   if(state.filter!=='all')list=list.filter(t=>t.status===state.filter);
   if(state.search)list=list.filter(t=>(t.title||'').toLowerCase().includes(state.search)||(t.assignee||'').toLowerCase().includes(state.search)||(t.type||'').toLowerCase().includes(state.search)||(t.id||'').toLowerCase().includes(state.search));
   tbody.innerHTML=list.length?list.map(t=>rowHTML(t,7)).join(''):`<tr><td colspan="7" class="px-6 py-16 text-center text-slate-600 text-sm">No tickets match.</td></tr>`;
 }
+
 function renderActivityLog() {
   const el=document.getElementById('activity-log');
   const LC={'Dispute':'border-rose-500/50','Partner Portal':'border-blue-500/50','Inquiry':'border-violet-500/50'};
@@ -1003,36 +1211,128 @@ function renderActivityLog() {
     ?state.activityLog.slice(0,8).map((a,i)=>`<div class="log-item ${LC[a.type]||'border-indigo-500/50'} pl-3" style="animation:slideIn 0.4s ${i*0.05}s ease both"><p class="text-xs text-white font-medium font-mono">${a.msg}</p><p class="text-[10px] text-slate-500">${a.type} · ${a.time}</p></div>`).join('')
     :`<div class="text-center text-slate-600 text-xs py-8">No activity yet</div>`;
 }
+
+// ── TEAM STATS: daily reset (today) + history ────────────────────
+function setStatsView(view) {
+  state.statsView = view;
+  document.getElementById('stats-tab-today').classList.toggle('active', view==='today');
+  document.getElementById('stats-tab-history').classList.toggle('active', view==='history');
+  document.getElementById('stats-today-panel').classList.toggle('hidden', view!=='today');
+  document.getElementById('stats-history-panel').classList.toggle('hidden', view!=='history');
+  if(view==='history') renderHistoryStats();
+}
+
 function renderTeamStats() {
+  // TODAY ONLY — resets automatically because we filter by todayKey()
   const el=document.getElementById('team-stats-grid');
-  const allNames=[...new Set([...state.workingToday,...state.tickets.map(t=>t.assignee).filter(Boolean)])];
-  if(!allNames.length){el.innerHTML=`<p class="text-xs text-slate-600 text-center py-4">No data yet.</p>`;return;}
-  const max=Math.max(...allNames.map(n=>state.tickets.filter(t=>t.assignee===n).length),1);
+  const tk=todayKey();
+  const todayTickets=state.tickets.filter(t=>t.dateKey===tk);
+  const allNames=[...new Set([...state.workingToday,...todayTickets.map(t=>t.assignee).filter(Boolean)])];
+
+  if(!allNames.length){
+    el.innerHTML=`<div class="flex flex-col items-center py-8 gap-3">
+      <div class="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center">
+        <svg class="w-6 h-6 text-indigo-400/50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      </div>
+      <p class="text-xs text-slate-600 text-center">No tickets yet today.<br>Performance starts fresh each new day.</p>
+    </div>`;
+    return;
+  }
+
+  const max=Math.max(...allNames.map(n=>todayTickets.filter(t=>t.assignee===n).length),1);
   el.innerHTML=allNames.map(name=>{
-    const total=state.tickets.filter(t=>t.assignee===name).length;
-    const done=state.tickets.filter(t=>t.assignee===name&&t.status==='Completed').length;
-    const skipped=state.tickets.filter(t=>t.assignee===name&&t.status==='Skipped').length;
+    const total  =todayTickets.filter(t=>t.assignee===name).length;
+    const done   =todayTickets.filter(t=>t.assignee===name&&t.status==='Completed').length;
+    const skipped=todayTickets.filter(t=>t.assignee===name&&t.status==='Skipped').length;
+    const pending=total-done-skipped;
     const pct=Math.round((total/max)*100);
     const clr=memberColor(name);
     const isOn=state.workingToday.includes(name);
-    return `<div class="flex items-center gap-4">
-      <div class="w-8 h-8 rounded-full ${clr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0">${name[0]}</div>
+    return `<div class="flex items-center gap-4 p-3 rounded-xl hover:bg-white/3 transition-colors">
+      <div class="w-9 h-9 rounded-full ${clr} flex items-center justify-center text-sm font-bold text-white flex-shrink-0">${name[0]}</div>
       <div class="flex-1">
-        <div class="flex items-center justify-between mb-1">
+        <div class="flex items-center justify-between mb-1.5">
           <div class="flex items-center gap-2">
             <span class="text-sm font-semibold text-white">${name}</span>
             ${isOn?'<span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20">ON DUTY</span>':''}
           </div>
           <div class="flex items-center gap-3">
             <span class="text-xs text-emerald-400 font-mono">${done} done</span>
+            ${pending?`<span class="text-xs text-amber-400 font-mono">${pending} pending</span>`:''}
             ${skipped?`<span class="text-xs text-slate-500 font-mono">${skipped} skipped</span>`:''}
-            <span class="text-xs text-slate-400 font-mono">${total} total</span>
+            <span class="text-xs text-slate-400 font-mono font-bold">${total} total</span>
           </div>
         </div>
-        <div class="h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full bar-fill rounded-full ${clr} opacity-70" style="width:${pct}%"></div></div>
+        <div class="h-2 bg-white/5 rounded-full overflow-hidden">
+          <div class="h-full bar-fill rounded-full ${clr} opacity-70" style="width:${pct}%"></div>
+        </div>
       </div>
     </div>`;
   }).join('');
+}
+
+function renderHistoryStats() {
+  const el=document.getElementById('history-stats-container');
+  // Group all tickets by dateKey
+  const groups = {};
+  state.tickets.forEach(t=>{
+    const key=t.dateKey||'unknown';
+    if(!groups[key])groups[key]=[];
+    groups[key].push(t);
+  });
+  const sortedKeys=Object.keys(groups).sort().reverse();
+  if(!sortedKeys.length){el.innerHTML=`<p class="text-xs text-slate-600 text-center py-4">No historical data yet.</p>`;return;}
+
+  const tk=todayKey();
+  el.innerHTML=sortedKeys.map(key=>{
+    const dayTickets=groups[key];
+    const isToday=key===tk;
+    const names=[...new Set(dayTickets.map(t=>t.assignee).filter(Boolean))];
+    const dayDone=dayTickets.filter(t=>t.status==='Completed').length;
+    const dayTotal=dayTickets.length;
+    return `<div class="border border-white/5 rounded-xl overflow-hidden">
+      <div class="history-day-header px-5 py-3 flex items-center justify-between rounded-xl" onclick="toggleHistoryDay('${key}')">
+        <div class="flex items-center gap-3">
+          ${isToday?'<div class="w-2 h-2 rounded-full bg-emerald-400 pending-dot flex-shrink-0"></div>':'<div class="w-2 h-2 rounded-full bg-slate-600 flex-shrink-0"></div>'}
+          <span class="text-sm font-semibold text-white">${formatDayLabel(key)}</span>
+          ${isToday?'<span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">LIVE</span>':''}
+        </div>
+        <div class="flex items-center gap-4">
+          <span class="text-xs text-emerald-400 font-mono">${dayDone}/${dayTotal} done</span>
+          <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+      </div>
+      <div id="hist-body-${key}" class="hidden px-5 pb-4 pt-1 space-y-2 border-t border-white/5">
+        ${names.length?names.map(name=>{
+          const total  =dayTickets.filter(t=>t.assignee===name).length;
+          const done   =dayTickets.filter(t=>t.assignee===name&&t.status==='Completed').length;
+          const skipped=dayTickets.filter(t=>t.assignee===name&&t.status==='Skipped').length;
+          const clr=memberColor(name);
+          const max2=Math.max(...names.map(n=>dayTickets.filter(t=>t.assignee===n).length),1);
+          const pct=Math.round((total/max2)*100);
+          return `<div class="flex items-center gap-3 py-1">
+            <div class="w-7 h-7 rounded-full ${clr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0">${name[0]}</div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-semibold text-white">${name}</span>
+                <div class="flex gap-3">
+                  <span class="text-[11px] text-emerald-400 font-mono">${done} done</span>
+                  ${skipped?`<span class="text-[11px] text-slate-500 font-mono">${skipped} skip</span>`:''}
+                  <span class="text-[11px] text-slate-400 font-mono font-bold">${total} total</span>
+                </div>
+              </div>
+              <div class="h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full ${clr} opacity-60" style="width:${pct}%"></div></div>
+            </div>
+          </div>`;
+        }).join(''):'<p class="text-xs text-slate-600 text-center py-2">No data for this day.</p>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleHistoryDay(key) {
+  const el=document.getElementById(`hist-body-${key}`);
+  if(el) el.classList.toggle('hidden');
 }
 
 // ── NAV ──────────────────────────────────────────────────────────
@@ -1044,7 +1344,9 @@ function showSection(name) {
       :'nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5';
   });
   document.getElementById('page-title').textContent={dashboard:'Dashboard',tickets:'All Tickets',team:'Team Stats'}[name];
+  if(name==='team') renderTeamStats();
 }
+
 function filterTickets(f) {
   state.filter=f;
   ['all','Pending','Completed','Skipped'].forEach(x=>{
@@ -1055,7 +1357,7 @@ function filterTickets(f) {
   renderAllTable();
 }
 function searchTickets(){state.search=document.getElementById('search-input').value.toLowerCase();renderAllTable();}
-function openModal(){renderPreview();const m=document.getElementById('modal');m.classList.remove('hidden');m.classList.add('flex');setTimeout(()=>document.getElementById('modal-title').focus(),60);}
+function openModal(){renderPreview();const m=document.getElementById('modal');m.classList.remove('hidden');m.classList.add('flex');document.getElementById('modal-dup-warning').classList.add('hidden');setTimeout(()=>document.getElementById('modal-title').focus(),60);}
 function closeModal(){const m=document.getElementById('modal');m.classList.add('hidden');m.classList.remove('flex');}
 function showToast(msg,sub='Saved to Firebase'){
   document.getElementById('toast-msg').textContent=msg;
@@ -1074,12 +1376,13 @@ function setSubmitting(v){
   });
 }
 function toggleDark(){state.darkMode=!state.darkMode;document.documentElement.classList.toggle('dark',state.darkMode);document.getElementById('dark-label').textContent=state.darkMode?'Light Mode':'Dark Mode';}
+
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){closeModal();closeConfirmModal();closeSkipModal();closeEditModal();closeSkipRotationModal();}
   if(e.key==='Enter'&&!document.getElementById('modal').classList.contains('hidden'))submitTicketModal();
 });
+
 init();
 </script>
 </body>
 </html>
-
