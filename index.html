@@ -85,7 +85,24 @@
   .name-pill{cursor:pointer;transition:all 0.15s;}
   .name-pill:hover{background:rgba(99,102,241,0.18);}
   .name-pill.active-name{background:rgba(99,102,241,0.25);border-color:rgba(99,102,241,0.5);}
-  #name-picker-dropdown{position:absolute;top: calc(100% + 8px);left:0;z-index:60;background:rgba(8,12,30,0.98);border:1px solid rgba(99,102,241,0.25);border-radius:14px;box-shadow:0 -20px 48px rgba(0,0,0,0.6);min-width:190px;max-height:240px;overflow-y:auto;display:none;backdrop-filter:blur(20px);}
+
+  /* ── FIX: name picker dropdown opens DOWNWARD ── */
+  #name-picker-dropdown{
+    position:absolute;
+    top:calc(100% + 8px);   /* was: bottom:calc(100% + 8px) */
+    right:0;
+    left:auto;
+    z-index:60;
+    background:rgba(8,12,30,0.98);
+    border:1px solid rgba(99,102,241,0.25);
+    border-radius:14px;
+    box-shadow:0 20px 48px rgba(0,0,0,0.6);
+    min-width:190px;
+    max-height:240px;
+    overflow-y:auto;
+    display:none;
+    backdrop-filter:blur(20px);
+  }
   #name-picker-dropdown.open{display:block;animation:fadeSlide 0.15s ease forwards;}
   .edit-bar{background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);}
 </style>
@@ -266,7 +283,6 @@
       <button onclick="showSection('team')" id="nav-team" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>Team Stats
       </button>
-      <!-- CHAT NAV -->
       <button onclick="showSection('chat')" id="nav-chat" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>Team Chat
         <span id="chat-badge" class="ml-auto hidden bg-rose-500 text-white text-[10px] font-mono px-1.5 py-0.5 rounded-full animate-pulse">!</span>
@@ -398,63 +414,54 @@
       </div>
     </div>
 
-    <!-- ═══════════════════════ TEAM CHAT ═══════════════════════ -->
-    <div id="section-chat" class="hidden flex flex-col" style="height:calc(100vh - 73px);">
+    </div><!-- end main-scroll -->
 
-      <!-- Chat top bar -->
-      <div class="px-8 py-4 border-b border-white/5 flex items-center justify-between flex-shrink-0" style="background:rgba(15,23,42,0.5)">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center">
-            <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-          </div>
-          <div>
-            <p class="text-sm font-bold text-white">Team Chat</p>
-            <div class="flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full bg-emerald-400 pending-dot"></div><p class="text-[10px] text-emerald-400 font-mono">Live · Firebase RTDB</p></div>
-          </div>
+  <!-- TEAM CHAT — outside scroll, only shown when chat nav is active -->
+  <div id="chat-panel" class="hidden flex-col flex-1 overflow-hidden">
+    <div class="px-8 py-4 border-b border-white/5 flex items-center justify-between flex-shrink-0" style="background:rgba(15,23,42,0.5)">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center">
+          <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
         </div>
-        <!-- Name picker -->
-        <div class="relative">
-          <button id="name-picker-btn" onclick="toggleNamePicker()" class="flex items-center gap-2 glass-light border border-white/10 hover:border-indigo-500/40 rounded-xl px-4 py-2 text-sm transition-all">
-            <div id="my-avatar" class="w-6 h-6 rounded-full bg-slate-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">?</div>
-            <span id="my-name-label" class="text-slate-300 font-medium">Select your name</span>
-            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-          </button>
-          <div id="name-picker-dropdown" class="px-2 py-2"></div>
+        <div>
+          <p class="text-sm font-bold text-white">Team Chat</p>
+          <div class="flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full bg-emerald-400 pending-dot"></div><p class="text-[10px] text-emerald-400 font-mono">Live · Firebase RTDB</p></div>
         </div>
       </div>
-
-      <!-- Messages -->
-      <div id="chat-scroll" class="flex-1 overflow-y-auto px-8 py-5 space-y-2">
-        <div class="flex items-center justify-center py-12">
-          <div class="flex items-center gap-2"><div class="w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin"></div><span class="text-xs text-slate-600">Loading messages…</span></div>
-        </div>
-      </div>
-
-      <!-- Compose area -->
-      <div class="flex-shrink-0 px-8 py-4 border-t border-white/5" style="background:rgba(15,23,42,0.6)">
-        <!-- Edit mode bar -->
-        <div id="edit-bar" class="edit-bar hidden mb-3 rounded-xl px-4 py-2 flex items-center gap-3">
-          <svg class="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-          <div class="flex-1 min-w-0"><p class="text-xs font-semibold text-blue-400">Editing message</p><p class="text-xs text-slate-400 truncate" id="edit-preview">—</p></div>
-          <button onclick="cancelEdit()" class="text-slate-500 hover:text-white transition-colors"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
-        </div>
-        <div class="flex items-end gap-3">
-          <textarea id="chat-input" rows="1"
-            placeholder="Type a message… (Enter to send, Shift+Enter for new line)"
-            class="flex-1 form-input bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-3 placeholder-slate-600 transition-all resize-none overflow-y-auto"
-            style="min-height:46px;max-height:120px;"
-            onkeydown="chatKeydown(event)"
-            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
-          <button onclick="sendMsg()" class="flex-shrink-0 w-11 h-11 bg-indigo-600 hover:bg-indigo-500 rounded-xl flex items-center justify-center transition-all shadow-lg shadow-indigo-900/40">
-            <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
-          </button>
-        </div>
-        <p class="text-[10px] text-slate-600 text-center mt-2">Messages sync across all team members in real-time via Firebase</p>
+      <div class="relative">
+        <button id="name-picker-btn" onclick="toggleNamePicker()" class="flex items-center gap-2 glass-light border border-white/10 hover:border-indigo-500/40 rounded-xl px-4 py-2 text-sm transition-all">
+          <div id="my-avatar" class="w-6 h-6 rounded-full bg-slate-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">?</div>
+          <span id="my-name-label" class="text-slate-300 font-medium">Select your name</span>
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <div id="name-picker-dropdown" class="px-2 py-2"></div>
       </div>
     </div>
-    <!-- ═══════════════════════════════════════════════════════════ -->
-
-    </div><!-- end main-scroll -->
+    <div id="chat-scroll" class="flex-1 overflow-y-auto px-8 py-5 space-y-2">
+      <div class="flex items-center justify-center py-12">
+        <div class="flex items-center gap-2"><div class="w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin"></div><span class="text-xs text-slate-600">Loading messages…</span></div>
+      </div>
+    </div>
+    <div class="flex-shrink-0 px-8 py-4 border-t border-white/5" style="background:rgba(15,23,42,0.6)">
+      <div id="edit-bar" class="edit-bar hidden mb-3 rounded-xl px-4 py-2 flex items-center gap-3">
+        <svg class="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        <div class="flex-1 min-w-0"><p class="text-xs font-semibold text-blue-400">Editing message</p><p class="text-xs text-slate-400 truncate" id="edit-preview">—</p></div>
+        <button onclick="cancelEdit()" class="text-slate-500 hover:text-white transition-colors"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <div class="flex items-end gap-3">
+        <textarea id="chat-input" rows="1"
+          placeholder="Type a message… (Enter to send, Shift+Enter for new line)"
+          class="flex-1 form-input bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-3 placeholder-slate-600 transition-all resize-none overflow-y-auto"
+          style="min-height:46px;max-height:120px;"
+          onkeydown="chatKeydown(event)"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+        <button onclick="sendMsg()" class="flex-shrink-0 w-11 h-11 bg-indigo-600 hover:bg-indigo-500 rounded-xl flex items-center justify-center transition-all shadow-lg shadow-indigo-900/40">
+          <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+        </button>
+      </div>
+      <p class="text-[10px] text-slate-600 text-center mt-2">Messages sync across all team members in real-time via Firebase</p>
+    </div>
+  </div>
   </main>
 </div>
 
@@ -516,7 +523,6 @@ let state={
   tickets:[],rotationIndex:0,workingToday:[],activityLog:[],
   filter:'all',dateFilter:'today',search:'',darkMode:true,submitting:false,loaded:false,
   pendingRemoveName:null,pendingSkipId:null,pendingEditId:null,statsView:'today',
-  // chat
   myName:localStorage.getItem('dops_name')||'',
   chatMessages:{},editingKey:null,pendingDelKey:null,chatOpen:false,lastSeenTs:parseInt(localStorage.getItem('dops_chat_seen')||'0'),
 };
@@ -549,12 +555,10 @@ async function init(){
     if(!state.loaded){state.loaded=true;hideLoader();setFbStatus('connected','🔴 Live · Firestore');}
   },err=>{console.error(err);setFbStatus('error','Connection failed');hideLoader();});
 
-  // RTDB chat listener
   chatRef.orderByChild('ts').limitToLast(200).on('value',snap=>{
     const raw=snap.val()||{};
     state.chatMessages=raw;
     renderChat();
-    // badge for new messages when chat not open
     if(!state.chatOpen){
       const newCount=Object.values(raw).filter(m=>m.ts>state.lastSeenTs).length;
       const badge=document.getElementById('chat-badge');
@@ -566,7 +570,6 @@ async function init(){
   document.getElementById('modal-title').addEventListener('input',function(){checkDupInline(this.value,'modal-dup-warning','modal-dup-text');});
   document.getElementById('ticket-title').addEventListener('input',function(){checkDupInline(this.value,'inline-dup-warning','inline-dup-text');});
 
-  // close name picker on outside click
   document.addEventListener('click',e=>{
     const btn=document.getElementById('name-picker-btn');const dd=document.getElementById('name-picker-dropdown');
     if(!btn.contains(e.target)&&!dd.contains(e.target))dd.classList.remove('open');
@@ -657,10 +660,7 @@ function renderTeamStats(){const el=document.getElementById('team-stats-grid');c
 function renderHistoryStats(){const el=document.getElementById('history-stats-container');const groups={};state.tickets.forEach(t=>{const k=t.dateKey||'unknown';if(!groups[k])groups[k]=[];groups[k].push(t);});const keys=Object.keys(groups).sort().reverse();if(!keys.length){el.innerHTML=`<p class="text-xs text-slate-600 text-center py-4">No historical data yet.</p>`;return;}const tk=todayKey();el.innerHTML=keys.map(key=>{const dt=groups[key];const isToday=key===tk;const names=[...new Set(dt.map(t=>t.assignee).filter(Boolean))];const dDone=dt.filter(t=>t.status==='Completed').length;return`<div class="border border-white/5 rounded-xl overflow-hidden"><div class="history-day-header px-5 py-3 flex items-center justify-between" onclick="toggleHistoryDay('${key}')"><div class="flex items-center gap-3">${isToday?'<div class="w-2 h-2 rounded-full bg-emerald-400 pending-dot"></div>':'<div class="w-2 h-2 rounded-full bg-slate-600"></div>'}<span class="text-sm font-semibold text-white">${formatDayLabel(key)}</span>${isToday?'<span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">LIVE</span>':''}</div><div class="flex items-center gap-4"><span class="text-xs text-emerald-400 font-mono">${dDone}/${dt.length} done</span><svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></div></div><div id="hist-body-${key}" class="hidden px-5 pb-4 pt-1 space-y-2 border-t border-white/5">${names.map(name=>{const t2=dt.filter(t=>t.assignee===name).length;const d2=dt.filter(t=>t.assignee===name&&t.status==='Completed').length;const s2=dt.filter(t=>t.assignee===name&&t.status==='Skipped').length;const m2=Math.max(...names.map(n=>dt.filter(t=>t.assignee===n).length),1);const p2=Math.round((t2/m2)*100);const c2=memberColor(name);return`<div class="flex items-center gap-3 py-1"><div class="w-7 h-7 rounded-full ${c2} flex items-center justify-center text-xs font-bold text-white flex-shrink-0">${name[0]}</div><div class="flex-1"><div class="flex items-center justify-between mb-1"><span class="text-xs font-semibold text-white">${name}</span><div class="flex gap-3"><span class="text-[11px] text-emerald-400 font-mono">${d2} done</span>${s2?`<span class="text-[11px] text-slate-500 font-mono">${s2} skip</span>`:''}<span class="text-[11px] text-slate-400 font-mono font-bold">${t2} total</span></div></div><div class="h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full ${c2} opacity-60" style="width:${p2}%"></div></div></div></div>`;}).join('')}</div></div>`;}).join('');}
 function toggleHistoryDay(key){const el=document.getElementById(`hist-body-${key}`);if(el)el.classList.toggle('hidden');}
 
-// ══════════════════════════════════════════════════════════════════
-// TEAM CHAT  –  Firebase Realtime Database
-// ══════════════════════════════════════════════════════════════════
-
+// ── CHAT ───────────────────────────────────────────────────────────
 function renderNamePicker(){
   const dd=document.getElementById('name-picker-dropdown');
   const names=[...new Set([...DEFAULT_TEAM,...state.workingToday])];
@@ -681,157 +681,72 @@ function applyName(name){
 }
 
 function esc(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
-
-function chatTimeStr(ts){
-  const d=new Date(ts);const now=new Date();
-  const diffDays=Math.floor((now-d)/86400000);
-  const t=d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-  if(diffDays===0)return t;
-  if(diffDays===1)return`Yesterday ${t}`;
-  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+t;
-}
+function chatTimeStr(ts){const d=new Date(ts);const now=new Date();const diffDays=Math.floor((now-d)/86400000);const t=d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});if(diffDays===0)return t;if(diffDays===1)return`Yesterday ${t}`;return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+t;}
 
 function renderChat(){
   const el=document.getElementById('chat-scroll');
   const msgs=state.chatMessages;
   const keys=Object.keys(msgs).sort((a,b)=>(msgs[a].ts||0)-(msgs[b].ts||0));
-
-  if(!keys.length){
-    el.innerHTML=`<div class="flex flex-col items-center justify-center gap-3 py-20"><div class="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center"><svg class="w-7 h-7 text-indigo-400/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div><p class="text-sm text-slate-500 font-semibold">No messages yet</p><p class="text-xs text-slate-600">Be the first to say something to the team!</p></div>`;
-    return;
-  }
-
+  if(!keys.length){el.innerHTML=`<div class="flex flex-col items-center justify-center gap-3 py-20"><div class="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center"><svg class="w-7 h-7 text-indigo-400/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div><p class="text-sm text-slate-500 font-semibold">No messages yet</p><p class="text-xs text-slate-600">Be the first to say something to the team!</p></div>`;return;}
   const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<80;
   let html='';let prevDate='';
-
   keys.forEach(key=>{
     const m=msgs[key];
     const dateLabel=new Date(m.ts||Date.now()).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-    if(dateLabel!==prevDate){
-      html+=`<div class="flex items-center gap-3 py-3"><div class="flex-1 h-px bg-white/5"></div><span class="text-[10px] text-slate-600 font-mono uppercase tracking-wider px-3 flex-shrink-0">${dateLabel}</span><div class="flex-1 h-px bg-white/5"></div></div>`;
-      prevDate=dateLabel;
-    }
+    if(dateLabel!==prevDate){html+=`<div class="flex items-center gap-3 py-3"><div class="flex-1 h-px bg-white/5"></div><span class="text-[10px] text-slate-600 font-mono uppercase tracking-wider px-3 flex-shrink-0">${dateLabel}</span><div class="flex-1 h-px bg-white/5"></div></div>`;prevDate=dateLabel;}
     const isOwn=m.sender===state.myName;
     const clr=memberColor(m.sender||'?');
     const editedBadge=m.edited?`<span class="text-[9px] text-slate-600 ml-1">(edited)</span>`:'';
-
-    // Action buttons  (edit only for own; delete for everyone)
-    const actBtns=`
-      ${isOwn?`<button onclick="startEdit('${key}')" title="Edit" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-blue-500/20 text-slate-500 hover:text-blue-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button>`:''}
-      <button onclick="openDelMsg('${key}')" title="Delete" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
-    `;
-
-    if(isOwn){
-      html+=`<div class="chat-bubble flex items-end justify-end gap-2 group" data-key="${key}">
-        <div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div>
-        <div class="max-w-[68%]">
-          <div class="bubble-own rounded-2xl rounded-br-sm px-4 py-2.5">
-            <p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p>
-          </div>
-          <p class="text-[10px] text-slate-600 mt-1 text-right font-mono">${chatTimeStr(m.ts)}</p>
-        </div>
-        <div class="w-8 h-8 rounded-full ${clr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mb-5">${(m.sender||'?')[0].toUpperCase()}</div>
-      </div>`;
-    } else {
-      html+=`<div class="chat-bubble flex items-end gap-2 group" data-key="${key}">
-        <div class="w-8 h-8 rounded-full ${clr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mb-5">${(m.sender||'?')[0].toUpperCase()}</div>
-        <div class="max-w-[68%]">
-          <p class="text-[10px] text-slate-500 font-semibold mb-1 ml-1">${esc(m.sender||'Unknown')}</p>
-          <div class="bubble-other rounded-2xl rounded-bl-sm px-4 py-2.5">
-            <p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p>
-          </div>
-          <p class="text-[10px] text-slate-600 mt-1 font-mono ml-1">${chatTimeStr(m.ts)}</p>
-        </div>
-        <div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div>
-      </div>`;
-    }
+    const actBtns=isOwn?`<button onclick="startEdit('${key}')" title="Edit" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-blue-500/20 text-slate-500 hover:text-blue-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="openDelMsg('${key}')" title="Delete" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>`:``;
+    if(isOwn){html+=`<div class="chat-bubble flex items-end justify-end gap-2 group" data-key="${key}"><div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div><div class="max-w-[68%]"><div class="bubble-own rounded-2xl rounded-br-sm px-4 py-2.5"><p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p></div><p class="text-[10px] text-slate-600 mt-1 text-right font-mono">${chatTimeStr(m.ts)}</p></div><div class="w-8 h-8 rounded-full ${clr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mb-5">${(m.sender||'?')[0].toUpperCase()}</div></div>`;}
+    else{html+=`<div class="chat-bubble flex items-end gap-2 group" data-key="${key}"><div class="w-8 h-8 rounded-full ${clr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mb-5">${(m.sender||'?')[0].toUpperCase()}</div><div class="max-w-[68%]"><p class="text-[10px] text-slate-500 font-semibold mb-1 ml-1">${esc(m.sender||'Unknown')}</p><div class="bubble-other rounded-2xl rounded-bl-sm px-4 py-2.5"><p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p></div><p class="text-[10px] text-slate-600 mt-1 font-mono ml-1">${chatTimeStr(m.ts)}</p></div><div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div></div>`;}
   });
-
   el.innerHTML=html;
   if(atBottom)el.scrollTop=el.scrollHeight;
 }
 
-// Send / edit submit
 async function sendMsg(){
   if(!state.myName){showToast('Select your name first','No name set');toggleNamePicker();return;}
-  const inp=document.getElementById('chat-input');
-  const text=inp.value.trim();
-  if(!text)return;
-
-  if(state.editingKey){
-    // Save edit
-    await chatRef.child(state.editingKey).update({text,edited:true,editedAt:Date.now()}).catch(e=>console.error(e));
-    cancelEdit();
-    inp.value='';inp.style.height='auto';
-    return;
-  }
-
+  const inp=document.getElementById('chat-input');const text=inp.value.trim();if(!text)return;
+  if(state.editingKey){await chatRef.child(state.editingKey).update({text,edited:true,editedAt:Date.now()}).catch(e=>console.error(e));cancelEdit();inp.value='';inp.style.height='auto';return;}
   inp.value='';inp.style.height='auto';
   await chatRef.push({sender:state.myName,text,ts:Date.now()}).catch(e=>console.error(e));
   setTimeout(()=>{const el=document.getElementById('chat-scroll');el.scrollTop=el.scrollHeight;},120);
 }
-
-function chatKeydown(e){
-  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}
-  if(e.key==='Escape'&&state.editingKey)cancelEdit();
-}
-
-function startEdit(key){
-  const m=state.chatMessages[key];
-  if(!m)return;
-  if(m.sender!==state.myName){showToast('You can only edit your own messages','Not allowed');return;}
-  state.editingKey=key;
-  const inp=document.getElementById('chat-input');
-  inp.value=m.text;inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,120)+'px';inp.focus();
-  document.getElementById('edit-bar').classList.remove('hidden');
-  document.getElementById('edit-preview').textContent=(m.text||'').substring(0,60)+((m.text||'').length>60?'…':'');
-}
-function cancelEdit(){
-  state.editingKey=null;
-  document.getElementById('edit-bar').classList.add('hidden');
-  const inp=document.getElementById('chat-input');inp.value='';inp.style.height='auto';
-}
-
-function openDelMsg(key){
-  const m=state.chatMessages[key];if(!m)return;
-  state.pendingDelKey=key;
-  document.getElementById('del-msg-preview').textContent=(m.text||'').substring(0,80)+((m.text||'').length>80?'…':'');
-  document.getElementById('del-msg-modal').classList.add('open');
-}
+function chatKeydown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}if(e.key==='Escape'&&state.editingKey)cancelEdit();}
+function startEdit(key){const m=state.chatMessages[key];if(!m)return;if(m.sender!==state.myName){showToast('You can only edit your own messages','Not allowed');return;}state.editingKey=key;const inp=document.getElementById('chat-input');inp.value=m.text;inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,120)+'px';inp.focus();document.getElementById('edit-bar').classList.remove('hidden');document.getElementById('edit-preview').textContent=(m.text||'').substring(0,60)+((m.text||'').length>60?'…':'');}
+function cancelEdit(){state.editingKey=null;document.getElementById('edit-bar').classList.add('hidden');const inp=document.getElementById('chat-input');inp.value='';inp.style.height='auto';}
+function openDelMsg(key){const m=state.chatMessages[key];if(!m)return;state.pendingDelKey=key;document.getElementById('del-msg-preview').textContent=(m.text||'').substring(0,80)+((m.text||'').length>80?'…':'');document.getElementById('del-msg-modal').classList.add('open');}
 function closeDelMsgModal(){state.pendingDelKey=null;document.getElementById('del-msg-modal').classList.remove('open');}
-async function confirmDelMsg(){
-  const key=state.pendingDelKey;if(!key)return;
-  closeDelMsgModal();
-  await chatRef.child(key).remove().catch(e=>console.error(e));
-  showToast('Message deleted','Chat');
-}
+async function confirmDelMsg(){const key=state.pendingDelKey;if(!key)return;closeDelMsgModal();await chatRef.child(key).remove().catch(e=>console.error(e));showToast('Message deleted','Chat');}
 
 // ── NAV ────────────────────────────────────────────────────────────
 function showSection(name){
+  // toggle regular sections (dashboard/tickets/team)
   ['dashboard','tickets','team','chat'].forEach(s=>{
     const el=document.getElementById('section-'+s);
-    if(s==='chat'){
-      el.classList.toggle('hidden',s!==name);
-      if(s===name){el.style.display='flex';el.style.flexDirection='column';}
-    } else {
-      el.classList.toggle('hidden',s!==name);
-    }
+    if(el) el.classList.toggle('hidden', s!==name);
     document.getElementById('nav-'+s).className=s===name
       ?'nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all bg-indigo-600/20 text-indigo-300 border border-indigo-500/20'
       :'nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-slate-400 hover:text-white hover:bg-white/5';
   });
   document.getElementById('page-title').textContent={dashboard:'Dashboard',tickets:'All Tickets',team:'Team Stats',chat:'Team Chat'}[name];
 
-  // toggle scroll overflow
+  // show/hide the real chat panel (outside scroll)
+  const chatPanel=document.getElementById('chat-panel');
   const ms=document.getElementById('main-scroll');
-  if(name==='chat'){ms.style.overflow='hidden';}else{ms.style.overflow='auto';}
-
   if(name==='chat'){
+    chatPanel.style.display='flex';
+    chatPanel.style.flexDirection='column';
+    ms.style.display='none'; // hide scroll area completely
     state.chatOpen=true;
-    state.lastSeenTs=Date.now();localStorage.setItem('dops_chat_seen',state.lastSeenTs.toString());
+    state.lastSeenTs=Date.now();
+    localStorage.setItem('dops_chat_seen',state.lastSeenTs.toString());
     document.getElementById('chat-badge').classList.add('hidden');
-    setTimeout(()=>{const el=document.getElementById('chat-scroll');el.scrollTop=el.scrollHeight;},80);
+    setTimeout(()=>{const el=document.getElementById('chat-scroll');if(el)el.scrollTop=el.scrollHeight;},80);
   } else {
+    chatPanel.style.display='none';
+    ms.style.display=''; // restore scroll area
     state.chatOpen=false;
   }
   if(name==='team')renderTeamStats();
