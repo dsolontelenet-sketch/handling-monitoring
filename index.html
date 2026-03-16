@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -576,9 +575,37 @@ function memberColor(n){const c=[...n].reduce((a,ch)=>a+ch.charCodeAt(0),0);retu
 function todayKey(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function formatDayLabel(key){const[y,m,d]=key.split('-').map(Number);const dt=new Date(y,m-1,d);const today=new Date();today.setHours(0,0,0,0);const diff=Math.round((today-dt)/86400000);const label=dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});if(diff===0)return`Today · ${label}`;if(diff===1)return`Yesterday · ${label}`;return label;}
 
-// ── PHOTO STORAGE ─────────────────────────────────────────────────
-function getPhoto(name){return localStorage.getItem('dops_photo_'+name)||null;}
-function savePhoto(name,b64){localStorage.setItem('dops_photo_'+name,b64);}
+// ── PHOTO STORAGE — Firebase RTDB (syncs to all users) ───────────
+const photosRef=rtdb.ref('profiles/photos');
+// In-memory photo cache populated from Firebase
+const photoCache={};
+
+function getPhoto(name){return photoCache[name]||photoCache[encodeNameKey(name)]||null;}
+
+async function savePhoto(name,b64){
+  // Save to Firebase RTDB so ALL users see it in real-time
+  await photosRef.child(encodeNameKey(name)).set(b64).catch(e=>console.error('Photo save failed:',e));
+}
+
+// Firebase key cannot contain . # $ [ ]  — encode the name safely
+function encodeNameKey(name){return name.replace(/[.#$\[\]]/g,'_');}
+
+function listenPhotos(){
+  photosRef.on('value',snap=>{
+    const data=snap.val()||{};
+    // Merge into cache — store under both the encoded key and matched real name
+    const allNames=[...DEFAULT_TEAM,...(state.workingToday||[])];
+    Object.keys(data).forEach(k=>{
+      photoCache[k]=data[k]; // always store by raw key
+      // Try to find the real name this key belongs to
+      const real=allNames.find(n=>encodeNameKey(n)===k)||k;
+      photoCache[real]=data[k];
+    });
+    // Re-render everything that shows avatars
+    renderWorkingToday();renderSidebar();renderChat();renderNamePicker();
+    if(state.myName)applyName(state.myName);
+  });
+}
 
 // Returns an avatar HTML string: photo img or colored initial
 // szClass = tailwind sizing (e.g. "w-8 h-8"), textSz = text size class
@@ -661,7 +688,7 @@ function cropDragEnd(){
   document.removeEventListener('touchmove',cropDragMove);
   document.removeEventListener('touchend',cropDragEnd);
 }
-function confirmCrop(){
+async function confirmCrop(){
   const canvas=document.createElement('canvas');
   const cs=cropState.containerSize;
   const out=200;
@@ -672,12 +699,18 @@ function confirmCrop(){
   const ratio=out/cs;
   ctx.drawImage(img,cropState.offsetX*ratio,cropState.offsetY*ratio,cropState.naturalW*cropState.scale*ratio,cropState.naturalH*cropState.scale*ratio);
   const b64=canvas.toDataURL('image/jpeg',0.85);
-  savePhoto(state.myName,b64);
+  // Optimistically update local cache so UI responds instantly
+  photoCache[state.myName]=b64;
+  photoCache[encodeNameKey(state.myName)]=b64;
   closeCropModal();
   applyName(state.myName);
   renderNamePicker();
   renderChat();
-  showToast(`Photo updated for ${state.myName}`,'Profile Photo');
+  renderWorkingToday();renderSidebar();
+  showToast('Uploading photo…','Profile Photo');
+  // Save to Firebase — all other users will see it via listenPhotos()
+  await savePhoto(state.myName,b64);
+  showToast('Photo synced to Firebase ✓','Profile Photo');
 }
 
 // ── PHOTO UPLOAD HANDLERS ─────────────────────────────────────────
@@ -712,6 +745,9 @@ async function init(){
   document.getElementById('sidebar-today-key').textContent=tk;
   document.getElementById('recent-date-label').textContent=tk;
   document.getElementById('stats-today-date-label').textContent=formatDayLabel(tk);
+
+  // Start syncing profile photos from Firebase RTDB in real-time
+  listenPhotos();
 
   if(state.myName)applyName(state.myName);
 
