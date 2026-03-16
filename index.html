@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en" class="dark">
 <head>
@@ -86,10 +87,10 @@
   .name-pill:hover{background:rgba(99,102,241,0.18);}
   .name-pill.active-name{background:rgba(99,102,241,0.25);border-color:rgba(99,102,241,0.5);}
 
-  /* ── FIX: name picker dropdown opens DOWNWARD ── */
+  /* ── Name picker dropdown opens DOWNWARD ── */
   #name-picker-dropdown{
     position:absolute;
-    top:calc(100% + 8px);   /* was: bottom:calc(100% + 8px) */
+    top:calc(100% + 8px);
     right:0;
     left:auto;
     z-index:60;
@@ -97,17 +98,70 @@
     border:1px solid rgba(99,102,241,0.25);
     border-radius:14px;
     box-shadow:0 20px 48px rgba(0,0,0,0.6);
-    min-width:190px;
-    max-height:240px;
+    min-width:230px;
+    max-height:300px;
     overflow-y:auto;
     display:none;
     backdrop-filter:blur(20px);
   }
   #name-picker-dropdown.open{display:block;animation:fadeSlide 0.15s ease forwards;}
   .edit-bar{background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);}
+
+  /* ── PHOTO UPLOAD ── */
+  .photo-upload-btn{
+    width:28px;height:28px;border-radius:8px;
+    background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    color:#818cf8;transition:all 0.15s ease;flex-shrink:0;
+  }
+  .photo-upload-btn:hover{background:rgba(99,102,241,0.28);color:#a5b4fc;border-color:rgba(99,102,241,0.5);}
+  .photo-upload-btn svg{pointer-events:none;}
+
+  /* avatar with photo */
+  .av-photo{object-fit:cover;border-radius:9999px;}
+
+  /* crop modal */
+  #crop-modal-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:20px;}
+  #crop-modal-overlay.open{display:flex;}
+  #crop-container{position:relative;width:280px;height:280px;border-radius:50%;overflow:hidden;cursor:move;background:#0f172a;border:3px solid rgba(99,102,241,0.6);flex-shrink:0;}
+  #crop-img{position:absolute;top:0;left:0;transform-origin:0 0;user-select:none;-webkit-user-select:none;pointer-events:none;}
+  .crop-ring{position:absolute;inset:0;border-radius:50%;border:2px dashed rgba(99,102,241,0.5);pointer-events:none;}
 </style>
 </head>
 <body class="bg-mesh min-h-screen text-slate-100 dark">
+
+<!-- HIDDEN FILE INPUT -->
+<input type="file" id="photo-upload-input" accept="image/*" class="hidden" onchange="handlePhotoUpload(event)"/>
+
+<!-- CROP MODAL -->
+<div id="crop-modal-overlay">
+  <div class="relative z-10 flex flex-col items-center gap-5">
+    <div class="text-center">
+      <p class="text-base font-bold text-white mb-1">Crop Your Photo</p>
+      <p class="text-xs text-slate-400">Drag to reposition · Scroll to zoom</p>
+    </div>
+    <div id="crop-container"
+      onmousedown="cropDragStart(event)"
+      ontouchstart="cropDragStart(event)"
+      onwheel="cropWheel(event)">
+      <img id="crop-img" src="" alt="crop"/>
+      <div class="crop-ring"></div>
+    </div>
+    <!-- zoom slider -->
+    <div class="flex items-center gap-3 w-72">
+      <svg class="w-4 h-4 text-slate-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
+      <input id="crop-zoom-slider" type="range" min="0.5" max="3" step="0.05" value="1" class="flex-1 accent-indigo-500" oninput="cropZoomSlider(this.value)"/>
+      <svg class="w-4 h-4 text-slate-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10h-6"/></svg>
+    </div>
+    <div class="flex gap-3">
+      <button onclick="closeCropModal()" class="px-5 py-2.5 text-sm font-semibold text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all">Cancel</button>
+      <button onclick="confirmCrop()" class="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        Save Photo
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- LOADING -->
 <div id="loading-overlay">
@@ -428,9 +482,12 @@
           <div class="flex items-center gap-1.5"><div class="w-1.5 h-1.5 rounded-full bg-emerald-400 pending-dot"></div><p class="text-[10px] text-emerald-400 font-mono">Live · Firebase RTDB</p></div>
         </div>
       </div>
+      <!-- Name + photo picker -->
       <div class="relative">
         <button id="name-picker-btn" onclick="toggleNamePicker()" class="flex items-center gap-2 glass-light border border-white/10 hover:border-indigo-500/40 rounded-xl px-4 py-2 text-sm transition-all">
-          <div id="my-avatar" class="w-6 h-6 rounded-full bg-slate-600 flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">?</div>
+          <div id="my-avatar-wrap" class="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center bg-slate-600">
+            <span id="my-avatar-init" class="text-[11px] font-bold text-white">?</span>
+          </div>
           <span id="my-name-label" class="text-slate-300 font-medium">Select your name</span>
           <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
         </button>
@@ -519,6 +576,125 @@ function memberColor(n){const c=[...n].reduce((a,ch)=>a+ch.charCodeAt(0),0);retu
 function todayKey(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function formatDayLabel(key){const[y,m,d]=key.split('-').map(Number);const dt=new Date(y,m-1,d);const today=new Date();today.setHours(0,0,0,0);const diff=Math.round((today-dt)/86400000);const label=dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});if(diff===0)return`Today · ${label}`;if(diff===1)return`Yesterday · ${label}`;return label;}
 
+// ── PHOTO STORAGE ─────────────────────────────────────────────────
+function getPhoto(name){return localStorage.getItem('dops_photo_'+name)||null;}
+function savePhoto(name,b64){localStorage.setItem('dops_photo_'+name,b64);}
+
+// Returns an avatar HTML string: photo img or colored initial
+// szClass = tailwind sizing (e.g. "w-8 h-8"), textSz = text size class
+function avatarHTML(name,szClass,textSz='text-[10px]',extra=''){
+  const photo=getPhoto(name);
+  if(photo){
+    return`<div class="${szClass} rounded-full overflow-hidden flex-shrink-0 ${extra}"><img src="${photo}" class="w-full h-full object-cover" alt="${name}"/></div>`;
+  }
+  const clr=memberColor(name);
+  return`<div class="${szClass} rounded-full ${clr} flex items-center justify-center ${textSz} font-bold text-white flex-shrink-0 ${extra}">${(name||'?')[0].toUpperCase()}</div>`;
+}
+
+// ── CROP STATE ────────────────────────────────────────────────────
+let cropState={imgSrc:'',scale:1,offsetX:0,offsetY:0,dragging:false,startX:0,startY:0,startOX:0,startOY:0,naturalW:0,naturalH:0,containerSize:280};
+
+function openCropModal(src){
+  cropState.imgSrc=src;cropState.scale=1;cropState.offsetX=0;cropState.offsetY=0;
+  document.getElementById('crop-zoom-slider').value=1;
+  const img=document.getElementById('crop-img');
+  img.onload=()=>{
+    cropState.naturalW=img.naturalWidth;cropState.naturalH=img.naturalHeight;
+    const cs=cropState.containerSize;
+    // fit to container
+    const fit=Math.max(cs/img.naturalWidth,cs/img.naturalHeight);
+    cropState.scale=Math.max(1,fit);
+    document.getElementById('crop-zoom-slider').value=cropState.scale;
+    applyCropTransform();
+  };
+  img.src=src;
+  document.getElementById('crop-modal-overlay').classList.add('open');
+}
+function closeCropModal(){document.getElementById('crop-modal-overlay').classList.remove('open');}
+
+function applyCropTransform(){
+  const img=document.getElementById('crop-img');
+  const cs=cropState.containerSize;
+  const w=cropState.naturalW*cropState.scale;
+  const h=cropState.naturalH*cropState.scale;
+  // Clamp offset so image always covers container
+  const maxX=0,minX=cs-w,maxY=0,minY=cs-h;
+  cropState.offsetX=Math.min(maxX,Math.max(minX,cropState.offsetX));
+  cropState.offsetY=Math.min(maxY,Math.max(minY,cropState.offsetY));
+  img.style.width=w+'px';img.style.height=h+'px';
+  img.style.transform=`translate(${cropState.offsetX}px,${cropState.offsetY}px)`;
+}
+function cropZoomSlider(val){
+  cropState.scale=parseFloat(val);
+  applyCropTransform();
+}
+function cropWheel(e){
+  e.preventDefault();
+  cropState.scale=Math.min(3,Math.max(0.5,cropState.scale-(e.deltaY>0?0.1:-0.1)));
+  document.getElementById('crop-zoom-slider').value=cropState.scale;
+  applyCropTransform();
+}
+function cropDragStart(e){
+  cropState.dragging=true;
+  const px=e.touches?e.touches[0].clientX:e.clientX;
+  const py=e.touches?e.touches[0].clientY:e.clientY;
+  cropState.startX=px;cropState.startY=py;
+  cropState.startOX=cropState.offsetX;cropState.startOY=cropState.offsetY;
+  document.addEventListener('mousemove',cropDragMove);
+  document.addEventListener('mouseup',cropDragEnd);
+  document.addEventListener('touchmove',cropDragMove,{passive:false});
+  document.addEventListener('touchend',cropDragEnd);
+}
+function cropDragMove(e){
+  if(!cropState.dragging)return;
+  e.preventDefault&&e.preventDefault();
+  const px=e.touches?e.touches[0].clientX:e.clientX;
+  const py=e.touches?e.touches[0].clientY:e.clientY;
+  cropState.offsetX=cropState.startOX+(px-cropState.startX);
+  cropState.offsetY=cropState.startOY+(py-cropState.startY);
+  applyCropTransform();
+}
+function cropDragEnd(){
+  cropState.dragging=false;
+  document.removeEventListener('mousemove',cropDragMove);
+  document.removeEventListener('mouseup',cropDragEnd);
+  document.removeEventListener('touchmove',cropDragMove);
+  document.removeEventListener('touchend',cropDragEnd);
+}
+function confirmCrop(){
+  const canvas=document.createElement('canvas');
+  const cs=cropState.containerSize;
+  const out=200;
+  canvas.width=out;canvas.height=out;
+  const ctx=canvas.getContext('2d');
+  ctx.beginPath();ctx.arc(out/2,out/2,out/2,0,Math.PI*2);ctx.clip();
+  const img=document.getElementById('crop-img');
+  const ratio=out/cs;
+  ctx.drawImage(img,cropState.offsetX*ratio,cropState.offsetY*ratio,cropState.naturalW*cropState.scale*ratio,cropState.naturalH*cropState.scale*ratio);
+  const b64=canvas.toDataURL('image/jpeg',0.85);
+  savePhoto(state.myName,b64);
+  closeCropModal();
+  applyName(state.myName);
+  renderNamePicker();
+  renderChat();
+  showToast(`Photo updated for ${state.myName}`,'Profile Photo');
+}
+
+// ── PHOTO UPLOAD HANDLERS ─────────────────────────────────────────
+function triggerPhotoUpload(e){
+  e.stopPropagation();
+  if(!state.myName){showToast('Select your name first','No name set');return;}
+  document.getElementById('photo-upload-input').click();
+}
+function handlePhotoUpload(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  e.target.value='';
+  const reader=new FileReader();
+  reader.onload=ev=>{openCropModal(ev.target.result);};
+  reader.readAsDataURL(file);
+}
+
 let state={
   tickets:[],rotationIndex:0,workingToday:[],activityLog:[],
   filter:'all',dateFilter:'today',search:'',darkMode:true,submitting:false,loaded:false,
@@ -591,13 +767,50 @@ function populateDateFilter(){const el=document.getElementById('date-filter');co
 // ── WORKING TODAY ──────────────────────────────────────────────────
 function addCustomName(){const input=document.getElementById('custom-name-input');const name=input.value.trim();if(!name)return;addMember(name);input.value='';closeDropdown();}
 function addMember(name){name=name.trim();if(!name)return;if(state.workingToday.map(n=>n.toLowerCase()).includes(name.toLowerCase())){showToast(`${name} is already on the list`,'Already added');return;}metaDoc.update({workingToday:[...state.workingToday,name]}).catch(console.error);closeDropdown();}
-function removeMember(name){state.pendingRemoveName=name;const clr=memberColor(name);const av=document.getElementById('confirm-avatar');av.className=`w-8 h-8 rounded-full ${clr} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;av.textContent=name[0].toUpperCase();document.getElementById('confirm-name-display').textContent=name;document.getElementById('confirm-modal').classList.add('open');}
+function removeMember(name){
+  state.pendingRemoveName=name;
+  const el=document.getElementById('confirm-avatar');
+  el.innerHTML=avatarHTML(name,'w-8 h-8','text-sm');
+  // replace the element content
+  const photo=getPhoto(name);
+  if(photo){el.className='w-8 h-8 rounded-full overflow-hidden flex-shrink-0';el.innerHTML=`<img src="${photo}" class="w-full h-full object-cover"/>`;
+  }else{el.className=`w-8 h-8 rounded-full ${memberColor(name)} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;el.textContent=name[0].toUpperCase();}
+  document.getElementById('confirm-name-display').textContent=name;
+  document.getElementById('confirm-modal').classList.add('open');
+}
 function closeConfirmModal(){state.pendingRemoveName=null;document.getElementById('confirm-modal').classList.remove('open');}
 function confirmRemoveMember(){const name=state.pendingRemoveName;if(!name)return;closeConfirmModal();const updated=state.workingToday.filter(n=>n!==name);const newIdx=updated.length>0?state.rotationIndex%updated.length:0;metaDoc.update({workingToday:updated,rotationIndex:newIdx}).catch(console.error);showToast(`${name} removed`,'Member removed');}
-function renderWorkingToday(){const c=document.getElementById('wt-pills');const wt=state.workingToday;document.getElementById('wt-count').textContent=`${wt.length} member${wt.length!==1?'s':''}`;if(!wt.length){c.innerHTML=`<span class="text-xs text-slate-600 italic">No members added yet.</span>`;return;}c.innerHTML=wt.map((name,i)=>{const isCurr=i===(state.rotationIndex%wt.length);const clr=memberColor(name);return`<div class="wt-pill ${isCurr?'ring-1 ring-indigo-500':''}"><div class="w-5 h-5 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">${name[0].toUpperCase()}</div><span>${name}</span>${isCurr?'<span class="text-[9px] font-mono text-indigo-400 bg-indigo-500/15 px-1.5 py-0.5 rounded-full">NEXT</span>':''}<button class="del-btn" onclick="removeMember('${name.replace(/'/g,"\\'")}');event.stopPropagation();">✕</button></div>`;}).join('');}
+
+function renderWorkingToday(){
+  const c=document.getElementById('wt-pills');
+  const wt=state.workingToday;
+  document.getElementById('wt-count').textContent=`${wt.length} member${wt.length!==1?'s':''}`;
+  if(!wt.length){c.innerHTML=`<span class="text-xs text-slate-600 italic">No members added yet.</span>`;return;}
+  c.innerHTML=wt.map((name,i)=>{
+    const isCurr=i===(state.rotationIndex%wt.length);
+    const av=avatarHTML(name,'w-5 h-5','text-[10px]');
+    return`<div class="wt-pill ${isCurr?'ring-1 ring-indigo-500':''}">${av}<span>${name}</span>${isCurr?'<span class="text-[9px] font-mono text-indigo-400 bg-indigo-500/15 px-1.5 py-0.5 rounded-full">NEXT</span>':''}<button class="del-btn" onclick="removeMember('${name.replace(/'/g,"\\'")}');event.stopPropagation();">✕</button></div>`;
+  }).join('');
+}
 
 // ── SKIP ROTATION ──────────────────────────────────────────────────
-function openSkipRotationModal(){const wt=state.workingToday;if(!wt.length){showToast('No members','Nothing to skip');return;}const si=state.rotationIndex%wt.length;const curr=wt[si];const next=wt[(si+1)%wt.length];const ca=document.getElementById('skip-rot-curr-avatar');ca.className=`w-9 h-9 rounded-full ${memberColor(curr)} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;ca.textContent=curr[0].toUpperCase();document.getElementById('skip-rot-curr-name').textContent=curr;const na=document.getElementById('skip-rot-next-avatar');na.className=`w-9 h-9 rounded-full ${memberColor(next)} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;na.textContent=next[0].toUpperCase();document.getElementById('skip-rot-next-name').textContent=next;document.getElementById('skip-rotation-modal').classList.add('open');}
+function openSkipRotationModal(){
+  const wt=state.workingToday;if(!wt.length){showToast('No members','Nothing to skip');return;}
+  const si=state.rotationIndex%wt.length;const curr=wt[si];const next=wt[(si+1)%wt.length];
+  // curr avatar
+  const ca=document.getElementById('skip-rot-curr-avatar');
+  const cPhoto=getPhoto(curr);
+  if(cPhoto){ca.className='w-9 h-9 rounded-full overflow-hidden flex-shrink-0';ca.innerHTML=`<img src="${cPhoto}" class="w-full h-full object-cover"/>`;}
+  else{ca.className=`w-9 h-9 rounded-full ${memberColor(curr)} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;ca.textContent=curr[0].toUpperCase();}
+  document.getElementById('skip-rot-curr-name').textContent=curr;
+  // next avatar
+  const na=document.getElementById('skip-rot-next-avatar');
+  const nPhoto=getPhoto(next);
+  if(nPhoto){na.className='w-9 h-9 rounded-full overflow-hidden flex-shrink-0';na.innerHTML=`<img src="${nPhoto}" class="w-full h-full object-cover"/>`;}
+  else{na.className=`w-9 h-9 rounded-full ${memberColor(next)} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;na.textContent=next[0].toUpperCase();}
+  document.getElementById('skip-rot-next-name').textContent=next;
+  document.getElementById('skip-rotation-modal').classList.add('open');
+}
 function closeSkipRotationModal(){document.getElementById('skip-rotation-modal').classList.remove('open');}
 async function confirmSkipRotation(){const wt=state.workingToday;if(!wt.length)return;const si=state.rotationIndex%wt.length;const skipped=wt[si];const ni=(si+1)%wt.length;closeSkipRotationModal();await metaDoc.update({rotationIndex:ni}).catch(console.error);showToast(`Skipped ${skipped} → ${wt[ni]}`,'Rotation Advanced');}
 
@@ -613,7 +826,18 @@ function closeEditModal(){state.pendingEditId=null;document.getElementById('edit
 async function confirmEditTicket(){const fid=state.pendingEditId;if(!fid)return;const title=document.getElementById('edit-title').value.trim();const type=document.getElementById('edit-type').value;const assignee=document.getElementById('edit-assignee').value;const status=document.getElementById('edit-status').value;if(!title){document.getElementById('edit-title').style.borderColor='rgba(239,68,68,0.6)';setTimeout(()=>document.getElementById('edit-title').style.borderColor='',1500);return;}closeEditModal();const updates={title,type,assignee,status};if(status!=='Skipped'){updates.skipReason=null;updates.skipNote=null;}await ticketsCol.doc(fid).update(updates).catch(e=>alert(e.message));showToast('Ticket updated','Changes Saved');}
 
 // ── DROPDOWN ───────────────────────────────────────────────────────
-function renderDropdown(query){const list=document.getElementById('dropdown-list');const q=query.toLowerCase().trim();const filtered=DEFAULT_TEAM.filter(n=>q===''||n.toLowerCase().includes(q));if(!filtered.length){list.innerHTML=`<p class="text-xs text-slate-600 px-3 py-3 text-center">No matches</p>`;return;}const alreadySet=state.workingToday.map(n=>n.toLowerCase());list.innerHTML=filtered.map(n=>{const already=alreadySet.includes(n.toLowerCase());const clr=memberColor(n);return`<div class="member-chip ${already?'already':''}" onclick="addMember('${n}');event.stopPropagation();"><div class="w-7 h-7 rounded-full ${clr} flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">${n[0]}</div><span class="flex-1 font-medium">${n}</span>${already?'<span class="text-[10px] text-slate-500 font-mono bg-white/5 px-2 py-0.5 rounded-full">added</span>':'<span class="text-[10px] text-indigo-400 font-mono bg-indigo-500/10 px-2 py-0.5 rounded-full">+ add</span>'}</div>`;}).join('');}
+function renderDropdown(query){
+  const list=document.getElementById('dropdown-list');
+  const q=query.toLowerCase().trim();
+  const filtered=DEFAULT_TEAM.filter(n=>q===''||n.toLowerCase().includes(q));
+  if(!filtered.length){list.innerHTML=`<p class="text-xs text-slate-600 px-3 py-3 text-center">No matches</p>`;return;}
+  const alreadySet=state.workingToday.map(n=>n.toLowerCase());
+  list.innerHTML=filtered.map(n=>{
+    const already=alreadySet.includes(n.toLowerCase());
+    const av=avatarHTML(n,'w-7 h-7','text-[11px]');
+    return`<div class="member-chip ${already?'already':''}" onclick="addMember('${n}');event.stopPropagation();">${av}<span class="flex-1 font-medium">${n}</span>${already?'<span class="text-[10px] text-slate-500 font-mono bg-white/5 px-2 py-0.5 rounded-full">added</span>':'<span class="text-[10px] text-indigo-400 font-mono bg-indigo-500/10 px-2 py-0.5 rounded-full">+ add</span>'}</div>`;
+  }).join('');
+}
 function filterDropdown(val){renderDropdown(val);positionDropdown();}
 function positionDropdown(){const input=document.getElementById('custom-name-input');const dd=document.getElementById('add-dropdown');const rect=input.getBoundingClientRect();dd.style.top=(rect.bottom+6)+'px';dd.style.left=rect.left+'px';dd.style.width=rect.width+'px';}
 function openDropdown(){renderDropdown(document.getElementById('custom-name-input').value);positionDropdown();document.getElementById('add-dropdown').classList.add('open');}
@@ -650,33 +874,134 @@ async function submitTicketModal(){const ok=await createTicket(document.getEleme
 function renderStats(){const tk=todayKey();const tt=state.tickets.filter(t=>t.dateKey===tk);const total=tt.length,done=tt.filter(t=>t.status==='Completed').length,skipped=tt.filter(t=>t.status==='Skipped').length;document.getElementById('stat-total').textContent=total;document.getElementById('stat-pending').textContent=total-done-skipped;document.getElementById('stat-completed').textContent=done;document.getElementById('ticket-count-badge').textContent=state.tickets.length;}
 function renderRotation(){const wt=state.workingToday;if(!wt.length){['rot-curr-init','rot-curr-name','rot-next-init','rot-next-name','header-next'].forEach(id=>document.getElementById(id).textContent='—');document.getElementById('preview-assignee').textContent='Add members first';document.getElementById('modal-assignee').textContent='Add members first';return;}const si=state.rotationIndex%wt.length;const curr=wt[si],next=wt[(si+1)%wt.length];document.getElementById('rot-curr-name').textContent=curr;document.getElementById('rot-curr-init').textContent=curr[0];document.getElementById('rot-next-name').textContent=next;document.getElementById('rot-next-init').textContent=next[0];document.getElementById('header-next').textContent=curr;}
 function renderPreview(){const wt=state.workingToday;if(!wt.length){document.getElementById('preview-assignee').textContent='Add members first';document.getElementById('modal-assignee').textContent='Add members first';return;}const n=wt[state.rotationIndex%wt.length];document.getElementById('preview-assignee').textContent=n;document.getElementById('modal-assignee').textContent=n;}
-function renderSidebar(){const el=document.getElementById('sidebar-rotation');const wt=state.workingToday;el.innerHTML='';if(!wt.length){el.innerHTML=`<p class="text-xs text-slate-600 px-3 italic">No one added yet</p>`;return;}const si=state.rotationIndex%wt.length;const tk=todayKey();for(let i=0;i<wt.length;i++){const idx=(si+i)%wt.length;const name=wt[idx];const isCurr=i===0,isNext=i===1;const cnt=state.tickets.filter(t=>t.assignee===name&&t.dateKey===tk).length;const clr=memberColor(name);const div=document.createElement('div');div.className=`rotation-item flex items-center gap-2 px-3 py-1.5 rounded-lg border border-transparent ${isCurr?'active':isNext?'next-up':''}`;div.innerHTML=`<div class="w-6 h-6 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">${name[0]}</div><span class="text-xs ${isCurr?'text-indigo-300 font-semibold':isNext?'text-amber-400':'text-slate-400'} truncate flex-1">${name}</span><span class="text-[10px] font-mono ${isCurr?'text-indigo-400':'text-slate-600'}">${cnt}</span>${isCurr?'<div class="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0 pending-dot"></div>':''}`;el.appendChild(div);}}
-function rowHTML(t,cols){const tc=TYPE_CFG[t.type]||TYPE_CFG['Inquiry'];const done=t.status==='Completed',skipped=t.status==='Skipped';const clr=memberColor(t.assignee||'?');const dup=state.tickets.find(x=>x._id!==t._id&&x.dateKey===t.dateKey&&(x.title||'').trim().toLowerCase()===(t.title||'').trim().toLowerCase());const dupB=dup?`<span class="ml-1 text-[9px] font-mono text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-full border border-rose-500/20">DUP</span>`:'';let sb;if(done)sb=`<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Completed</span>`;else if(skipped)sb=`<div><span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-500/10 text-slate-400 border border-slate-500/20">⏭ Skipped</span>${t.skipReason?`<p class="text-[10px] text-slate-600 mt-0.5 font-mono truncate max-w-[120px]">${t.skipReason}</p>`:''}</div>`;else sb=`<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20"><div class="w-1.5 h-1.5 rounded-full bg-amber-400 pending-dot"></div>Pending</span>`;const db2=!skipped?`<button onclick="markComplete('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${done?'bg-slate-700 text-slate-400 hover:bg-slate-600':'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/20'}">${done?'↩ Reopen':'✓ Done'}</button>`:`<button onclick="markComplete('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-slate-700 text-slate-400 hover:bg-slate-600">↩ Reopen</button>`;const skpB=(!done&&!skipped&&t.type==='Dispute')?`<button onclick="openSkipModal('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20">⏭ Skip</button>`:'';const editB=`<button onclick="openEditModal('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20">✏ Edit</button>`;return`<tr class="ticket-row border-b border-white/5 ${skipped?'opacity-60':''}"><td class="px-6 py-4 text-xs font-mono text-slate-400">${t.id||'—'}</td><td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${tc.bg} ${tc.color} border ${tc.border}">${tc.icon} ${t.type}</span></td><td class="px-6 py-4 text-sm text-white font-medium max-w-xs truncate">${t.title}${dupB}</td><td class="px-6 py-4"><div class="flex items-center gap-2"><div class="w-6 h-6 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white">${(t.assignee||'?')[0]}</div><span class="text-sm text-white font-medium">${t.assignee||'—'}</span></div></td>${cols===7?`<td class="px-6 py-4 text-xs text-slate-500 font-mono">${t.date||'—'}</td>`:''}<td class="px-6 py-4">${sb}</td><td class="px-6 py-4"><div class="flex items-center flex-wrap gap-1">${db2}${skpB}${editB}</div></td></tr>`;}
+
+function renderSidebar(){
+  const el=document.getElementById('sidebar-rotation');
+  const wt=state.workingToday;
+  el.innerHTML='';
+  if(!wt.length){el.innerHTML=`<p class="text-xs text-slate-600 px-3 italic">No one added yet</p>`;return;}
+  const si=state.rotationIndex%wt.length;
+  const tk=todayKey();
+  for(let i=0;i<wt.length;i++){
+    const idx=(si+i)%wt.length;const name=wt[idx];
+    const isCurr=i===0,isNext=i===1;
+    const cnt=state.tickets.filter(t=>t.assignee===name&&t.dateKey===tk).length;
+    const av=avatarHTML(name,'w-6 h-6','text-[10px]');
+    const div=document.createElement('div');
+    div.className=`rotation-item flex items-center gap-2 px-3 py-1.5 rounded-lg border border-transparent ${isCurr?'active':isNext?'next-up':''}`;
+    div.innerHTML=`${av}<span class="text-xs ${isCurr?'text-indigo-300 font-semibold':isNext?'text-amber-400':'text-slate-400'} truncate flex-1">${name}</span><span class="text-[10px] font-mono ${isCurr?'text-indigo-400':'text-slate-600'}">${cnt}</span>${isCurr?'<div class="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0 pending-dot"></div>':''}`;
+    el.appendChild(div);
+  }
+}
+
+function rowHTML(t,cols){
+  const tc=TYPE_CFG[t.type]||TYPE_CFG['Inquiry'];
+  const done=t.status==='Completed',skipped=t.status==='Skipped';
+  const dup=state.tickets.find(x=>x._id!==t._id&&x.dateKey===t.dateKey&&(x.title||'').trim().toLowerCase()===(t.title||'').trim().toLowerCase());
+  const dupB=dup?`<span class="ml-1 text-[9px] font-mono text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded-full border border-rose-500/20">DUP</span>`:'';
+  let sb;
+  if(done)sb=`<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Completed</span>`;
+  else if(skipped)sb=`<div><span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-500/10 text-slate-400 border border-slate-500/20">⏭ Skipped</span>${t.skipReason?`<p class="text-[10px] text-slate-600 mt-0.5 font-mono truncate max-w-[120px]">${t.skipReason}</p>`:''}</div>`;
+  else sb=`<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20"><div class="w-1.5 h-1.5 rounded-full bg-amber-400 pending-dot"></div>Pending</span>`;
+  const db2=!skipped?`<button onclick="markComplete('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all ${done?'bg-slate-700 text-slate-400 hover:bg-slate-600':'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 border border-emerald-500/20'}">${done?'↩ Reopen':'✓ Done'}</button>`:`<button onclick="markComplete('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-slate-700 text-slate-400 hover:bg-slate-600">↩ Reopen</button>`;
+  const skpB=(!done&&!skipped&&t.type==='Dispute')?`<button onclick="openSkipModal('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20">⏭ Skip</button>`:'';
+  const editB=`<button onclick="openEditModal('${t._id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-all bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20">✏ Edit</button>`;
+  const av=avatarHTML(t.assignee||'?','w-6 h-6','text-[10px]');
+  return`<tr class="ticket-row border-b border-white/5 ${skipped?'opacity-60':''}"><td class="px-6 py-4 text-xs font-mono text-slate-400">${t.id||'—'}</td><td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${tc.bg} ${tc.color} border ${tc.border}">${tc.icon} ${t.type}</span></td><td class="px-6 py-4 text-sm text-white font-medium max-w-xs truncate">${t.title}${dupB}</td><td class="px-6 py-4"><div class="flex items-center gap-2">${av}<span class="text-sm text-white font-medium">${t.assignee||'—'}</span></div></td>${cols===7?`<td class="px-6 py-4 text-xs text-slate-500 font-mono">${t.date||'—'}</td>`:''}<td class="px-6 py-4">${sb}</td><td class="px-6 py-4"><div class="flex items-center flex-wrap gap-1">${db2}${skpB}${editB}</div></td></tr>`;
+}
+
 function renderRecentTable(){const tbody=document.getElementById('recent-table-body');const tk=todayKey();const r=state.tickets.filter(t=>t.dateKey===tk).slice(0,5);tbody.innerHTML=r.length?r.map(t=>rowHTML(t,6)).join(''):`<tr><td colspan="6" class="px-6 py-12 text-center text-slate-600 text-sm">No tickets yet today.</td></tr>`;}
 function renderAllTable(){const tbody=document.getElementById('all-table-body');const dfVal=document.getElementById('date-filter')?.value||'today';state.dateFilter=dfVal;let list=state.tickets;if(dfVal==='today'){const tk=todayKey();list=list.filter(t=>t.dateKey===tk);}else if(dfVal!=='all')list=list.filter(t=>t.dateKey===dfVal);if(state.filter!=='all')list=list.filter(t=>t.status===state.filter);if(state.search)list=list.filter(t=>(t.title||'').toLowerCase().includes(state.search)||(t.assignee||'').toLowerCase().includes(state.search)||(t.type||'').toLowerCase().includes(state.search)||(t.id||'').toLowerCase().includes(state.search));tbody.innerHTML=list.length?list.map(t=>rowHTML(t,7)).join(''):`<tr><td colspan="7" class="px-6 py-16 text-center text-slate-600 text-sm">No tickets match.</td></tr>`;}
 function renderActivityLog(){const el=document.getElementById('activity-log');const LC={'Dispute':'border-rose-500/50','Partner Portal':'border-blue-500/50','Inquiry':'border-violet-500/50'};el.innerHTML=state.activityLog.length?state.activityLog.slice(0,8).map((a,i)=>`<div class="log-item ${LC[a.type]||'border-indigo-500/50'} pl-3" style="animation:slideIn 0.4s ${i*0.05}s ease both"><p class="text-xs text-white font-medium font-mono">${a.msg}</p><p class="text-[10px] text-slate-500">${a.type} · ${a.time}</p></div>`).join(''):`<div class="text-center text-slate-600 text-xs py-8">No activity yet</div>`;}
 function setStatsView(view){state.statsView=view;document.getElementById('stats-tab-today').classList.toggle('active',view==='today');document.getElementById('stats-tab-history').classList.toggle('active',view==='history');document.getElementById('stats-today-panel').classList.toggle('hidden',view!=='today');document.getElementById('stats-history-panel').classList.toggle('hidden',view!=='history');if(view==='history')renderHistoryStats();}
-function renderTeamStats(){const el=document.getElementById('team-stats-grid');const tk=todayKey();const tt=state.tickets.filter(t=>t.dateKey===tk);const names=[...new Set([...state.workingToday,...tt.map(t=>t.assignee).filter(Boolean)])];if(!names.length){el.innerHTML=`<div class="text-center py-8"><p class="text-xs text-slate-600">No tickets yet today.</p></div>`;return;}const max=Math.max(...names.map(n=>tt.filter(t=>t.assignee===n).length),1);el.innerHTML=names.map(name=>{const total=tt.filter(t=>t.assignee===name).length;const done=tt.filter(t=>t.assignee===name&&t.status==='Completed').length;const skipped=tt.filter(t=>t.assignee===name&&t.status==='Skipped').length;const pending=total-done-skipped;const pct=Math.round((total/max)*100);const clr=memberColor(name);const isOn=state.workingToday.includes(name);return`<div class="flex items-center gap-4 p-3 rounded-xl hover:bg-white/3 transition-colors"><div class="w-9 h-9 rounded-full ${clr} flex items-center justify-center text-sm font-bold text-white flex-shrink-0">${name[0]}</div><div class="flex-1"><div class="flex items-center justify-between mb-1.5"><div class="flex items-center gap-2"><span class="text-sm font-semibold text-white">${name}</span>${isOn?'<span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20">ON DUTY</span>':''}</div><div class="flex items-center gap-3"><span class="text-xs text-emerald-400 font-mono">${done} done</span>${pending?`<span class="text-xs text-amber-400 font-mono">${pending} pending</span>`:''} ${skipped?`<span class="text-xs text-slate-500 font-mono">${skipped} skip</span>`:''}<span class="text-xs text-slate-400 font-mono font-bold">${total} total</span></div></div><div class="h-2 bg-white/5 rounded-full overflow-hidden"><div class="h-full bar-fill rounded-full ${clr} opacity-70" style="width:${pct}%"></div></div></div></div>`;}).join('');}
-function renderHistoryStats(){const el=document.getElementById('history-stats-container');const groups={};state.tickets.forEach(t=>{const k=t.dateKey||'unknown';if(!groups[k])groups[k]=[];groups[k].push(t);});const keys=Object.keys(groups).sort().reverse();if(!keys.length){el.innerHTML=`<p class="text-xs text-slate-600 text-center py-4">No historical data yet.</p>`;return;}const tk=todayKey();el.innerHTML=keys.map(key=>{const dt=groups[key];const isToday=key===tk;const names=[...new Set(dt.map(t=>t.assignee).filter(Boolean))];const dDone=dt.filter(t=>t.status==='Completed').length;return`<div class="border border-white/5 rounded-xl overflow-hidden"><div class="history-day-header px-5 py-3 flex items-center justify-between" onclick="toggleHistoryDay('${key}')"><div class="flex items-center gap-3">${isToday?'<div class="w-2 h-2 rounded-full bg-emerald-400 pending-dot"></div>':'<div class="w-2 h-2 rounded-full bg-slate-600"></div>'}<span class="text-sm font-semibold text-white">${formatDayLabel(key)}</span>${isToday?'<span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">LIVE</span>':''}</div><div class="flex items-center gap-4"><span class="text-xs text-emerald-400 font-mono">${dDone}/${dt.length} done</span><svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></div></div><div id="hist-body-${key}" class="hidden px-5 pb-4 pt-1 space-y-2 border-t border-white/5">${names.map(name=>{const t2=dt.filter(t=>t.assignee===name).length;const d2=dt.filter(t=>t.assignee===name&&t.status==='Completed').length;const s2=dt.filter(t=>t.assignee===name&&t.status==='Skipped').length;const m2=Math.max(...names.map(n=>dt.filter(t=>t.assignee===n).length),1);const p2=Math.round((t2/m2)*100);const c2=memberColor(name);return`<div class="flex items-center gap-3 py-1"><div class="w-7 h-7 rounded-full ${c2} flex items-center justify-center text-xs font-bold text-white flex-shrink-0">${name[0]}</div><div class="flex-1"><div class="flex items-center justify-between mb-1"><span class="text-xs font-semibold text-white">${name}</span><div class="flex gap-3"><span class="text-[11px] text-emerald-400 font-mono">${d2} done</span>${s2?`<span class="text-[11px] text-slate-500 font-mono">${s2} skip</span>`:''}<span class="text-[11px] text-slate-400 font-mono font-bold">${t2} total</span></div></div><div class="h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full ${c2} opacity-60" style="width:${p2}%"></div></div></div></div>`;}).join('')}</div></div>`;}).join('');}
+
+function renderTeamStats(){
+  const el=document.getElementById('team-stats-grid');
+  const tk=todayKey();const tt=state.tickets.filter(t=>t.dateKey===tk);
+  const names=[...new Set([...state.workingToday,...tt.map(t=>t.assignee).filter(Boolean)])];
+  if(!names.length){el.innerHTML=`<div class="text-center py-8"><p class="text-xs text-slate-600">No tickets yet today.</p></div>`;return;}
+  const max=Math.max(...names.map(n=>tt.filter(t=>t.assignee===n).length),1);
+  const clr2=n=>memberColor(n).replace('bg-','');
+  el.innerHTML=names.map(name=>{
+    const total=tt.filter(t=>t.assignee===name).length;
+    const done=tt.filter(t=>t.assignee===name&&t.status==='Completed').length;
+    const skipped=tt.filter(t=>t.assignee===name&&t.status==='Skipped').length;
+    const pending=total-done-skipped;
+    const pct=Math.round((total/max)*100);
+    const clr=memberColor(name);
+    const isOn=state.workingToday.includes(name);
+    const av=avatarHTML(name,'w-9 h-9','text-sm');
+    return`<div class="flex items-center gap-4 p-3 rounded-xl hover:bg-white/3 transition-colors">${av}<div class="flex-1"><div class="flex items-center justify-between mb-1.5"><div class="flex items-center gap-2"><span class="text-sm font-semibold text-white">${name}</span>${isOn?'<span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20">ON DUTY</span>':''}</div><div class="flex items-center gap-3"><span class="text-xs text-emerald-400 font-mono">${done} done</span>${pending?`<span class="text-xs text-amber-400 font-mono">${pending} pending</span>`:''} ${skipped?`<span class="text-xs text-slate-500 font-mono">${skipped} skip</span>`:''}<span class="text-xs text-slate-400 font-mono font-bold">${total} total</span></div></div><div class="h-2 bg-white/5 rounded-full overflow-hidden"><div class="h-full bar-fill rounded-full ${clr} opacity-70" style="width:${pct}%"></div></div></div></div>`;
+  }).join('');
+}
+
+function renderHistoryStats(){
+  const el=document.getElementById('history-stats-container');
+  const groups={};state.tickets.forEach(t=>{const k=t.dateKey||'unknown';if(!groups[k])groups[k]=[];groups[k].push(t);});
+  const keys=Object.keys(groups).sort().reverse();
+  if(!keys.length){el.innerHTML=`<p class="text-xs text-slate-600 text-center py-4">No historical data yet.</p>`;return;}
+  const tk=todayKey();
+  el.innerHTML=keys.map(key=>{
+    const dt=groups[key];const isToday=key===tk;
+    const names=[...new Set(dt.map(t=>t.assignee).filter(Boolean))];
+    const dDone=dt.filter(t=>t.status==='Completed').length;
+    return`<div class="border border-white/5 rounded-xl overflow-hidden"><div class="history-day-header px-5 py-3 flex items-center justify-between" onclick="toggleHistoryDay('${key}')"><div class="flex items-center gap-3">${isToday?'<div class="w-2 h-2 rounded-full bg-emerald-400 pending-dot"></div>':'<div class="w-2 h-2 rounded-full bg-slate-600"></div>'}<span class="text-sm font-semibold text-white">${formatDayLabel(key)}</span>${isToday?'<span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">LIVE</span>':''}</div><div class="flex items-center gap-4"><span class="text-xs text-emerald-400 font-mono">${dDone}/${dt.length} done</span><svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></div></div><div id="hist-body-${key}" class="hidden px-5 pb-4 pt-1 space-y-2 border-t border-white/5">${names.map(name=>{const t2=dt.filter(t=>t.assignee===name).length;const d2=dt.filter(t=>t.assignee===name&&t.status==='Completed').length;const s2=dt.filter(t=>t.assignee===name&&t.status==='Skipped').length;const m2=Math.max(...names.map(n=>dt.filter(t=>t.assignee===n).length),1);const p2=Math.round((t2/m2)*100);const c2=memberColor(name);const av=avatarHTML(name,'w-7 h-7','text-xs');return`<div class="flex items-center gap-3 py-1">${av}<div class="flex-1"><div class="flex items-center justify-between mb-1"><span class="text-xs font-semibold text-white">${name}</span><div class="flex gap-3"><span class="text-[11px] text-emerald-400 font-mono">${d2} done</span>${s2?`<span class="text-[11px] text-slate-500 font-mono">${s2} skip</span>`:''}<span class="text-[11px] text-slate-400 font-mono font-bold">${t2} total</span></div></div><div class="h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full ${c2} opacity-60" style="width:${p2}%"></div></div></div></div>`;}).join('')}</div></div>`;
+  }).join('');
+}
 function toggleHistoryDay(key){const el=document.getElementById(`hist-body-${key}`);if(el)el.classList.toggle('hidden');}
 
 // ── CHAT ───────────────────────────────────────────────────────────
 function renderNamePicker(){
   const dd=document.getElementById('name-picker-dropdown');
   const names=[...new Set([...DEFAULT_TEAM,...state.workingToday])];
-  dd.innerHTML=names.map(n=>{const clr=memberColor(n);const sel=n===state.myName;return`<div class="member-chip ${sel?'already':''}" onclick="pickName('${n}')"><div class="w-7 h-7 rounded-full ${clr} flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">${n[0]}</div><span class="flex-1 font-medium">${n}</span>${sel?'<svg class="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>':''}</div>`;}).join('');
+  dd.innerHTML=`
+    <div class="px-3 pt-2 pb-1 border-b border-white/5 flex items-center justify-between">
+      <p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Select Name</p>
+      ${state.myName?`<button onclick="triggerPhotoUpload(event)" class="photo-upload-btn" title="Upload profile photo">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke="currentColor" stroke-width="2"/></svg>
+      </button>`:''}
+    </div>
+    <div class="px-2 py-2">
+    ${names.map(n=>{
+      const sel=n===state.myName;
+      const photo=getPhoto(n);
+      let avHtml;
+      if(photo){avHtml=`<div class="w-7 h-7 rounded-full overflow-hidden flex-shrink-0"><img src="${photo}" class="w-full h-full object-cover"/></div>`;}
+      else{const clr=memberColor(n);avHtml=`<div class="w-7 h-7 rounded-full ${clr} flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">${n[0]}</div>`;}
+      const check=sel?`<svg class="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`:'';
+      return`<div class="member-chip ${sel?'bg-indigo-500/10':''}" onclick="pickName('${n}')">${avHtml}<span class="flex-1 font-medium">${n}</span>${check}</div>`;
+    }).join('')}
+    </div>
+    ${state.myName?`<div class="px-3 pb-3 pt-1 border-t border-white/5">
+      <button onclick="triggerPhotoUpload(event)" class="w-full flex items-center gap-2 text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-xl px-3 py-2 transition-all">
+        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke-width="2"/></svg>
+        ${getPhoto(state.myName)?'Change Profile Photo':'Upload Profile Photo'}
+      </button>
+    </div>`:''}
+  `;
 }
+
 function toggleNamePicker(){renderNamePicker();document.getElementById('name-picker-dropdown').classList.toggle('open');}
+
 function pickName(name){
   state.myName=name;localStorage.setItem('dops_name',name);
   applyName(name);
   document.getElementById('name-picker-dropdown').classList.remove('open');
+  renderNamePicker();
 }
+
 function applyName(name){
-  const clr=memberColor(name);
-  const av=document.getElementById('my-avatar');
-  av.className=`w-6 h-6 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0`;
-  av.textContent=name[0].toUpperCase();
+  const photo=getPhoto(name);
+  const wrap=document.getElementById('my-avatar-wrap');
+  const init=document.getElementById('my-avatar-init');
+  if(photo){
+    wrap.className='w-7 h-7 rounded-full overflow-hidden flex-shrink-0';
+    wrap.innerHTML=`<img src="${photo}" class="w-full h-full object-cover" alt="${name}"/>`;
+  }else{
+    const clr=memberColor(name);
+    wrap.className=`w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ${clr} flex items-center justify-center`;
+    wrap.innerHTML=`<span id="my-avatar-init" class="text-[11px] font-bold text-white">${name[0].toUpperCase()}</span>`;
+  }
   document.getElementById('my-name-label').textContent=name;
 }
 
@@ -687,7 +1012,10 @@ function renderChat(){
   const el=document.getElementById('chat-scroll');
   const msgs=state.chatMessages;
   const keys=Object.keys(msgs).sort((a,b)=>(msgs[a].ts||0)-(msgs[b].ts||0));
-  if(!keys.length){el.innerHTML=`<div class="flex flex-col items-center justify-center gap-3 py-20"><div class="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center"><svg class="w-7 h-7 text-indigo-400/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div><p class="text-sm text-slate-500 font-semibold">No messages yet</p><p class="text-xs text-slate-600">Be the first to say something to the team!</p></div>`;return;}
+  if(!keys.length){
+    el.innerHTML=`<div class="flex flex-col items-center justify-center gap-3 py-20"><div class="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center"><svg class="w-7 h-7 text-indigo-400/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div><p class="text-sm text-slate-500 font-semibold">No messages yet</p><p class="text-xs text-slate-600">Be the first to say something to the team!</p></div>`;
+    return;
+  }
   const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<80;
   let html='';let prevDate='';
   keys.forEach(key=>{
@@ -695,11 +1023,17 @@ function renderChat(){
     const dateLabel=new Date(m.ts||Date.now()).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
     if(dateLabel!==prevDate){html+=`<div class="flex items-center gap-3 py-3"><div class="flex-1 h-px bg-white/5"></div><span class="text-[10px] text-slate-600 font-mono uppercase tracking-wider px-3 flex-shrink-0">${dateLabel}</span><div class="flex-1 h-px bg-white/5"></div></div>`;prevDate=dateLabel;}
     const isOwn=m.sender===state.myName;
-    const clr=memberColor(m.sender||'?');
+    const senderPhoto=getPhoto(m.sender||'');
+    const senderClr=memberColor(m.sender||'?');
+    const senderInit=(m.sender||'?')[0].toUpperCase();
+    // build avatar html
+    let bubbleAv;
+    if(senderPhoto){bubbleAv=`<div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 mb-5"><img src="${senderPhoto}" class="w-full h-full object-cover" alt="${esc(m.sender)}"/></div>`;}
+    else{bubbleAv=`<div class="w-8 h-8 rounded-full ${senderClr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mb-5">${senderInit}</div>`;}
     const editedBadge=m.edited?`<span class="text-[9px] text-slate-600 ml-1">(edited)</span>`:'';
-    const actBtns=isOwn?`<button onclick="startEdit('${key}')" title="Edit" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-blue-500/20 text-slate-500 hover:text-blue-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="openDelMsg('${key}')" title="Delete" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>`:``;
-    if(isOwn){html+=`<div class="chat-bubble flex items-end justify-end gap-2 group" data-key="${key}"><div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div><div class="max-w-[68%]"><div class="bubble-own rounded-2xl rounded-br-sm px-4 py-2.5"><p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p></div><p class="text-[10px] text-slate-600 mt-1 text-right font-mono">${chatTimeStr(m.ts)}</p></div><div class="w-8 h-8 rounded-full ${clr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mb-5">${(m.sender||'?')[0].toUpperCase()}</div></div>`;}
-    else{html+=`<div class="chat-bubble flex items-end gap-2 group" data-key="${key}"><div class="w-8 h-8 rounded-full ${clr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mb-5">${(m.sender||'?')[0].toUpperCase()}</div><div class="max-w-[68%]"><p class="text-[10px] text-slate-500 font-semibold mb-1 ml-1">${esc(m.sender||'Unknown')}</p><div class="bubble-other rounded-2xl rounded-bl-sm px-4 py-2.5"><p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p></div><p class="text-[10px] text-slate-600 mt-1 font-mono ml-1">${chatTimeStr(m.ts)}</p></div><div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div></div>`;}
+    const actBtns=isOwn?`<button onclick="startEdit('${key}')" title="Edit" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-blue-500/20 text-slate-500 hover:text-blue-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="openDelMsg('${key}')" title="Delete" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>`:``; 
+    if(isOwn){html+=`<div class="chat-bubble flex items-end justify-end gap-2 group" data-key="${key}"><div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div><div class="max-w-[68%]"><div class="bubble-own rounded-2xl rounded-br-sm px-4 py-2.5"><p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p></div><p class="text-[10px] text-slate-600 mt-1 text-right font-mono">${chatTimeStr(m.ts)}</p></div>${bubbleAv}</div>`;}
+    else{html+=`<div class="chat-bubble flex items-end gap-2 group" data-key="${key}">${bubbleAv}<div class="max-w-[68%]"><p class="text-[10px] text-slate-500 font-semibold mb-1 ml-1">${esc(m.sender||'Unknown')}</p><div class="bubble-other rounded-2xl rounded-bl-sm px-4 py-2.5"><p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p></div><p class="text-[10px] text-slate-600 mt-1 font-mono ml-1">${chatTimeStr(m.ts)}</p></div><div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div></div>`;}
   });
   el.innerHTML=html;
   if(atBottom)el.scrollTop=el.scrollHeight;
@@ -722,7 +1056,6 @@ async function confirmDelMsg(){const key=state.pendingDelKey;if(!key)return;clos
 
 // ── NAV ────────────────────────────────────────────────────────────
 function showSection(name){
-  // toggle regular sections (dashboard/tickets/team)
   ['dashboard','tickets','team','chat'].forEach(s=>{
     const el=document.getElementById('section-'+s);
     if(el) el.classList.toggle('hidden', s!==name);
@@ -732,13 +1065,12 @@ function showSection(name){
   });
   document.getElementById('page-title').textContent={dashboard:'Dashboard',tickets:'All Tickets',team:'Team Stats',chat:'Team Chat'}[name];
 
-  // show/hide the real chat panel (outside scroll)
   const chatPanel=document.getElementById('chat-panel');
   const ms=document.getElementById('main-scroll');
   if(name==='chat'){
     chatPanel.style.display='flex';
     chatPanel.style.flexDirection='column';
-    ms.style.display='none'; // hide scroll area completely
+    ms.style.display='none';
     state.chatOpen=true;
     state.lastSeenTs=Date.now();
     localStorage.setItem('dops_chat_seen',state.lastSeenTs.toString());
@@ -746,11 +1078,12 @@ function showSection(name){
     setTimeout(()=>{const el=document.getElementById('chat-scroll');if(el)el.scrollTop=el.scrollHeight;},80);
   } else {
     chatPanel.style.display='none';
-    ms.style.display=''; // restore scroll area
+    ms.style.display='';
     state.chatOpen=false;
   }
   if(name==='team')renderTeamStats();
 }
+
 function filterTickets(f){state.filter=f;['all','Pending','Completed','Skipped'].forEach(x=>{const btn=document.getElementById('filter-'+x);if(!btn)return;btn.className=x===f?'filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-indigo-600 text-white':'filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white';});renderAllTable();}
 function searchTickets(){state.search=document.getElementById('search-input').value.toLowerCase();renderAllTable();}
 function openModal(){renderPreview();const m=document.getElementById('modal');m.classList.remove('hidden');m.classList.add('flex');document.getElementById('modal-dup-warning').classList.add('hidden');setTimeout(()=>document.getElementById('modal-title').focus(),60);}
@@ -759,7 +1092,7 @@ function showToast(msg,sub='Saved to Firebase'){document.getElementById('toast-m
 function setSubmitting(v){state.submitting=v;['submit-btn','modal-submit-btn'].forEach(id=>{const b=document.getElementById(id);if(!b)return;b.disabled=v;b.style.opacity=v?'0.6':'1';b.style.cursor=v?'not-allowed':'pointer';if(v)b.innerHTML=`<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Saving…`;else b.innerHTML=`<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Submit Ticket`;});}
 function toggleDark(){state.darkMode=!state.darkMode;document.documentElement.classList.toggle('dark',state.darkMode);document.getElementById('dark-label').textContent=state.darkMode?'Light Mode':'Dark Mode';}
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeModal();closeConfirmModal();closeSkipModal();closeEditModal();closeSkipRotationModal();closeDelMsgModal();}
+  if(e.key==='Escape'){closeModal();closeConfirmModal();closeSkipModal();closeEditModal();closeSkipRotationModal();closeDelMsgModal();closeCropModal();}
   if(e.key==='Enter'&&!document.getElementById('modal').classList.contains('hidden')&&document.activeElement!==document.getElementById('chat-input'))submitTicketModal();
 });
 init();
