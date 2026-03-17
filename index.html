@@ -125,12 +125,93 @@
   #crop-container{position:relative;width:280px;height:280px;border-radius:50%;overflow:hidden;cursor:move;background:#0f172a;border:3px solid rgba(99,102,241,0.6);flex-shrink:0;}
   #crop-img{position:absolute;top:0;left:0;transform-origin:0 0;user-select:none;-webkit-user-select:none;pointer-events:none;}
   .crop-ring{position:absolute;inset:0;border-radius:50%;border:2px dashed rgba(99,102,241,0.5);pointer-events:none;}
+
+  /* ── PHOTO VIEWER LIGHTBOX ── */
+  #photo-viewer{
+    position:fixed;inset:0;z-index:10000;
+    display:none;
+    align-items:center;justify-content:center;
+    background:rgba(0,0,0,0);
+    transition:background 0.3s ease;
+  }
+  #photo-viewer.open{
+    display:flex;
+    background:rgba(0,0,0,0.82);
+    pointer-events:auto;
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+  }
+  #photo-viewer-inner{
+    position:relative;display:flex;flex-direction:column;align-items:center;gap:20px;
+    opacity:0;transform:scale(0.55) translateY(30px);
+    transition:opacity 0.35s cubic-bezier(0.34,1.56,0.64,1), transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  #photo-viewer.open #photo-viewer-inner{opacity:1;transform:scale(1) translateY(0);}
+  #photo-viewer-img-wrap{
+    position:relative;width:220px;height:220px;border-radius:50%;overflow:hidden;
+    box-shadow:0 0 0 4px rgba(99,102,241,0.5),0 0 60px rgba(99,102,241,0.3),0 24px 64px rgba(0,0,0,0.7);
+  }
+  #photo-viewer-img-wrap::before{
+    content:'';position:absolute;inset:-4px;border-radius:50%;
+    background:conic-gradient(from 0deg,#6366f1,#8b5cf6,#ec4899,#6366f1);
+    animation:spin-ring 3s linear infinite;z-index:-1;
+  }
+  @keyframes spin-ring{to{transform:rotate(360deg);}}
+  #photo-viewer-img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+  #photo-viewer-initial{
+    width:100%;height:100%;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:72px;font-weight:800;color:white;font-family:'Sora',sans-serif;
+    letter-spacing:-2px;
+  }
+  #photo-viewer-name{
+    font-size:22px;font-weight:800;color:white;letter-spacing:-0.5px;
+    text-shadow:0 2px 20px rgba(0,0,0,0.6);
+    opacity:0;transform:translateY(10px);
+    transition:opacity 0.3s 0.15s ease,transform 0.3s 0.15s ease;
+  }
+  #photo-viewer.open #photo-viewer-name{opacity:1;transform:translateY(0);}
+  #photo-viewer-sub{
+    font-size:11px;font-family:'JetBrains Mono',monospace;color:rgba(148,163,184,0.8);
+    text-transform:uppercase;letter-spacing:2px;margin-top:-12px;
+    opacity:0;transform:translateY(8px);
+    transition:opacity 0.3s 0.22s ease,transform 0.3s 0.22s ease;
+  }
+  #photo-viewer.open #photo-viewer-sub{opacity:1;transform:translateY(0);}
+  #photo-viewer-close{
+    position:absolute;top:18px;right:18px;
+    width:38px;height:38px;border-radius:50%;
+    background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;color:rgba(255,255,255,0.7);
+    transition:all 0.2s ease;
+  }
+  #photo-viewer-close:hover{background:rgba(239,68,68,0.25);border-color:rgba(239,68,68,0.5);color:white;}
+  /* clickable avatar hover ring */
+  .av-clickable{cursor:pointer;transition:transform 0.18s ease,box-shadow 0.18s ease;}
+  .av-clickable:hover{transform:scale(1.15);box-shadow:0 0 0 3px rgba(99,102,241,0.6),0 4px 20px rgba(99,102,241,0.35);}
+  .av-clickable:active{transform:scale(0.95);}
 </style>
 </head>
 <body class="bg-mesh min-h-screen text-slate-100 dark">
 
 <!-- HIDDEN FILE INPUT -->
 <input type="file" id="photo-upload-input" accept="image/*" class="hidden" onchange="handlePhotoUpload(event)"/>
+
+<!-- PHOTO VIEWER LIGHTBOX -->
+<div id="photo-viewer" onclick="closePhotoViewer()">
+  <button id="photo-viewer-close" onclick="closePhotoViewer()">
+    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+  </button>
+  <div id="photo-viewer-inner" onclick="event.stopPropagation()">
+    <div id="photo-viewer-img-wrap">
+      <img id="photo-viewer-img" src="" alt="" class="hidden"/>
+      <div id="photo-viewer-initial"></div>
+    </div>
+    <p id="photo-viewer-name">—</p>
+    <p id="photo-viewer-sub">Team Member</p>
+  </div>
+</div>
 
 <!-- CROP MODAL -->
 <div id="crop-modal-overlay">
@@ -608,14 +689,69 @@ function listenPhotos(){
 }
 
 // Returns an avatar HTML string: photo img or colored initial
-// szClass = tailwind sizing (e.g. "w-8 h-8"), textSz = text size class
-function avatarHTML(name,szClass,textSz='text-[10px]',extra=''){
+// szClass = tailwind sizing, textSz = text size class, extra = extra classes, clickable = bool
+function avatarHTML(name,szClass,textSz='text-[10px]',extra='',clickable=false){
   const photo=getPhoto(name);
+  const clickAttr=clickable?`onclick="viewPhoto('${name.replace(/'/g,"\\'")}');event.stopPropagation();" title="View ${name}'s photo"`:'';
+  const clickCls=clickable?'av-clickable':'';
   if(photo){
-    return`<div class="${szClass} rounded-full overflow-hidden flex-shrink-0 ${extra}"><img src="${photo}" class="w-full h-full object-cover" alt="${name}"/></div>`;
+    return`<div class="${szClass} rounded-full overflow-hidden flex-shrink-0 ${clickCls} ${extra}" ${clickAttr}><img src="${photo}" class="w-full h-full object-cover" alt="${name}"/></div>`;
   }
   const clr=memberColor(name);
-  return`<div class="${szClass} rounded-full ${clr} flex items-center justify-center ${textSz} font-bold text-white flex-shrink-0 ${extra}">${(name||'?')[0].toUpperCase()}</div>`;
+  return`<div class="${szClass} rounded-full ${clr} flex items-center justify-center ${textSz} font-bold text-white flex-shrink-0 ${clickCls} ${extra}" ${clickAttr}>${(name||'?')[0].toUpperCase()}</div>`;
+}
+
+// ── PHOTO VIEWER ──────────────────────────────────────────────────
+function viewPhoto(name){
+  const photo=getPhoto(name);
+  const viewer=document.getElementById('photo-viewer');
+  const img=document.getElementById('photo-viewer-img');
+  const init=document.getElementById('photo-viewer-initial');
+  const nameEl=document.getElementById('photo-viewer-name');
+  const subEl=document.getElementById('photo-viewer-sub');
+
+  nameEl.textContent=name;
+  const isOnDuty=state.workingToday.includes(name);
+  subEl.textContent=isOnDuty?'🟢 On Duty Today':'Team Member';
+
+  if(photo){
+    img.src=photo;
+    img.classList.remove('hidden');
+    init.style.display='none';
+  }else{
+    img.classList.add('hidden');
+    const clr=memberColor(name);
+    // strip 'bg-' prefix for inline bg color approximation
+    const colorMap={'bg-indigo-500':'#6366f1','bg-blue-500':'#3b82f6','bg-violet-500':'#8b5cf6','bg-fuchsia-500':'#d946ef','bg-rose-500':'#f43f5e','bg-amber-500':'#f59e0b','bg-emerald-500':'#10b981','bg-teal-500':'#14b8a6','bg-cyan-500':'#06b6d4','bg-pink-500':'#ec4899','bg-orange-500':'#f97316','bg-lime-500':'#84cc16'};
+    init.style.background=colorMap[clr]||'#6366f1';
+    init.style.display='flex';
+    init.textContent=name[0].toUpperCase();
+  }
+
+  viewer.classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function closePhotoViewer(){
+  const viewer=document.getElementById('photo-viewer');
+  // Animate out: fade background + shrink inner
+  viewer.style.background='rgba(0,0,0,0)';
+  viewer.style.backdropFilter='blur(0px)';
+  const inner=document.getElementById('photo-viewer-inner');
+  inner.style.opacity='0';
+  inner.style.transform='scale(0.7) translateY(20px)';
+  inner.style.transition='opacity 0.22s ease, transform 0.22s ease';
+  setTimeout(()=>{
+    viewer.classList.remove('open');
+    viewer.style.background='';
+    viewer.style.backdropFilter='';
+    inner.style.opacity='';
+    inner.style.transform='';
+    inner.style.transition='';
+    document.getElementById('photo-viewer-img').src='';
+    document.getElementById('photo-viewer-img').classList.add('hidden');
+    document.body.style.overflow='';
+  },240);
 }
 
 // ── CROP STATE ────────────────────────────────────────────────────
@@ -922,7 +1058,7 @@ function renderSidebar(){
     const idx=(si+i)%wt.length;const name=wt[idx];
     const isCurr=i===0,isNext=i===1;
     const cnt=state.tickets.filter(t=>t.assignee===name&&t.dateKey===tk).length;
-    const av=avatarHTML(name,'w-6 h-6','text-[10px]');
+    const av=avatarHTML(name,'w-6 h-6','text-[10px]','',true);
     const div=document.createElement('div');
     div.className=`rotation-item flex items-center gap-2 px-3 py-1.5 rounded-lg border border-transparent ${isCurr?'active':isNext?'next-up':''}`;
     div.innerHTML=`${av}<span class="text-xs ${isCurr?'text-indigo-300 font-semibold':isNext?'text-amber-400':'text-slate-400'} truncate flex-1">${name}</span><span class="text-[10px] font-mono ${isCurr?'text-indigo-400':'text-slate-600'}">${cnt}</span>${isCurr?'<div class="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0 pending-dot"></div>':''}`;
@@ -1062,10 +1198,11 @@ function renderChat(){
     const senderPhoto=getPhoto(m.sender||'');
     const senderClr=memberColor(m.sender||'?');
     const senderInit=(m.sender||'?')[0].toUpperCase();
-    // build avatar html
+    const clickAv=`onclick="viewPhoto('${(m.sender||'').replace(/'/g,"\\'")}');event.stopPropagation();" title="View ${esc(m.sender||'')}'s photo"`;
+    // build avatar html — always clickable in chat
     let bubbleAv;
-    if(senderPhoto){bubbleAv=`<div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 mb-5"><img src="${senderPhoto}" class="w-full h-full object-cover" alt="${esc(m.sender)}"/></div>`;}
-    else{bubbleAv=`<div class="w-8 h-8 rounded-full ${senderClr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mb-5">${senderInit}</div>`;}
+    if(senderPhoto){bubbleAv=`<div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 mb-5 av-clickable" ${clickAv}><img src="${senderPhoto}" class="w-full h-full object-cover" alt="${esc(m.sender)}"/></div>`;}
+    else{bubbleAv=`<div class="w-8 h-8 rounded-full ${senderClr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mb-5 av-clickable" ${clickAv}>${senderInit}</div>`;}
     const editedBadge=m.edited?`<span class="text-[9px] text-slate-600 ml-1">(edited)</span>`:'';
     const actBtns=isOwn?`<button onclick="startEdit('${key}')" title="Edit" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-blue-500/20 text-slate-500 hover:text-blue-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="openDelMsg('${key}')" title="Delete" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>`:``; 
     if(isOwn){html+=`<div class="chat-bubble flex items-end justify-end gap-2 group" data-key="${key}"><div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div><div class="max-w-[68%]"><div class="bubble-own rounded-2xl rounded-br-sm px-4 py-2.5"><p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p></div><p class="text-[10px] text-slate-600 mt-1 text-right font-mono">${chatTimeStr(m.ts)}</p></div>${bubbleAv}</div>`;}
@@ -1128,7 +1265,7 @@ function showToast(msg,sub='Saved to Firebase'){document.getElementById('toast-m
 function setSubmitting(v){state.submitting=v;['submit-btn','modal-submit-btn'].forEach(id=>{const b=document.getElementById(id);if(!b)return;b.disabled=v;b.style.opacity=v?'0.6':'1';b.style.cursor=v?'not-allowed':'pointer';if(v)b.innerHTML=`<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Saving…`;else b.innerHTML=`<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Submit Ticket`;});}
 function toggleDark(){state.darkMode=!state.darkMode;document.documentElement.classList.toggle('dark',state.darkMode);document.getElementById('dark-label').textContent=state.darkMode?'Light Mode':'Dark Mode';}
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){closeModal();closeConfirmModal();closeSkipModal();closeEditModal();closeSkipRotationModal();closeDelMsgModal();closeCropModal();}
+  if(e.key==='Escape'){closeModal();closeConfirmModal();closeSkipModal();closeEditModal();closeSkipRotationModal();closeDelMsgModal();closeCropModal();closePhotoViewer();}
   if(e.key==='Enter'&&!document.getElementById('modal').classList.contains('hidden')&&document.activeElement!==document.getElementById('chat-input'))submitTicketModal();
 });
 init();
