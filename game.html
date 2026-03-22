@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mystic Wings Adventure — DisputeOps</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='90'>🧙‍♀️</text></svg>">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+  tailwind.config={darkMode:'class',theme:{extend:{fontFamily:{sans:['Sora','sans-serif'],mono:['JetBrains Mono','monospace']}}}}
+</script>
+<style>
+  *{box-sizing:border-box;}
+  body{font-family:'Sora',sans-serif;background:#020817;color:#e2e8f0;overflow:hidden;}
+  .glass{background:rgba(15,23,42,0.72);backdrop-filter:blur(18px);border:1px solid rgba(99,102,241,0.14);}
+  .glass-light{background:rgba(255,255,255,0.04);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.07);}
+  ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(99,102,241,0.35);border-radius:2px;}
+  @keyframes statusPulse{0%,100%{opacity:1}50%{opacity:0.45}}
+  .pulse{animation:statusPulse 1.5s ease-in-out infinite;}
+  @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .slide-up{animation:slideUp 0.4s ease forwards;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+  .shimmer-bg{background:linear-gradient(90deg,transparent,rgba(168,85,247,0.12),transparent);background-size:200% auto;animation:shimmer 2.5s linear infinite;}
+  /* Canvas */
+  #game-canvas{display:block;border-radius:14px;cursor:crosshair;border:1px solid rgba(99,102,241,0.2);touch-action:none;}
+  /* Class cards */
+  .class-card{transition:all 0.2s ease;cursor:pointer;border:1.5px solid rgba(255,255,255,0.07);}
+  .class-card:hover{transform:scale(1.04);border-color:rgba(168,85,247,0.4);}
+  .class-card.selected{border-color:rgba(168,85,247,0.7);background:rgba(168,85,247,0.12);box-shadow:0 0 16px rgba(168,85,247,0.25);}
+  /* Power-up indicators */
+  .pup-slot{transition:all 0.2s;min-width:60px;}
+  .pup-slot.active{background:rgba(168,85,247,0.2);border-color:rgba(168,85,247,0.5);}
+  /* Leaderboard rows */
+  .lb-row{transition:all 0.15s;border-radius:10px;}
+  .lb-row:hover{background:rgba(99,102,241,0.07);}
+  .lb-row.is-me{background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);}
+  /* Name picker */
+  .name-chip{transition:all 0.15s;cursor:pointer;border:1px solid rgba(255,255,255,0.07);}
+  .name-chip:hover{background:rgba(168,85,247,0.12);border-color:rgba(168,85,247,0.35);}
+  .name-chip.picked{background:rgba(168,85,247,0.18);border-color:rgba(168,85,247,0.6);box-shadow:0 0 10px rgba(168,85,247,0.2);}
+  /* Back link */
+  .back-btn{transition:all 0.2s;}
+  .back-btn:hover{background:rgba(99,102,241,0.15);color:#a5b4fc;}
+  /* Overlay */
+  .game-overlay{position:absolute;inset:0;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
+  /* Stats bar */
+  .stat-bar{height:6px;border-radius:3px;background:rgba(255,255,255,0.06);overflow:hidden;}
+  .stat-bar-fill{height:100%;border-radius:3px;transition:width 0.5s ease;}
+  /* Combo flash */
+  @keyframes comboFlash{0%{transform:scale(1.4);opacity:1}100%{transform:scale(1);opacity:0.8}}
+  .combo-flash{animation:comboFlash 0.3s ease;}
+  /* Boss warning */
+  @keyframes bossWarn{0%,100%{opacity:0.7}50%{opacity:1}}
+  .boss-warn{animation:bossWarn 0.4s ease infinite;}
+  /* Wave badge */
+  @keyframes wavePop{0%{transform:scale(0.5);opacity:0}60%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
+  .wave-pop{animation:wavePop 0.5s ease forwards;}
+  /* Power-up timer bar */
+  .pup-bar{height:3px;background:rgba(168,85,247,0.3);border-radius:2px;overflow:hidden;}
+  .pup-bar-fill{height:100%;background:#a855f7;border-radius:2px;transition:width 0.1s linear;}
+</style>
+</head>
+<body class="dark" style="height:100vh;overflow:hidden;">
+
+<!-- LAYOUT: Sidebar + Game -->
+<div class="flex h-screen overflow-hidden">
+
+  <!-- ── LEFT SIDEBAR ── -->
+  <aside class="w-72 flex-shrink-0 flex flex-col h-full border-r border-white/5" style="background:rgba(5,8,22,0.95);backdrop-filter:blur(20px);">
+
+    <!-- Header -->
+    <div class="px-5 py-4 border-b border-white/5">
+      <a href="index.html" class="back-btn flex items-center gap-2 text-slate-400 text-xs font-semibold px-3 py-2 rounded-lg mb-3 w-fit no-underline">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        Back to Dashboard
+      </a>
+      <div class="flex items-center gap-3">
+        <div class="text-3xl">🧙‍♀️</div>
+        <div>
+          <p class="text-sm font-bold text-white">Mystic Wings</p>
+          <p class="text-[10px] text-fuchsia-400 font-mono uppercase tracking-widest">Adventure</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Player Name Picker -->
+    <div class="px-5 py-4 border-b border-white/5">
+      <p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-2">Playing As</p>
+      <div id="name-grid" class="grid grid-cols-2 gap-1.5"></div>
+    </div>
+
+    <!-- Character Class Selector -->
+    <div class="px-5 py-4 border-b border-white/5">
+      <p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-3">Character Class</p>
+      <div class="space-y-2" id="class-cards"></div>
+    </div>
+
+    <!-- Run Stats -->
+    <div class="px-5 py-4 border-b border-white/5">
+      <p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold mb-3">Run Stats</p>
+      <div class="space-y-2.5" id="run-stats">
+        <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Wave</span><span id="stat-wave" class="text-xs font-mono font-bold text-white">—</span></div>
+        <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Kills</span><span id="stat-kills" class="text-xs font-mono font-bold text-emerald-400">0</span></div>
+        <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Combo</span><span id="stat-combo" class="text-xs font-mono font-bold text-fuchsia-400">x1</span></div>
+        <div class="flex items-center justify-between"><span class="text-xs text-slate-500">Best Score</span><span id="stat-best" class="text-xs font-mono font-bold text-amber-300">—</span></div>
+      </div>
+    </div>
+
+    <!-- Live Leaderboard -->
+    <div class="flex-1 flex flex-col overflow-hidden px-5 py-4">
+      <div class="flex items-center justify-between mb-3">
+        <p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Leaderboard</p>
+        <span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 pulse">LIVE</span>
+      </div>
+      <div id="leaderboard" class="flex-1 overflow-y-auto space-y-1 pr-1">
+        <div class="text-center py-6 text-xs text-slate-600">Loading…</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── GAME AREA ── -->
+  <main class="flex-1 flex flex-col items-center justify-center gap-3 overflow-hidden" style="background:#020817;">
+
+    <!-- TOP HUD -->
+    <div class="flex items-center gap-4 w-full max-w-sm px-2">
+      <!-- Score -->
+      <div class="flex-1 glass rounded-xl px-4 py-2.5 border border-fuchsia-500/20">
+        <p class="text-[9px] text-fuchsia-400 font-mono uppercase tracking-widest">Score</p>
+        <p id="hud-score" class="text-2xl font-black text-white font-mono leading-none">0</p>
+      </div>
+      <!-- Lives -->
+      <div class="glass rounded-xl px-4 py-2.5 border border-rose-500/20 text-center">
+        <p class="text-[9px] text-rose-400 font-mono uppercase tracking-widest mb-0.5">Lives</p>
+        <div id="hud-lives" class="flex gap-0.5 justify-center"></div>
+      </div>
+      <!-- Best -->
+      <div class="glass rounded-xl px-4 py-2.5 border border-amber-500/20 text-right">
+        <p class="text-[9px] text-amber-400 font-mono uppercase tracking-widest">Best</p>
+        <p id="hud-best" class="text-2xl font-black text-amber-300 font-mono leading-none">0</p>
+      </div>
+    </div>
+
+    <!-- Power-up row -->
+    <div class="flex items-center gap-2 w-full max-w-sm px-2">
+      <div id="pup-shield" class="pup-slot glass rounded-lg px-3 py-1.5 border border-white/10 text-center">
+        <p class="text-lg">🛡</p>
+        <div class="pup-bar mt-1"><div id="pup-shield-bar" class="pup-bar-fill w-0"></div></div>
+      </div>
+      <div id="pup-rapid" class="pup-slot glass rounded-lg px-3 py-1.5 border border-white/10 text-center">
+        <p class="text-lg">⚡</p>
+        <div class="pup-bar mt-1"><div id="pup-rapid-bar" class="pup-bar-fill w-0"></div></div>
+      </div>
+      <div id="pup-spread" class="pup-slot glass rounded-lg px-3 py-1.5 border border-white/10 text-center">
+        <p class="text-lg">💥</p>
+        <div class="pup-bar mt-1"><div id="pup-spread-bar" class="pup-bar-fill w-0"></div></div>
+      </div>
+      <div id="pup-bomb" class="pup-slot glass rounded-lg px-3 py-1.5 border border-white/10 text-center flex-1">
+        <p class="text-lg">💣</p>
+        <p id="pup-bomb-count" class="text-[9px] text-slate-500 font-mono">×0</p>
+      </div>
+      <!-- Ultimate button -->
+      <button id="ult-btn" onclick="activateUlt()" class="glass rounded-lg px-4 py-2 border border-fuchsia-500/30 text-center cursor-pointer flex-1 disabled:opacity-40" disabled>
+        <p class="text-lg" id="ult-emoji">✨</p>
+        <p class="text-[9px] text-fuchsia-400 font-mono" id="ult-label">ULT</p>
+      </button>
+    </div>
+
+    <!-- CANVAS WRAP -->
+    <div style="position:relative;width:380px;height:540px;" id="canvas-wrap">
+      <canvas id="game-canvas" width="380" height="540"></canvas>
+
+      <!-- START OVERLAY -->
+      <div id="overlay-start" class="game-overlay" style="background:rgba(2,6,18,0.92);">
+        <div class="text-center slide-up">
+          <div class="text-6xl mb-3" id="start-class-emoji">🧙‍♀️</div>
+          <h1 class="text-3xl font-black text-white mb-1" style="text-shadow:0 0 30px rgba(168,85,247,0.8)">Mystic Wings</h1>
+          <p class="text-sm text-fuchsia-300 font-mono mb-1">Adventure</p>
+          <p class="text-xs text-slate-500 mb-6">DisputeOps Edition · 3 Bosses Await</p>
+
+          <div class="glass rounded-xl px-5 py-3 mb-4 border border-fuchsia-500/20 text-center mx-4">
+            <p class="text-[10px] text-slate-500 mb-1.5 uppercase tracking-wider">Select Character</p>
+            <div id="start-class-row" class="flex gap-2 justify-center flex-wrap"></div>
+          </div>
+
+          <div class="glass rounded-xl px-5 py-3 mb-5 border border-indigo-500/20 text-center mx-4">
+            <p class="text-[10px] text-slate-500 mb-1.5 uppercase tracking-wider">Playing As</p>
+            <div id="start-name-row" class="flex gap-2 justify-center flex-wrap"></div>
+          </div>
+
+          <button onclick="startGame()" class="bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-500 hover:to-indigo-500 text-white font-black text-sm px-10 py-3 rounded-2xl shadow-xl shadow-fuchsia-900/50 transition-all hover:scale-105 active:scale-95">
+            ▶ Start Adventure
+          </button>
+          <p class="text-[9px] text-slate-700 mt-4 font-mono">Mouse / Touch to move · Auto-shoot · Collect gems for score</p>
+        </div>
+      </div>
+
+      <!-- GAME OVER OVERLAY -->
+      <div id="overlay-over" class="game-overlay hidden" style="background:rgba(2,6,18,0.95);">
+        <div class="text-center slide-up">
+          <div id="go-icon" class="text-5xl mb-3">💀</div>
+          <h2 id="go-title" class="text-2xl font-black text-white mb-1">Game Over</h2>
+          <p id="go-sub" class="text-sm text-slate-400 font-mono mb-5">—</p>
+          <div class="glass rounded-2xl px-8 py-5 mb-5 border border-white/10 min-w-[220px]">
+            <p class="text-[9px] text-slate-500 uppercase tracking-wider mb-1">Final Score</p>
+            <p id="go-score" class="text-5xl font-black text-white font-mono mb-2">0</p>
+            <div id="go-newbest" class="hidden flex items-center justify-center gap-2 text-amber-400 text-xs font-bold mb-2">
+              🏆 NEW HIGH SCORE! 🏆
+            </div>
+            <p class="text-xs text-slate-500">Best: <span id="go-best" class="text-amber-300 font-mono font-bold">0</span></p>
+            <div class="flex items-center justify-center gap-4 mt-3 pt-3 border-t border-white/5">
+              <div class="text-center"><p class="text-[9px] text-slate-600 uppercase">Kills</p><p id="go-kills" class="text-sm font-bold font-mono text-emerald-400">0</p></div>
+              <div class="text-center"><p class="text-[9px] text-slate-600 uppercase">Wave</p><p id="go-wave" class="text-sm font-bold font-mono text-indigo-400">1</p></div>
+              <div class="text-center"><p class="text-[9px] text-slate-600 uppercase">Combo</p><p id="go-combo" class="text-sm font-bold font-mono text-fuchsia-400">×1</p></div>
+            </div>
+          </div>
+          <div class="flex gap-3">
+            <button onclick="startGame()" class="bg-gradient-to-r from-fuchsia-600 to-indigo-600 text-white font-bold text-sm px-6 py-2.5 rounded-xl hover:scale-105 transition-all">▶ Play Again</button>
+            <a href="index.html" class="glass text-slate-300 font-semibold text-sm px-6 py-2.5 rounded-xl border border-white/10 hover:border-white/20 transition-all no-underline flex items-center">← Dashboard</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- WAVE BADGE (shown momentarily) -->
+      <div id="wave-badge" class="hidden absolute top-4 left-1/2 -translate-x-1/2 z-20 glass rounded-full px-5 py-2 border border-indigo-500/30 text-center">
+        <p class="text-[10px] text-indigo-300 font-mono uppercase tracking-widest">Wave</p>
+        <p id="wave-num" class="text-xl font-black text-white font-mono">1</p>
+      </div>
+
+      <!-- BOSS WARNING -->
+      <div id="boss-warning" class="hidden absolute inset-0 rounded-2xl pointer-events-none flex flex-col items-center justify-center z-10 boss-warn" style="background:rgba(239,68,68,0.07);border:2px solid rgba(239,68,68,0.3);">
+        <p class="text-2xl font-black text-rose-400 uppercase tracking-wider">⚠ BOSS</p>
+        <p id="boss-warn-name" class="text-sm text-rose-300 font-mono">—</p>
+      </div>
+    </div>
+
+    <!-- Hint -->
+    <p class="text-[9px] text-slate-700 font-mono">Move mouse or touch canvas · Auto-fire · Collect 💎 gems</p>
+  </main>
+</div>
+
+<script>
+// ── FIREBASE ──────────────────────────────────────────────────────
+const firebaseConfig={
+  apiKey:"AIzaSyCsoYyepyJGIqbdW-QfWUZjJozmxrx2oWk",
+  authDomain:"handlingdisputes.firebaseapp.com",
+  projectId:"handlingdisputes",
+  databaseURL:"https://handlingdisputes-default-rtdb.firebaseio.com",
+  appId:"1:891854791293:web:70bf2ee2c964a144228714"
+};
+firebase.initializeApp(firebaseConfig);
+const rtdb=firebase.database();
+const scoresRef=rtdb.ref('game/scores');
+const photosRef=rtdb.ref('profiles/photos');
+
+const DEFAULT_TEAM=['Kent','Johnny','Reysel','Jashmier','Keone','Diovic','Ralph','Myca'];
+const COLOR_POOL=['bg-indigo-500','bg-blue-500','bg-violet-500','bg-fuchsia-500','bg-rose-500','bg-amber-500','bg-emerald-500','bg-teal-500','bg-cyan-500','bg-pink-500','bg-orange-500','bg-lime-500'];
+const COLOR_HEX={'bg-indigo-500':'#6366f1','bg-blue-500':'#3b82f6','bg-violet-500':'#8b5cf6','bg-fuchsia-500':'#d946ef','bg-rose-500':'#f43f5e','bg-amber-500':'#f59e0b','bg-emerald-500':'#10b981','bg-teal-500':'#14b8a6','bg-cyan-500':'#06b6d4','bg-pink-500':'#ec4899','bg-orange-500':'#f97316','bg-lime-500':'#84cc16'};
+function memberColor(n){const c=[...n].reduce((a,ch)=>a+ch.charCodeAt(0),0);return COLOR_POOL[c%COLOR_POOL.length];}
+function encodeKey(n){return n.replace(/[.#$\[\]]/g,'_');}
+
+// ── CHARACTER CLASSES ─────────────────────────────────────────────
+const CLASSES=[
+  {id:'witch',name:'Witch',emoji:'🧙‍♀️',color:'#c084fc',glow:'rgba(192,132,252,0.7)',desc:'Spread shots',shotType:'spread',bulletCount:3,fireRate:10,damage:1,speed:4.5,ult:'🌙 Lunar Burst',ultDesc:'Ring of magic'},
+  {id:'angel',name:'Angel',emoji:'👼',color:'#60a5fa',glow:'rgba(96,165,250,0.7)',desc:'Laser beam',shotType:'laser',bulletCount:1,fireRate:7,damage:3,speed:5,ult:'✨ Holy Light',ultDesc:'Screen clear'},
+  {id:'warrior',name:'Warrior',emoji:'⚔️',color:'#fb923c',glow:'rgba(251,146,60,0.7)',desc:'Heavy shots',shotType:'heavy',bulletCount:2,fireRate:15,damage:2,speed:3.8,ult:'🔥 Inferno',ultDesc:'Massive damage'},
+];
+
+// ── BOSS CONFIGS ──────────────────────────────────────────────────
+const BOSSES=[
+  {name:'Goblin King',  emoji:'👺',hp:150, maxHp:150, color:'#4ade80',glow:'rgba(74,222,128,0.5)', speed:1.4,bSpeed:2.8,bCount:3,size:56,reward:600,  phase2At:0.5, desc:'Minion Commander'},
+  {name:'Fire Drake',   emoji:'🐉',hp:280, maxHp:280, color:'#f97316',glow:'rgba(249,115,22,0.5)', speed:1.9,bSpeed:3.8,bCount:5,size:66,reward:1500, phase2At:0.4, desc:'Ancient Dragon'},
+  {name:'Void Titan',   emoji:'👹',hp:500, maxHp:500, color:'#e879f9',glow:'rgba(232,121,249,0.5)',speed:2.4,bSpeed:4.8,bCount:7,size:78,reward:3000, phase2At:0.35,desc:'Dimension Lord'},
+  {name:'Ice Witch',    emoji:'🧊',hp:750, maxHp:750, color:'#67e8f9',glow:'rgba(103,232,249,0.5)',speed:2.8,bSpeed:5.5,bCount:8,size:82,reward:5000, phase2At:0.4, desc:'Frozen Sorceress'},
+  {name:'Storm Giant',  emoji:'⛈️',hp:1000,maxHp:1000,color:'#818cf8',glow:'rgba(129,140,248,0.5)',speed:3.0,bSpeed:6.0,bCount:9,size:88,reward:7500, phase2At:0.4, desc:'Tempest Warlord'},
+  {name:'Shadow Wraith',emoji:'💀',hp:1400,maxHp:1400,color:'#94a3b8',glow:'rgba(148,163,184,0.5)',speed:3.5,bSpeed:6.8,bCount:10,size:90,reward:10000,phase2At:0.35,desc:'Undead Reaper'},
+  {name:'Lava Colossus',emoji:'🌋',hp:1900,maxHp:1900,color:'#ef4444',glow:'rgba(239,68,68,0.5)',  speed:2.8,bSpeed:7.2,bCount:11,size:96,reward:14000,phase2At:0.35,desc:'Molten Destroyer'},
+  {name:'Thunder Hydra', emoji:'🐲',hp:2500,maxHp:2500,color:'#facc15',glow:'rgba(250,204,21,0.5)', speed:3.8,bSpeed:7.8,bCount:12,size:100,reward:19000,phase2At:0.3, desc:'Nine-Headed Beast'},
+  {name:'Cosmic Horror', emoji:'🌀',hp:3500,maxHp:3500,color:'#c084fc',glow:'rgba(192,132,252,0.5)',speed:4.2,bSpeed:8.5,bCount:14,size:106,reward:26000,phase2At:0.3, desc:'Reality Bender'},
+  {name:'Chaos Overlord',emoji:'☠️',hp:5000,maxHp:5000,color:'#f43f5e',glow:'rgba(244,63,94,0.5)', speed:4.8,bSpeed:9.5,bCount:16,size:114,reward:40000,phase2At:0.25,desc:'Final Destroyer'},
+];
+
+// ── POWER-UP CONFIGS ─────────────────────────────────────────────
+const POWERUPS=[
+  {type:'shield',emoji:'🛡',color:'#38bdf8',dur:300},
+  {type:'rapid',emoji:'⚡',color:'#facc15',dur:250},
+  {type:'spread',emoji:'💥',color:'#f472b6',dur:220},
+  {type:'bomb',emoji:'💣',color:'#fb923c',dur:0},
+];
+
+// ── GAME STATE ────────────────────────────────────────────────────
+let G={
+  canvas:null,ctx:null,W:380,H:540,
+  running:false,animId:null,lastTime:0,
+  score:0,lives:3,wave:1,kills:0,
+  combo:1,comboTimer:0,comboMax:1,
+  playerName:localStorage.getItem('dops_game_name')||'',
+  classId:localStorage.getItem('dops_game_class')||'witch',
+  player:{x:190,y:460,targetX:190},
+  bullets:[],enemies:[],particles:[],floats:[],gems:[],powerupItems:[],
+  boss:null,bossPhase:1,
+  pups:{shield:0,rapid:0,spread:0,bomb:0},
+  ultReady:false,ultCharge:0,
+  stars:[],nebs:[],
+  spawnTimer:0,
+  invTimer:0,
+  waveBadgeTimer:0,
+  bossWarnTimer:0,
+  scores:{},photos:{},
+};
+
+// ── INIT ──────────────────────────────────────────────────────────
+function init(){
+  G.canvas=document.getElementById('game-canvas');
+  G.ctx=G.canvas.getContext('2d');
+
+  // Stars
+  for(let i=0;i<90;i++)G.stars.push({x:Math.random()*G.W,y:Math.random()*G.H,r:Math.random()*1.4+0.2,spd:0.25+Math.random()*0.6,op:Math.random()*0.7+0.2});
+
+  // Mouse
+  G.canvas.addEventListener('mousemove',e=>{const r=G.canvas.getBoundingClientRect();G.player.targetX=(e.clientX-r.left)*(G.W/r.width);});
+  G.canvas.addEventListener('touchmove',e=>{e.preventDefault();const r=G.canvas.getBoundingClientRect();G.player.targetX=(e.touches[0].clientX-r.left)*(G.W/r.width);},{passive:false});
+  G.canvas.addEventListener('touchstart',e=>{const r=G.canvas.getBoundingClientRect();G.player.targetX=(e.touches[0].clientX-r.left)*(G.W/r.width);},{passive:true});
+
+  // Firebase listeners
+  scoresRef.on('value',s=>{G.scores=s.val()||{};renderLeaderboard();updateBestHud();renderSideStats();});
+  photosRef.on('value',s=>{G.photos=s.val()||{};renderLeaderboard();renderNameGrid();});
+
+  renderNameGrid();
+  renderClassCards();
+  renderStartOverlayClasses();
+  drawIdle();
+}
+
+// ── RENDER NAME GRID ──────────────────────────────────────────────
+function renderNameGrid(){
+  const el=document.getElementById('name-grid');
+  el.innerHTML=DEFAULT_TEAM.map(n=>{
+    const sel=n===G.playerName;
+    const clr=memberColor(n);
+    const photo=G.photos[encodeKey(n)];
+    let av;
+    if(photo){av=`<div class="w-6 h-6 rounded-full overflow-hidden flex-shrink-0"><img src="${photo}" class="w-full h-full object-cover"/></div>`;}
+    else{av=`<div class="w-6 h-6 rounded-full ${clr} flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0">${n[0]}</div>`;}
+    return`<div onclick="pickName('${n}')" class="name-chip ${sel?'picked':''} flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium ${sel?'text-fuchsia-300':'text-slate-400'}">${av}<span class="truncate">${n}</span></div>`;
+  }).join('');
+  renderStartOverlayNames();
+}
+
+function pickName(name){
+  G.playerName=name;
+  localStorage.setItem('dops_game_name',name);
+  renderNameGrid();
+  updateBestHud();
+  renderSideStats();
+}
+
+// ── RENDER CLASS CARDS ─────────────────────────────────────────────
+function renderClassCards(){
+  const el=document.getElementById('class-cards');
+  el.innerHTML=CLASSES.map(c=>{
+    const sel=c.id===G.classId;
+    return`<div onclick="pickClass('${c.id}')" class="class-card ${sel?'selected':''} rounded-xl px-3 py-2.5 flex items-center gap-3">
+      <span class="text-xl flex-shrink-0">${c.emoji}</span>
+      <div class="flex-1 min-w-0">
+        <p class="text-xs font-bold text-white">${c.name}</p>
+        <p class="text-[10px] text-slate-500">${c.desc}</p>
+      </div>
+      ${sel?'<div class="w-2 h-2 rounded-full bg-fuchsia-400 flex-shrink-0 pulse"></div>':''}
+    </div>`;
+  }).join('');
+  const cls=CLASSES.find(c=>c.id===G.classId)||CLASSES[0];
+  document.getElementById('start-class-emoji').textContent=cls.emoji;
+  document.getElementById('ult-emoji').textContent=cls.ult.split(' ')[0];
+  document.getElementById('ult-label').textContent='ULT';
+}
+
+function pickClass(id){
+  G.classId=id;
+  localStorage.setItem('dops_game_class',id);
+  renderClassCards();
+  renderStartOverlayClasses();
+}
+
+function renderStartOverlayClasses(){
+  const el=document.getElementById('start-class-row');
+  if(!el)return;
+  el.innerHTML=CLASSES.map(c=>{
+    const sel=c.id===G.classId;
+    return`<div onclick="pickClass('${c.id}')" class="cursor-pointer px-3 py-2 rounded-xl border ${sel?'border-fuchsia-500/60 bg-fuchsia-500/15':'border-white/10 bg-white/4'} transition-all hover:scale-105 text-center">
+      <div class="text-2xl mb-0.5">${c.emoji}</div>
+      <p class="text-[10px] font-bold ${sel?'text-fuchsia-300':'text-slate-400'}">${c.name}</p>
+      <p class="text-[9px] text-slate-600">${c.desc}</p>
+    </div>`;
+  }).join('');
+}
+
+function renderStartOverlayNames(){
+  const el=document.getElementById('start-name-row');
+  if(!el)return;
+  el.innerHTML=DEFAULT_TEAM.map(n=>{
+    const sel=n===G.playerName;
+    const clr=memberColor(n);
+    const photo=G.photos[encodeKey(n)];
+    let av;
+    if(photo){av=`<div class="w-7 h-7 rounded-full overflow-hidden flex-shrink-0 mx-auto mb-1"><img src="${photo}" class="w-full h-full object-cover"/></div>`;}
+    else{av=`<div class="w-7 h-7 rounded-full ${clr} flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 mx-auto mb-1">${n[0]}</div>`;}
+    return`<div onclick="pickName('${n}')" class="cursor-pointer px-2 py-1.5 rounded-lg border ${sel?'border-fuchsia-500/50 bg-fuchsia-500/12':'border-white/8 bg-white/3'} transition-all hover:scale-105 text-center">
+      ${av}
+      <p class="text-[9px] font-bold ${sel?'text-fuchsia-300':'text-slate-500'}">${n}</p>
+    </div>`;
+  }).join('');
+}
+
+// ── START GAME ────────────────────────────────────────────────────
+function startGame(){
+  if(!G.playerName){G.playerName=DEFAULT_TEAM[0];localStorage.setItem('dops_game_name',G.playerName);}
+  const cls=CLASSES.find(c=>c.id===G.classId)||CLASSES[0];
+
+  G.score=0;G.lives=3;G.wave=1;G.kills=0;G.combo=1;G.comboTimer=0;G.comboMax=1;
+  G.bossPhase=1;G.boss=null;
+  G.bullets=[];G.enemies=[];G.particles=[];G.floats=[];G.gems=[];G.powerupItems=[];
+  G.pups={shield:0,rapid:0,spread:0,bomb:0};
+  G.ultReady=false;G.ultCharge=0;
+  G.player={x:190,y:460,targetX:190,shootTimer:0};
+  G.spawnTimer=0;G.invTimer=0;G.waveBadgeTimer=0;G.bossWarnTimer=0;
+
+  document.getElementById('overlay-start').style.display='none';
+  document.getElementById('overlay-over').classList.add('hidden');
+  document.getElementById('boss-warning').classList.add('hidden');
+
+  showWaveBadge(1);
+  updateHUD();
+  updatePupUI();
+  renderSideStats();
+
+  if(G.animId)cancelAnimationFrame(G.animId);
+  G.running=true;
+  G.lastTime=performance.now();
+  gameLoop(G.lastTime);
+}
+
+// ── GAME LOOP ─────────────────────────────────────────────────────
+function gameLoop(ts){
+  if(!G.running)return;
+  const dt=Math.min((ts-G.lastTime)/16,3);
+  G.lastTime=ts;
+  update(dt);
+  draw();
+  G.animId=requestAnimationFrame(gameLoop);
+}
+
+// ── UPDATE ────────────────────────────────────────────────────────
+function update(dt){
+  const cls=CLASSES.find(c=>c.id===G.classId)||CLASSES[0];
+
+  // Player move
+  const tx=Math.max(22,Math.min(G.W-22,G.player.targetX));
+  G.player.x+=(tx-G.player.x)*0.16*dt;
+
+  // Shooting
+  G.player.shootTimer=(G.player.shootTimer||0)-dt;
+  const rate=G.pups.rapid>0?Math.floor(cls.fireRate*0.45):cls.fireRate;
+  if(G.player.shootTimer<=0){
+    firePlayer(cls);
+    G.player.shootTimer=rate;
+  }
+
+  // Stars scroll
+  G.stars.forEach(s=>{s.y+=s.spd*dt;if(s.y>G.H)s.y=0;});
+
+  // Combo decay
+  if(G.comboTimer>0){G.comboTimer-=dt;if(G.comboTimer<=0){G.combo=1;renderSideStats();}}
+
+  // Power-up timers
+  ['shield','rapid','spread'].forEach(k=>{if(G.pups[k]>0){G.pups[k]-=dt;if(G.pups[k]<0)G.pups[k]=0;updatePupUI();}});
+
+  // Ult charge
+  if(!G.ultReady){G.ultCharge+=dt*0.18;if(G.ultCharge>=100){G.ultCharge=100;G.ultReady=true;document.getElementById('ult-btn').disabled=false;}}
+
+  // Spawn enemies (between bosses)
+  if(!G.boss){
+    G.spawnTimer-=dt;
+    if(G.spawnTimer<=0){
+      // Spawn 1 extra enemy per 2 waves (wave1=1, wave3=2, wave5=3, etc.)
+      const spawnCount=1+Math.floor((G.wave-1)/2);
+      for(let s=0;s<spawnCount;s++) spawnEnemy();
+      const spawnRate=Math.max(8,35-G.wave*2.5);
+      G.spawnTimer=spawnRate+Math.random()*10;
+    }
+    // Boss check
+    const killsNeeded=G.bossPhase*12+G.bossPhase*4;
+    if(G.kills>=killsNeeded&&!G.boss&&G.bossPhase<=BOSSES.length)triggerBoss();
+  }
+
+  // Bullets
+  for(let i=G.bullets.length-1;i>=0;i--){
+    const b=G.bullets[i];
+    b.x+=b.vx*dt;b.y+=b.vy*dt;
+    if(b.y<-30||b.y>G.H+30||b.x<-30||b.x>G.W+30){G.bullets.splice(i,1);continue;}
+
+    if(b.own){
+      // Hit enemies
+      let hit=false;
+      for(let j=G.enemies.length-1;j>=0;j--){
+        const e=G.enemies[j];
+        if(dist(b.x,b.y,e.x,e.y)<e.r+b.r){
+          e.hp-=b.dmg;spawnParticles(b.x,b.y,e.color,4);
+          if(e.hp<=0){killEnemy(e,j);}
+          G.bullets.splice(i,1);hit=true;break;
+        }
+      }
+      if(hit)continue;
+      // Hit boss
+      if(G.boss&&dist(b.x,b.y,G.boss.x,G.boss.y)<G.boss.r+b.r){
+        G.boss.hp-=b.dmg;spawnParticles(b.x,b.y,G.boss.cfg.color,3);
+        G.bullets.splice(i,1);
+        if(!G.boss.phase2&&G.boss.hp/G.boss.cfg.maxHp<=G.boss.cfg.phase2At){
+          G.boss.phase2=true;G.boss.enrageTimer=60;
+          spawnParticles(G.boss.x,G.boss.y,'#ffffff',40);
+        }
+        if(G.boss.hp<=0)killBoss();
+      }
+    } else {
+      // Enemy bullet hits player
+      if(G.invTimer<=0&&dist(b.x,b.y,G.player.x,G.player.y)<20){
+        if(G.pups.shield>0){
+          spawnParticles(G.player.x,G.player.y,'#38bdf8',10);
+          G.bullets.splice(i,1);continue;
+        }
+        G.bullets.splice(i,1);hitPlayer();
+      }
+    }
+  }
+
+  // Enemies update
+  for(let i=G.enemies.length-1;i>=0;i--){
+    const e=G.enemies[i];
+    e.x+=e.vx*dt;e.y+=e.vy*dt;
+    if(e.x<e.r||e.x>G.W-e.r)e.vx*=-1;
+    if(e.y>G.H+40){G.enemies.splice(i,1);continue;}
+    e.shootTimer-=dt;
+    if(e.shootTimer<=0){
+      shootEnemy(e);
+      e.shootTimer=55+Math.random()*45;
+    }
+    if(G.invTimer<=0&&dist(e.x,e.y,G.player.x,G.player.y)<e.r+18){
+      if(G.pups.shield>0){spawnParticles(e.x,e.y,'#38bdf8',8);G.enemies.splice(i,1);continue;}
+      spawnParticles(e.x,e.y,e.color,10);G.enemies.splice(i,1);hitPlayer();
+    }
+  }
+
+  // Boss update
+  if(G.boss){
+    const b=G.boss;
+    b.x+=b.vx*dt;
+    if(b.x<b.r||b.x>G.W-b.r)b.vx*=-1;
+    b.y+=(b.targetY-b.y)*0.015*dt;
+    b.bob=(b.bob||0)+0.06*dt;
+    if(b.enrageTimer>0)b.enrageTimer-=dt;
+    b.shootTimer-=dt;
+    const fr=b.phase2?18:32;
+    if(b.shootTimer<=0){
+      bossFire(b);
+      b.shootTimer=fr;
+    }
+  }
+
+  // Gems
+  for(let i=G.gems.length-1;i>=0;i--){
+    const g=G.gems[i];
+    g.y+=1.2*dt;g.life-=dt;
+    if(g.life<=0||g.y>G.H+20){G.gems.splice(i,1);continue;}
+    if(dist(g.x,g.y,G.player.x,G.player.y)<24){
+      const gained=g.val*G.combo;G.score+=gained;
+      spawnFloat(g.x,g.y,`+${gained}`,g.combo>1?'#fbbf24':'#a3e635');
+      spawnParticles(g.x,g.y,'#fbbf24',5);
+      G.gems.splice(i,1);updateHUD();
+    }
+  }
+
+  // Power-up pickups
+  for(let i=G.powerupItems.length-1;i>=0;i--){
+    const p=G.powerupItems[i];
+    p.y+=1.5*dt;p.bob=(p.bob||0)+0.08*dt;p.life-=dt;
+    if(p.life<=0||p.y>G.H+20){G.powerupItems.splice(i,1);continue;}
+    if(dist(p.x,p.y,G.player.x,G.player.y)<26){
+      applyPowerup(p.type);
+      spawnParticles(p.x,p.y,p.color,15);
+      spawnFloat(p.x,p.y,p.emoji,'#fff');
+      G.powerupItems.splice(i,1);
+    }
+  }
+
+  // Particles + floats
+  for(let i=G.particles.length-1;i>=0;i--){
+    const p=G.particles[i];
+    p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=0.09*dt;p.life-=dt;
+    if(p.life<=0)G.particles.splice(i,1);
+  }
+  for(let i=G.floats.length-1;i>=0;i--){
+    const f=G.floats[i];
+    f.y-=0.7*dt;f.life-=dt;
+    if(f.life<=0)G.floats.splice(i,1);
+  }
+
+  // Invincibility
+  if(G.invTimer>0)G.invTimer-=dt;
+
+  // Wave badge
+  if(G.waveBadgeTimer>0){G.waveBadgeTimer-=dt;if(G.waveBadgeTimer<=0)document.getElementById('wave-badge').classList.add('hidden');}
+
+  // Boss warning
+  if(G.bossWarnTimer>0){G.bossWarnTimer-=dt;if(G.bossWarnTimer<=0)document.getElementById('boss-warning').classList.add('hidden');}
+}
+
+// ── FIRE PLAYER ───────────────────────────────────────────────────
+function firePlayer(cls){
+  const x=G.player.x,y=G.player.y-20;
+  const dmg=cls.damage*(G.pups.rapid>0?1.5:1);
+  const isSpread=G.pups.spread>0||cls.shotType==='spread';
+  if(cls.shotType==='laser'){
+    G.bullets.push({x,y,vx:0,vy:-12,r:6,own:true,dmg,color:cls.color,laser:true});
+  } else if(cls.shotType==='heavy'){
+    G.bullets.push({x:x-16,y,vx:-0.3,vy:-9,r:6,own:true,dmg,color:cls.color});
+    G.bullets.push({x:x+16,y,vx:0.3,vy:-9,r:6,own:true,dmg,color:cls.color});
+    if(isSpread){G.bullets.push({x,y,vx:0,vy:-10,r:5,own:true,dmg,color:cls.color});}
+  } else {
+    // witch spread
+    const count=isSpread?5:3;
+    for(let k=0;k<count;k++){
+      const angle=(Math.PI/(count+1))*(k+1);
+      G.bullets.push({x,y,vx:Math.cos(angle)*2*(k-(count-1)/2)*0.4,vy:-8-Math.abs(k-(count-1)/2)*0.5,r:4,own:true,dmg,color:cls.color});
+    }
+  }
+}
+
+// ── ENEMY SPAWN ───────────────────────────────────────────────────
+function spawnEnemy(){
+  const px=30+Math.random()*(G.W-60);
+  const types=['goblin','fast','bomber','shadow'];
+  const weights=[0.45,0.3,0.15,0.1];
+  let t=0,r=Math.random();
+  for(let i=0;i<weights.length;i++){t+=weights[i];if(r<t){t=types[i];break;}}
+  if(typeof t!=='string')t='goblin';
+  const cfgs={
+    goblin:{hp:2+G.wave,r:13,vy:1.3+G.wave*0.12,color:'#4ade80',emoji:'👾',vx:(Math.random()-0.5)*1.5},
+    fast:{hp:1,r:9,vy:2.8+G.wave*0.15,color:'#f472b6',emoji:'🔴',vx:(Math.random()-0.5)*2.5},
+    bomber:{hp:3+G.wave,r:16,vy:0.9+G.wave*0.08,color:'#fb923c',emoji:'💣',vx:(Math.random()-0.5)*1},
+    shadow:{hp:2+G.wave,r:12,vy:1.6+G.wave*0.1,color:'#a78bfa',emoji:'🌑',vx:(Math.random()-0.5)*2},
+  };
+  const cfg=cfgs[t];
+  G.enemies.push({x:px,y:-20,...cfg,maxHp:cfg.hp,shootTimer:50+Math.random()*50,type:t});
+}
+
+function shootEnemy(e){
+  const dx=G.player.x-e.x,dy=G.player.y-e.y,len=Math.sqrt(dx*dx+dy*dy)||1;
+  const spd=e.type==='fast'?3.5:2.2;
+  G.bullets.push({x:e.x,y:e.y+e.r,vx:(dx/len)*spd,vy:(dy/len)*spd,r:3,own:false,color:'#fbbf24'});
+}
+
+// ── KILL ENEMY ────────────────────────────────────────────────────
+function killEnemy(e,idx){
+  G.enemies.splice(idx,1);
+  G.kills++;G.score+=e.type==='fast'?12:e.type==='bomber'?35:20;
+  // Combo
+  G.combo=Math.min(G.combo+1,10);G.comboTimer=90;G.comboMax=Math.max(G.comboMax,G.combo);
+  renderSideStats();
+  spawnGem(e.x,e.y,e.type==='bomber'?3:1);
+  spawnParticles(e.x,e.y,e.color,14);
+  spawnFloat(e.x,e.y,`×${G.combo}`,G.combo>3?'#fbbf24':'#a3e635');
+  // Occasional power-up drop
+  if(Math.random()<0.12)spawnPowerupItem(e.x,e.y);
+  updateHUD();
+  // Ult charge
+  G.ultCharge=Math.min(100,G.ultCharge+5);
+  if(G.ultCharge>=100&&!G.ultReady){G.ultReady=true;document.getElementById('ult-btn').disabled=false;}
+}
+
+// ── BOSS ──────────────────────────────────────────────────────────
+function triggerBoss(){
+  const idx=Math.min(G.bossPhase-1,BOSSES.length-1);
+  const cfg={...BOSSES[idx]};
+  G.boss={x:G.W/2,y:-90,targetY:80,vx:cfg.speed,r:cfg.size/2,hp:cfg.hp,cfg,phase2:false,shootTimer:45,enrageTimer:0,bob:0};
+  G.enemies=[];
+  document.getElementById('boss-warning').classList.remove('hidden');
+  document.getElementById('boss-warn-name').textContent=`${cfg.emoji} ${cfg.name} — ${cfg.desc}`;
+  G.bossWarnTimer=120;
+  showWaveBadge(`BOSS: ${cfg.name}`);
+}
+
+function bossFire(b){
+  const cnt=b.phase2?b.cfg.bCount+2:b.cfg.bCount;
+  const spd=b.phase2?b.cfg.bSpeed+1:b.cfg.bSpeed;
+  for(let k=0;k<cnt;k++){
+    const a=(Math.PI/(cnt+1))*(k+1)+Math.PI/2;
+    G.bullets.push({x:b.x,y:b.y+b.r,vx:Math.cos(a-Math.PI/2)*spd*1.1,vy:Math.sin(a)*spd,r:4,own:false,color:b.cfg.color});
+  }
+  if(b.phase2){
+    const dx=G.player.x-b.x,dy=G.player.y-b.y,len=Math.sqrt(dx*dx+dy*dy)||1;
+    G.bullets.push({x:b.x,y:b.y,vx:(dx/len)*(spd+1),vy:(dy/len)*(spd+1),r:5,own:false,color:'#fff'});
+  }
+}
+
+function killBoss(){
+  spawnParticles(G.boss.x,G.boss.y,G.boss.cfg.color,60);
+  spawnParticles(G.boss.x,G.boss.y,'#ffffff',30);
+  for(let i=0;i<10;i++)spawnGem(G.boss.x+(Math.random()-0.5)*80,G.boss.y+(Math.random()-0.5)*50,3);
+  for(let i=0;i<3;i++)spawnPowerupItem(G.boss.x+(Math.random()-0.5)*60,G.boss.y+20+Math.random()*30);
+  G.score+=G.boss.cfg.reward;
+  G.kills+=Math.floor(G.boss.cfg.maxHp/10);
+  G.boss=null;G.bossPhase++;G.wave++;G.spawnTimer=0;
+  updateHUD();renderSideStats();showWaveBadge(G.wave);
+  if(G.bossPhase>BOSSES.length)setTimeout(()=>endGame(true),1000);
+}
+
+// ── PLAYER HIT ────────────────────────────────────────────────────
+function hitPlayer(){
+  G.lives--;G.invTimer=110;G.combo=1;G.comboTimer=0;
+  spawnParticles(G.player.x,G.player.y,'#ef4444',25);
+  updateHUD();renderSideStats();
+  if(G.lives<=0)setTimeout(()=>endGame(false),300);
+}
+
+// ── POWER-UPS ─────────────────────────────────────────────────────
+function spawnPowerupItem(x,y){
+  const types=['shield','rapid','spread','bomb'];
+  const type=types[Math.floor(Math.random()*types.length)];
+  const cfg=POWERUPS.find(p=>p.type===type);
+  G.powerupItems.push({x,y,type,emoji:cfg.emoji,color:cfg.color,r:14,life:180,bob:0});
+}
+
+function applyPowerup(type){
+  const cfg=POWERUPS.find(p=>p.type===type);
+  if(type==='bomb'){G.pups.bomb++;updatePupUI();}
+  else{G.pups[type]=(cfg.dur||200);updatePupUI();}
+}
+
+function updatePupUI(){
+  ['shield','rapid','spread'].forEach(k=>{
+    const slot=document.getElementById('pup-'+k);
+    const bar=document.getElementById('pup-'+k+'-bar');
+    const cfg=POWERUPS.find(p=>p.type===k);
+    const pct=cfg?(G.pups[k]/cfg.dur)*100:0;
+    if(slot)slot.classList.toggle('active',G.pups[k]>0);
+    if(bar)bar.style.width=Math.max(0,pct)+'%';
+  });
+  const bombSlot=document.getElementById('pup-bomb');
+  const bombCount=document.getElementById('pup-bomb-count');
+  if(bombSlot)bombSlot.classList.toggle('active',G.pups.bomb>0);
+  if(bombCount)bombCount.textContent=`×${G.pups.bomb}`;
+}
+
+function activateUlt(){
+  if(!G.ultReady||!G.running)return;
+  const cls=CLASSES.find(c=>c.id===G.classId)||CLASSES[0];
+  // Ult effects by class
+  if(cls.id==='angel'){
+    // Holy Light: clear all enemies + bullets
+    G.enemies.forEach(e=>{spawnParticles(e.x,e.y,'#fff',10);G.score+=20;});
+    G.enemies=[];
+    G.bullets=G.bullets.filter(b=>b.own);
+    spawnFloat(G.W/2,G.H/2,'✨ HOLY LIGHT!','#fff');
+  } else if(cls.id==='warrior'){
+    // Inferno: massive spread burst
+    for(let k=0;k<24;k++){
+      const a=(k/24)*Math.PI*2;
+      G.bullets.push({x:G.player.x,y:G.player.y,vx:Math.cos(a)*9,vy:Math.sin(a)*9,r:5,own:true,dmg:8,color:'#f97316'});
+    }
+    spawnParticles(G.player.x,G.player.y,'#f97316',30);
+    spawnFloat(G.W/2,G.H/2,'🔥 INFERNO!','#f97316');
+  } else {
+    // Witch: Lunar Burst — ring of magic
+    for(let k=0;k<18;k++){
+      const a=(k/18)*Math.PI*2;
+      G.bullets.push({x:G.player.x,y:G.player.y,vx:Math.cos(a)*8,vy:Math.sin(a)*8,r:4,own:true,dmg:5,color:'#c084fc'});
+    }
+    spawnParticles(G.player.x,G.player.y,'#c084fc',25);
+    spawnFloat(G.W/2,G.H/2,'🌙 LUNAR BURST!','#c084fc');
+  }
+  G.ultReady=false;G.ultCharge=0;
+  document.getElementById('ult-btn').disabled=true;
+  // Boss damage if present
+  if(G.boss){
+    const dmgAmt=cls.id==='warrior'?40:cls.id==='angel'?25:30;
+    G.boss.hp=Math.max(0,G.boss.hp-dmgAmt);
+    spawnParticles(G.boss.x,G.boss.y,cls.color,20);
+    if(G.boss.hp<=0)killBoss();
+  }
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────
+function dist(x1,y1,x2,y2){return Math.sqrt((x2-x1)**2+(y2-y1)**2);}
+function spawnParticles(x,y,color,n){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=1+Math.random()*4;G.particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,r:1.5+Math.random()*2.5,color,life:16+Math.random()*20,maxLife:36});}}
+function spawnGem(x,y,mult=1){for(let i=0;i<mult;i++){G.gems.push({x:x+(Math.random()-0.5)*30,y:y+(Math.random()-0.5)*20,val:5+Math.floor(Math.random()*12),combo:G.combo,life:140+Math.random()*60});}}
+function spawnFloat(x,y,text,color){G.floats.push({x,y,text,color,life:40,maxLife:40});}
+
+// ── DRAW ──────────────────────────────────────────────────────────
+function draw(){
+  const c=G.ctx;
+  c.clearRect(0,0,G.W,G.H);
+  // Deep space bg
+  c.fillStyle='#020817';c.fillRect(0,0,G.W,G.H);
+
+  // Nebula
+  const ng=c.createRadialGradient(G.W*0.3,G.H*0.25,0,G.W*0.3,G.H*0.25,220);
+  ng.addColorStop(0,'rgba(99,102,241,0.055)');ng.addColorStop(1,'rgba(0,0,0,0)');
+  c.fillStyle=ng;c.fillRect(0,0,G.W,G.H);
+  const ng2=c.createRadialGradient(G.W*0.75,G.H*0.65,0,G.W*0.75,G.H*0.65,180);
+  ng2.addColorStop(0,'rgba(168,85,247,0.04)');ng2.addColorStop(1,'rgba(0,0,0,0)');
+  c.fillStyle=ng2;c.fillRect(0,0,G.W,G.H);
+
+  // Stars
+  G.stars.forEach(s=>{c.globalAlpha=s.op;c.fillStyle='#fff';c.beginPath();c.arc(s.x,s.y,s.r,0,Math.PI*2);c.fill();});
+  c.globalAlpha=1;
+
+  // Gems
+  G.gems.forEach(g=>{
+    c.globalAlpha=Math.min(1,g.life/30);
+    c.fillStyle='#fbbf24';c.shadowColor='#fbbf24';c.shadowBlur=8;
+    c.beginPath();c.moveTo(g.x,g.y-7);c.lineTo(g.x+5,g.y);c.lineTo(g.x,g.y+7);c.lineTo(g.x-5,g.y);c.closePath();c.fill();
+    c.shadowBlur=0;c.globalAlpha=1;
+  });
+
+  // Power-up items
+  G.powerupItems.forEach(p=>{
+    c.globalAlpha=Math.min(1,p.life/30);
+    c.shadowColor=p.color;c.shadowBlur=14;
+    c.font='20px serif';c.textAlign='center';c.textBaseline='middle';
+    c.fillText(p.emoji,p.x,p.y+Math.sin(p.bob)*4);
+    c.shadowBlur=0;c.globalAlpha=1;
+  });
+
+  // Particles
+  G.particles.forEach(p=>{
+    c.globalAlpha=Math.max(0,p.life/p.maxLife)*0.85;
+    c.fillStyle=p.color;c.beginPath();c.arc(p.x,p.y,p.r,0,Math.PI*2);c.fill();
+  });
+  c.globalAlpha=1;
+
+  // Enemy bullets
+  G.bullets.filter(b=>!b.own).forEach(b=>{
+    c.fillStyle=b.color||'#fbbf24';c.shadowColor=b.color||'#fbbf24';c.shadowBlur=9;
+    c.beginPath();c.arc(b.x,b.y,b.r,0,Math.PI*2);c.fill();c.shadowBlur=0;
+  });
+
+  // Player bullets
+  const cls=CLASSES.find(c2=>c2.id===G.classId)||CLASSES[0];
+  G.bullets.filter(b=>b.own).forEach(b=>{
+    c.fillStyle=b.color||cls.color;c.shadowColor=b.color||cls.color;c.shadowBlur=b.laser?16:10;
+    c.beginPath();c.arc(b.x,b.y,b.r,0,Math.PI*2);c.fill();c.shadowBlur=0;
+  });
+
+  // Enemies
+  G.enemies.forEach(e=>{
+    c.shadowColor=e.color;c.shadowBlur=12;
+    c.font=`${e.r*1.8}px serif`;c.textAlign='center';c.textBaseline='middle';
+    c.fillText(e.emoji,e.x,e.y);
+    c.shadowBlur=0;
+    if(e.hp<e.maxHp){
+      c.fillStyle='rgba(0,0,0,0.5)';c.fillRect(e.x-e.r,e.y-e.r-10,e.r*2,4);
+      c.fillStyle=e.color;c.fillRect(e.x-e.r,e.y-e.r-10,(e.hp/e.maxHp)*e.r*2,4);
+    }
+  });
+
+  // Boss
+  if(G.boss){
+    const b=G.boss;
+    const dy=b.y+Math.sin(b.bob)*5;
+    // Aura
+    const bg=c.createRadialGradient(b.x,dy,0,b.x,dy,b.r*2.8);
+    bg.addColorStop(0,b.phase2?'rgba(239,68,68,0.22)':b.cfg.glow);
+    bg.addColorStop(1,'rgba(0,0,0,0)');
+    c.fillStyle=bg;c.beginPath();c.arc(b.x,dy,b.r*2.8,0,Math.PI*2);c.fill();
+    // Emoji
+    c.shadowColor=b.enrageTimer>0?'#ff0000':b.cfg.color;
+    c.shadowBlur=b.enrageTimer>0?40:22;
+    c.font=`${b.r*1.6}px serif`;c.textAlign='center';c.textBaseline='middle';
+    c.fillText(b.cfg.emoji,b.x,dy);c.shadowBlur=0;
+    // HP bar bottom
+    const bw=200,bh=10,bx=(G.W-bw)/2,by=G.H-28;
+    c.fillStyle='rgba(0,0,0,0.6)';c.fillRect(bx,by,bw,bh);
+    const hpPct=b.hp/b.cfg.maxHp;
+    const hc=hpPct>0.5?b.cfg.color:hpPct>0.25?'#f97316':'#ef4444';
+    c.fillStyle=hc;c.fillRect(bx,by,hpPct*bw,bh);
+    c.strokeStyle='rgba(255,255,255,0.1)';c.lineWidth=1;c.strokeRect(bx,by,bw,bh);
+    c.fillStyle='#fff';c.font='bold 10px "JetBrains Mono"';c.textAlign='center';
+    c.fillText(`${b.cfg.name} — ${b.hp}/${b.cfg.maxHp}`,G.W/2,by-5);
+    if(b.phase2){c.fillStyle='#ef4444';c.font='bold 8px "JetBrains Mono"';c.fillText('⚡ ENRAGED',G.W/2,by+bh+10);}
+  }
+
+  // Player
+  const invFlash=G.invTimer>0&&Math.floor(G.invTimer*5)%2===0;
+  if(!invFlash){
+    c.shadowColor=cls.glow;c.shadowBlur=22;
+    c.font='34px serif';c.textAlign='center';c.textBaseline='middle';
+    c.fillText(cls.emoji,G.player.x,G.player.y);c.shadowBlur=0;
+    // Shield ring
+    if(G.pups.shield>0){
+      c.strokeStyle='rgba(56,189,248,0.7)';c.lineWidth=2;
+      c.beginPath();c.arc(G.player.x,G.player.y,26,0,Math.PI*2);c.stroke();
+    }
+  }
+
+  // Float texts
+  G.floats.forEach(f=>{
+    const a=Math.min(1,f.life/f.maxLife);
+    c.globalAlpha=a;c.fillStyle=f.color;c.font='bold 13px "JetBrains Mono"';
+    c.textAlign='center';c.textBaseline='middle';c.fillText(f.text,f.x,f.y);
+    c.globalAlpha=1;
+  });
+
+  // Combo indicator
+  if(G.combo>1&&G.comboTimer>0){
+    const alpha=Math.min(1,G.comboTimer/30);
+    c.globalAlpha=alpha;
+    c.fillStyle=G.combo>5?'#fbbf24':'#c084fc';
+    c.font=`bold ${14+G.combo}px "JetBrains Mono"`;c.textAlign='right';c.textBaseline='top';
+    c.fillText(`×${G.combo}`,G.W-12,12);c.globalAlpha=1;
+  }
+
+  // Wave indicator (top center during play)
+  if(G.running&&!G.boss){
+    c.fillStyle='rgba(99,102,241,0.25)';c.font='9px "JetBrains Mono"';c.textAlign='left';c.textBaseline='top';
+    c.fillText(`WAVE ${G.wave}`,8,8);
+  }
+}
+
+// Idle draw (starfield only when not running)
+function drawIdle(){
+  if(G.running)return;
+  G.stars.forEach(s=>{s.y+=s.spd*0.5;if(s.y>G.H)s.y=0;});
+  draw();
+  requestAnimationFrame(drawIdle);
+}
+
+// ── HUD UPDATE ────────────────────────────────────────────────────
+function updateHUD(){
+  document.getElementById('hud-score').textContent=G.score.toLocaleString();
+  const el=document.getElementById('hud-lives');
+  el.innerHTML='';
+  for(let i=0;i<3;i++){const s=document.createElement('span');s.textContent=i<G.lives?'❤️':'🖤';s.style.fontSize='13px';el.appendChild(s);}
+  updateBestHud();
+}
+
+function updateBestHud(){
+  const b=getMyBest();
+  document.getElementById('hud-best').textContent=(b||0).toLocaleString();
+  document.getElementById('stat-best').textContent=b?b.toLocaleString():'—';
+}
+
+function renderSideStats(){
+  document.getElementById('stat-wave').textContent=`Wave ${G.wave}`;
+  document.getElementById('stat-kills').textContent=G.kills;
+  document.getElementById('stat-combo').textContent=`×${G.combo}`;
+}
+
+// ── WAVE BADGE ────────────────────────────────────────────────────
+function showWaveBadge(label){
+  const el=document.getElementById('wave-badge');
+  document.getElementById('wave-num').textContent=label;
+  el.classList.remove('hidden');el.classList.add('wave-pop');
+  G.waveBadgeTimer=100;
+  setTimeout(()=>el.classList.remove('wave-pop'),500);
+}
+
+// ── END GAME ──────────────────────────────────────────────────────
+async function endGame(victory){
+  G.running=false;
+  if(G.animId)cancelAnimationFrame(G.animId);
+  const prev=getMyBest();
+  const isNew=G.score>prev;
+  // Save score
+  await scoresRef.push({
+    name:G.playerName,score:G.score,ts:Date.now(),victory,
+    wave:G.wave,kills:G.kills,combo:G.comboMax,classId:G.classId
+  }).catch(e=>console.error(e));
+  // Show overlay
+  const ov=document.getElementById('overlay-over');
+  ov.classList.remove('hidden');
+  document.getElementById('go-icon').textContent=victory?'🏆':'💀';
+  document.getElementById('go-title').textContent=victory?'Victory!':'Game Over';
+  document.getElementById('go-sub').textContent=victory?`All ${BOSSES.length} bosses defeated!`:`Defeated at Wave ${G.wave}`;
+  document.getElementById('go-score').textContent=G.score.toLocaleString();
+  document.getElementById('go-best').textContent=Math.max(G.score,prev).toLocaleString();
+  document.getElementById('go-kills').textContent=G.kills;
+  document.getElementById('go-wave').textContent=G.wave;
+  document.getElementById('go-combo').textContent=`×${G.comboMax}`;
+  const nb=document.getElementById('go-newbest');
+  if(isNew)nb.classList.remove('hidden');else nb.classList.add('hidden');
+  setTimeout(drawIdle,100);
+}
+
+// ── LEADERBOARD ───────────────────────────────────────────────────
+function renderLeaderboard(){
+  const el=document.getElementById('leaderboard');
+  const scores=Object.values(G.scores||{});
+  if(!scores.length){el.innerHTML='<div class="text-center py-6 text-[10px] text-slate-700">Play first to appear!</div>';return;}
+  const best={};
+  scores.forEach(s=>{if(!best[s.name]||s.score>best[s.name].score)best[s.name]=s;});
+  const sorted=Object.values(best).sort((a,b)=>b.score-a.score).slice(0,12);
+  const medals=['🥇','🥈','🥉'];
+  const clsMap={witch:'🧙‍♀️',angel:'👼',warrior:'⚔️'};
+  el.innerHTML=sorted.map((s,i)=>{
+    const isMe=s.name===G.playerName;
+    const medal=medals[i]||(i+1+'.').padStart(3);
+    const photo=G.photos[encodeKey(s.name)];
+    const clrCls=memberColor(s.name);
+    let av;
+    if(photo){av=`<div class="w-6 h-6 rounded-full overflow-hidden flex-shrink-0"><img src="${photo}" class="w-full h-full object-cover"/></div>`;}
+    else{av=`<div class="w-6 h-6 rounded-full ${clrCls} flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0">${s.name[0]}</div>`;}
+    return`<div class="lb-row ${isMe?'is-me':''} flex items-center gap-2 px-2 py-2">
+      <span class="text-xs w-5 text-center flex-shrink-0">${medals[i]||''}</span>
+      <span class="text-[9px] text-slate-600 w-4 text-center flex-shrink-0">${medals[i]?'':i+1}</span>
+      ${av}
+      <div class="flex-1 min-w-0">
+        <p class="text-[11px] font-semibold text-white truncate">${s.name}${isMe?' <span style="color:#a855f7;font-size:8px;">(you)</span>':''}</p>
+        <p class="text-[9px] text-slate-600 font-mono">${clsMap[s.classId]||''} W${s.wave||1} · ${s.kills||0}kills</p>
+      </div>
+      <span class="text-xs font-black font-mono ${isMe?'text-fuchsia-400':'text-slate-300'} flex-shrink-0">${(s.score||0).toLocaleString()}</span>
+    </div>`;
+  }).join('');
+}
+
+function getMyBest(){
+  if(!G.playerName)return 0;
+  const s=Object.values(G.scores||{}).filter(s=>s.name===G.playerName);
+  if(!s.length)return 0;
+  return Math.max(...s.map(s=>s.score||0));
+}
+
+// ── BOOTSTRAP ────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
