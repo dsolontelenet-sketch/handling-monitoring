@@ -145,27 +145,39 @@
       </div>
     </div>
 
-    <!-- Power-up row -->
-    <div class="flex items-center gap-2 w-full max-w-sm px-2">
-      <div id="pup-shield" class="pup-slot glass rounded-lg px-3 py-1.5 border border-white/10 text-center">
-        <p class="text-lg">🛡</p>
+    <!-- Power-up row 1 -->
+    <div class="flex items-center gap-1.5 w-full max-w-sm px-2">
+      <div id="pup-shield" class="pup-slot glass rounded-lg px-2 py-1.5 border border-white/10 text-center flex-1">
+        <p class="text-base">🛡</p>
         <div class="pup-bar mt-1"><div id="pup-shield-bar" class="pup-bar-fill w-0"></div></div>
       </div>
-      <div id="pup-rapid" class="pup-slot glass rounded-lg px-3 py-1.5 border border-white/10 text-center">
-        <p class="text-lg">⚡</p>
+      <div id="pup-rapid" class="pup-slot glass rounded-lg px-2 py-1.5 border border-white/10 text-center flex-1">
+        <p class="text-base">⚡</p>
         <div class="pup-bar mt-1"><div id="pup-rapid-bar" class="pup-bar-fill w-0"></div></div>
       </div>
-      <div id="pup-spread" class="pup-slot glass rounded-lg px-3 py-1.5 border border-white/10 text-center">
-        <p class="text-lg">💥</p>
+      <div id="pup-spread" class="pup-slot glass rounded-lg px-2 py-1.5 border border-white/10 text-center flex-1">
+        <p class="text-base">💥</p>
         <div class="pup-bar mt-1"><div id="pup-spread-bar" class="pup-bar-fill w-0"></div></div>
       </div>
-      <div id="pup-bomb" class="pup-slot glass rounded-lg px-3 py-1.5 border border-white/10 text-center flex-1">
-        <p class="text-lg">💣</p>
+      <div id="pup-damage" class="pup-slot glass rounded-lg px-2 py-1.5 border border-white/10 text-center flex-1">
+        <p class="text-base">💎</p>
+        <div class="pup-bar mt-1"><div id="pup-damage-bar" class="pup-bar-fill w-0"></div></div>
+      </div>
+      <div id="pup-multishot" class="pup-slot glass rounded-lg px-2 py-1.5 border border-white/10 text-center flex-1">
+        <p class="text-base">🔱</p>
+        <div class="pup-bar mt-1"><div id="pup-multishot-bar" class="pup-bar-fill w-0"></div></div>
+      </div>
+      <div id="pup-homing" class="pup-slot glass rounded-lg px-2 py-1.5 border border-white/10 text-center flex-1">
+        <p class="text-base">🎯</p>
+        <div class="pup-bar mt-1"><div id="pup-homing-bar" class="pup-bar-fill w-0"></div></div>
+      </div>
+      <div id="pup-bomb" class="pup-slot glass rounded-lg px-2 py-1.5 border border-white/10 text-center flex-1">
+        <p class="text-base">💣</p>
         <p id="pup-bomb-count" class="text-[9px] text-slate-500 font-mono">×0</p>
       </div>
       <!-- Ultimate button -->
-      <button id="ult-btn" onclick="activateUlt()" class="glass rounded-lg px-4 py-2 border border-fuchsia-500/30 text-center cursor-pointer flex-1 disabled:opacity-40" disabled>
-        <p class="text-lg" id="ult-emoji">✨</p>
+      <button id="ult-btn" onclick="activateUlt()" class="glass rounded-lg px-3 py-2 border border-fuchsia-500/30 text-center cursor-pointer flex-1 disabled:opacity-40" disabled>
+        <p class="text-base" id="ult-emoji">✨</p>
         <p class="text-[9px] text-fuchsia-400 font-mono" id="ult-label">ULT</p>
       </button>
     </div>
@@ -286,10 +298,13 @@ const BOSSES=[
 
 // ── POWER-UP CONFIGS ─────────────────────────────────────────────
 const POWERUPS=[
-  {type:'shield',emoji:'🛡',color:'#38bdf8',dur:300},
-  {type:'rapid',emoji:'⚡',color:'#facc15',dur:250},
-  {type:'spread',emoji:'💥',color:'#f472b6',dur:220},
-  {type:'bomb',emoji:'💣',color:'#fb923c',dur:0},
+  {type:'shield',   emoji:'🛡',color:'#38bdf8',dur:300},
+  {type:'rapid',    emoji:'⚡',color:'#facc15',dur:250},
+  {type:'spread',   emoji:'💥',color:'#f472b6',dur:220},
+  {type:'bomb',     emoji:'💣',color:'#fb923c',dur:0},
+  {type:'damage',   emoji:'💎',color:'#34d399',dur:280},
+  {type:'multishot',emoji:'🔱',color:'#818cf8',dur:240},
+  {type:'homing',   emoji:'🎯',color:'#fb7185',dur:200},
 ];
 
 // ── GAME STATE ────────────────────────────────────────────────────
@@ -300,10 +315,10 @@ let G={
   combo:1,comboTimer:0,comboMax:1,
   playerName:localStorage.getItem('dops_game_name')||'',
   classId:localStorage.getItem('dops_game_class')||'witch',
-  player:{x:190,y:460,targetX:190},
+  player:{x:190,y:460,targetX:190,targetY:460},
   bullets:[],enemies:[],particles:[],floats:[],gems:[],powerupItems:[],
   boss:null,bossPhase:1,
-  pups:{shield:0,rapid:0,spread:0,bomb:0},
+  pups:{shield:0,rapid:0,spread:0,bomb:0,damage:0,multishot:0,homing:0},
   ultReady:false,ultCharge:0,
   stars:[],nebs:[],
   spawnTimer:0,
@@ -321,10 +336,10 @@ function init(){
   // Stars
   for(let i=0;i<90;i++)G.stars.push({x:Math.random()*G.W,y:Math.random()*G.H,r:Math.random()*1.4+0.2,spd:0.25+Math.random()*0.6,op:Math.random()*0.7+0.2});
 
-  // Mouse
-  G.canvas.addEventListener('mousemove',e=>{const r=G.canvas.getBoundingClientRect();G.player.targetX=(e.clientX-r.left)*(G.W/r.width);});
-  G.canvas.addEventListener('touchmove',e=>{e.preventDefault();const r=G.canvas.getBoundingClientRect();G.player.targetX=(e.touches[0].clientX-r.left)*(G.W/r.width);},{passive:false});
-  G.canvas.addEventListener('touchstart',e=>{const r=G.canvas.getBoundingClientRect();G.player.targetX=(e.touches[0].clientX-r.left)*(G.W/r.width);},{passive:true});
+  // Mouse / Touch — full XY movement
+  G.canvas.addEventListener('mousemove',e=>{const r=G.canvas.getBoundingClientRect();G.player.targetX=(e.clientX-r.left)*(G.W/r.width);G.player.targetY=(e.clientY-r.top)*(G.H/r.height);});
+  G.canvas.addEventListener('touchmove',e=>{e.preventDefault();const r=G.canvas.getBoundingClientRect();G.player.targetX=(e.touches[0].clientX-r.left)*(G.W/r.width);G.player.targetY=(e.touches[0].clientY-r.top)*(G.H/r.height);},{passive:false});
+  G.canvas.addEventListener('touchstart',e=>{const r=G.canvas.getBoundingClientRect();G.player.targetX=(e.touches[0].clientX-r.left)*(G.W/r.width);G.player.targetY=(e.touches[0].clientY-r.top)*(G.H/r.height);},{passive:true});
 
   // Firebase listeners
   scoresRef.on('value',s=>{G.scores=s.val()||{};renderLeaderboard();updateBestHud();renderSideStats();});
@@ -424,9 +439,9 @@ function startGame(){
   G.score=0;G.lives=3;G.wave=1;G.kills=0;G.combo=1;G.comboTimer=0;G.comboMax=1;
   G.bossPhase=1;G.boss=null;
   G.bullets=[];G.enemies=[];G.particles=[];G.floats=[];G.gems=[];G.powerupItems=[];
-  G.pups={shield:0,rapid:0,spread:0,bomb:0};
+  G.pups={shield:0,rapid:0,spread:0,bomb:0,damage:0,multishot:0,homing:0};
   G.ultReady=false;G.ultCharge=0;
-  G.player={x:190,y:460,targetX:190,shootTimer:0};
+  G.player={x:190,y:460,targetX:190,targetY:460,shootTimer:0};
   G.spawnTimer=0;G.invTimer=0;G.waveBadgeTimer=0;G.bossWarnTimer=0;
 
   document.getElementById('overlay-start').style.display='none';
@@ -458,9 +473,11 @@ function gameLoop(ts){
 function update(dt){
   const cls=CLASSES.find(c=>c.id===G.classId)||CLASSES[0];
 
-  // Player move
+  // Player move (full XY)
   const tx=Math.max(22,Math.min(G.W-22,G.player.targetX));
+  const ty=Math.max(22,Math.min(G.H-22,G.player.targetY));
   G.player.x+=(tx-G.player.x)*0.16*dt;
+  G.player.y+=(ty-G.player.y)*0.16*dt;
 
   // Shooting
   G.player.shootTimer=(G.player.shootTimer||0)-dt;
@@ -477,7 +494,7 @@ function update(dt){
   if(G.comboTimer>0){G.comboTimer-=dt;if(G.comboTimer<=0){G.combo=1;renderSideStats();}}
 
   // Power-up timers
-  ['shield','rapid','spread'].forEach(k=>{if(G.pups[k]>0){G.pups[k]-=dt;if(G.pups[k]<0)G.pups[k]=0;updatePupUI();}});
+  ['shield','rapid','spread','damage','multishot','homing'].forEach(k=>{if(G.pups[k]>0){G.pups[k]-=dt;if(G.pups[k]<0)G.pups[k]=0;updatePupUI();}});
 
   // Ult charge
   if(!G.ultReady){G.ultCharge+=dt*0.18;if(G.ultCharge>=100){G.ultCharge=100;G.ultReady=true;document.getElementById('ult-btn').disabled=false;}}
@@ -500,6 +517,18 @@ function update(dt){
   // Bullets
   for(let i=G.bullets.length-1;i>=0;i--){
     const b=G.bullets[i];
+    // Homing: steer toward nearest enemy
+    if(b.homing&&b.own){
+      let nearest=null,nd=9999;
+      const targets=G.boss?[G.boss]:[...G.enemies];
+      for(const t of targets){const d=dist(b.x,b.y,t.x,t.y);if(d<nd){nd=d;nearest=t;}}
+      if(nearest&&nd<220){
+        const dx=nearest.x-b.x,dy=nearest.y-b.y,len=Math.sqrt(dx*dx+dy*dy)||1;
+        b.vx+=(dx/len)*0.7*dt; b.vy+=(dy/len)*0.7*dt;
+        const spd=Math.sqrt(b.vx*b.vx+b.vy*b.vy);
+        if(spd>13){b.vx=(b.vx/spd)*13;b.vy=(b.vy/spd)*13;}
+      }
+    }
     b.x+=b.vx*dt;b.y+=b.vy*dt;
     if(b.y<-30||b.y>G.H+30||b.x<-30||b.x>G.W+30){G.bullets.splice(i,1);continue;}
 
@@ -621,20 +650,38 @@ function update(dt){
 // ── FIRE PLAYER ───────────────────────────────────────────────────
 function firePlayer(cls){
   const x=G.player.x,y=G.player.y-20;
-  const dmg=cls.damage*(G.pups.rapid>0?1.5:1);
+  // Damage scales with wave + power-ups
+  const waveDmgBonus=1+Math.floor((G.wave-1)*0.15);
+  let dmg=cls.damage*waveDmgBonus*(G.pups.rapid>0?1.5:1)*(G.pups.damage>0?2.2:1);
   const isSpread=G.pups.spread>0||cls.shotType==='spread';
+  const isHoming=G.pups.homing>0;
+  const isMulti=G.pups.multishot>0;
+
+  function makeBullet(bx,by,vx,vy,r,color){
+    return{x:bx,y:by,vx,vy,r,own:true,dmg,color,homing:isHoming};
+  }
+
   if(cls.shotType==='laser'){
-    G.bullets.push({x,y,vx:0,vy:-12,r:6,own:true,dmg,color:cls.color,laser:true});
+    G.bullets.push(makeBullet(x,y,0,-12,6,cls.color));
+    if(isMulti){
+      G.bullets.push(makeBullet(x-18,y,-0.4,-11,5,cls.color));
+      G.bullets.push(makeBullet(x+18,y,0.4,-11,5,cls.color));
+    }
   } else if(cls.shotType==='heavy'){
-    G.bullets.push({x:x-16,y,vx:-0.3,vy:-9,r:6,own:true,dmg,color:cls.color});
-    G.bullets.push({x:x+16,y,vx:0.3,vy:-9,r:6,own:true,dmg,color:cls.color});
-    if(isSpread){G.bullets.push({x,y,vx:0,vy:-10,r:5,own:true,dmg,color:cls.color});}
+    G.bullets.push(makeBullet(x-16,y,-0.3,-9,6,cls.color));
+    G.bullets.push(makeBullet(x+16,y,0.3,-9,6,cls.color));
+    if(isSpread||isMulti){G.bullets.push(makeBullet(x,y,0,-10,5,cls.color));}
+    if(isMulti){
+      G.bullets.push(makeBullet(x-30,y,-1.2,-8,4,cls.color));
+      G.bullets.push(makeBullet(x+30,y,1.2,-8,4,cls.color));
+    }
   } else {
-    // witch spread
+    // Witch spread
     const count=isSpread?5:3;
-    for(let k=0;k<count;k++){
-      const angle=(Math.PI/(count+1))*(k+1);
-      G.bullets.push({x,y,vx:Math.cos(angle)*2*(k-(count-1)/2)*0.4,vy:-8-Math.abs(k-(count-1)/2)*0.5,r:4,own:true,dmg,color:cls.color});
+    const extraCount=isMulti?count+2:count;
+    for(let k=0;k<extraCount;k++){
+      const angle=(Math.PI/(extraCount+1))*(k+1);
+      G.bullets.push(makeBullet(x,y,Math.cos(angle)*2*(k-(extraCount-1)/2)*0.4,-8-Math.abs(k-(extraCount-1)/2)*0.5,4,cls.color));
     }
   }
 }
@@ -728,7 +775,7 @@ function hitPlayer(){
 
 // ── POWER-UPS ─────────────────────────────────────────────────────
 function spawnPowerupItem(x,y){
-  const types=['shield','rapid','spread','bomb'];
+  const types=['shield','rapid','spread','bomb','damage','multishot','homing'];
   const type=types[Math.floor(Math.random()*types.length)];
   const cfg=POWERUPS.find(p=>p.type===type);
   G.powerupItems.push({x,y,type,emoji:cfg.emoji,color:cfg.color,r:14,life:180,bob:0});
@@ -737,11 +784,12 @@ function spawnPowerupItem(x,y){
 function applyPowerup(type){
   const cfg=POWERUPS.find(p=>p.type===type);
   if(type==='bomb'){G.pups.bomb++;updatePupUI();}
-  else{G.pups[type]=(cfg.dur||200);updatePupUI();}
+  else{G.pups[type]=(cfg?cfg.dur:200);updatePupUI();}
+  spawnFloat(G.player.x,G.player.y,{shield:'🛡 SHIELD!',rapid:'⚡ RAPID!',spread:'💥 SPREAD!',damage:'💎 DAMAGE UP!',multishot:'🔱 MULTISHOT!',homing:'🎯 HOMING!',bomb:'💣 BOMB!'}[type]||'POWER UP!',cfg?cfg.color:'#fff');
 }
 
 function updatePupUI(){
-  ['shield','rapid','spread'].forEach(k=>{
+  ['shield','rapid','spread','damage','multishot','homing'].forEach(k=>{
     const slot=document.getElementById('pup-'+k);
     const bar=document.getElementById('pup-'+k+'-bar');
     const cfg=POWERUPS.find(p=>p.type===k);
