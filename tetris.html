@@ -19,7 +19,6 @@
 html,body{width:100%;height:100%;background:var(--bg);color:var(--text);
   font-family:'Exo 2',sans-serif;overflow:hidden;user-select:none;}
 
-/* Animated grid bg */
 body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background-image:linear-gradient(rgba(0,245,255,0.025) 1px,transparent 1px),
     linear-gradient(90deg,rgba(0,245,255,0.025) 1px,transparent 1px);
@@ -27,9 +26,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background:radial-gradient(ellipse 50% 50% at 15% 25%,rgba(0,245,255,0.06) 0%,transparent 60%),
     radial-gradient(ellipse 50% 50% at 85% 75%,rgba(191,95,255,0.06) 0%,transparent 60%);}
-@keyframes bgPulse{0%,100%{opacity:1}50%{opacity:0.6}}
 
-/* Screens */
 .screen{position:fixed;inset:0;z-index:10;display:flex;align-items:center;
   justify-content:center;overflow:auto;padding:16px;}
 .screen.hidden{display:none!important;}
@@ -103,7 +100,6 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .game-arena{display:flex;align-items:flex-start;justify-content:center;gap:10px;
   flex:1;min-height:0;}
 
-/* Game panel containers */
 .game-left{display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
 .game-right{display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
 .panel-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;
@@ -134,16 +130,10 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   position:relative;overflow:hidden;display:none;}
 .garbage-fill{position:absolute;bottom:0;left:0;right:0;background:var(--red);border-radius:6px;
   transition:height 0.3s ease;box-shadow:0 0 8px rgba(255,23,68,0.6);}
-.incoming-warn{position:absolute;bottom:0;left:0;right:0;
-  font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--red);
-  text-align:center;padding:2px;pointer-events:none;}
 .shake{animation:shake 0.4s ease;}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}
   40%{transform:translateX(6px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
-.line-clear-flash{animation:flash 0.3s ease;}
-@keyframes flash{0%{opacity:1}50%{opacity:0.4}100%{opacity:1}}
 
-/* Pause overlay */
 #pause-overlay{position:absolute;inset:0;z-index:50;background:rgba(3,6,15,0.85);
   display:none;align-items:center;justify-content:center;border-radius:4px;
   flex-direction:column;gap:16px;}
@@ -151,7 +141,7 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .pause-text{font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;
   letter-spacing:6px;color:var(--cyan);text-shadow:0 0 30px rgba(0,245,255,0.8);}
 
-/* Game over/end overlay */
+/* ── END ── */
 #s-end{flex-direction:column;gap:0;}
 .end-wrap{display:flex;flex-direction:column;align-items:center;gap:20px;
   width:100%;max-width:400px;text-align:center;}
@@ -166,7 +156,7 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .end-stat-lbl{font-size:10px;color:var(--dim);font-family:'Share Tech Mono',monospace;
   letter-spacing:1px;text-transform:uppercase;margin-top:3px;}
 
-/* Leaderboard */
+/* ── LEADERBOARD ── */
 #s-lb{flex-direction:column;gap:0;}
 .lb-wrap{width:100%;max-width:500px;display:flex;flex-direction:column;gap:16px;}
 .lb-title{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;
@@ -193,25 +183,24 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .lb-empty{padding:30px;text-align:center;font-size:12px;color:var(--dim);
   font-family:'Share Tech Mono',monospace;}
 
-/* Mobile controls */
+/* ── MOBILE CONTROLS ── */
 #mobile-ctrl{display:none;position:fixed;bottom:0;left:0;right:0;z-index:20;
   padding:8px 12px 16px;background:linear-gradient(transparent,rgba(3,6,15,0.95));
   gap:8px;justify-content:center;}
 .ctrl-row{display:flex;gap:8px;justify-content:center;}
 .ctrl-btn{width:56px;height:46px;background:rgba(0,245,255,0.08);
   border:1px solid rgba(0,245,255,0.2);border-radius:10px;
-  color:var(--cyan);font-size:18px;display:flex;align-items:center;justify-content:center;
+  color:var(--cyan);display:flex;align-items:center;justify-content:center;
   cursor:pointer;transition:all 0.1s;-webkit-tap-highlight-color:transparent;
-  font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;}
+  font-size:11px;letter-spacing:1px;font-family:'Share Tech Mono',monospace;}
 .ctrl-btn:active{background:rgba(0,245,255,0.2);transform:scale(0.93);}
 .ctrl-btn.wide{width:76px;}
 .ctrl-btn.hold-btn{background:rgba(255,145,0,0.08);border-color:rgba(255,145,0,0.2);color:var(--orange);}
 .ctrl-btn.hold-btn:active{background:rgba(255,145,0,0.2);}
 .ctrl-btn.drop-btn{background:rgba(255,23,68,0.08);border-color:rgba(255,23,68,0.2);color:var(--red);}
 
-/* Toast */
-#game-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:100;
-  pointer-events:none;}
+/* ── TOAST ── */
+#game-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:100;pointer-events:none;}
 .toast-msg{background:var(--panel);border:1px solid rgba(0,245,255,0.3);
   border-radius:10px;padding:8px 18px;font-family:'Orbitron',sans-serif;
   font-size:11px;font-weight:700;letter-spacing:2px;color:var(--cyan);
@@ -220,10 +209,14 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 @keyframes toastAnim{0%{opacity:0;transform:translateY(-10px)}15%{opacity:1;transform:translateY(0)}
   75%{opacity:1}100%{opacity:0;transform:translateY(-8px)}}
 
-/* Particles canvas */
+/* ── CONTROLS HINT ── */
+.controls-hint{background:rgba(0,245,255,0.04);border:1px solid rgba(0,245,255,0.1);
+  border-radius:10px;padding:10px 14px;font-family:'Share Tech Mono',monospace;
+  font-size:9px;letter-spacing:1px;color:var(--dim);line-height:1.8;}
+.controls-hint b{color:var(--cyan);}
+
 #particle-canvas{position:fixed;inset:0;z-index:5;pointer-events:none;}
 
-/* Responsive */
 @media(max-width:600px){
   #mobile-ctrl{display:flex;flex-direction:column;}
   .game-arena{gap:6px;}
@@ -249,6 +242,12 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       <input id="player-name" class="inp" placeholder="Enter your name…" maxlength="18" autocomplete="off"/>
     </div>
 
+    <!-- Controls hint -->
+    <div class="controls-hint">
+      <b>← →</b> Move &nbsp;|&nbsp; <b>↑ / X</b> Rotate CW &nbsp;|&nbsp; <b>Z / LShift</b> Rotate CCW<br>
+      <b>↓</b> Soft drop &nbsp;|&nbsp; <b>Space</b> Hard drop &nbsp;|&nbsp; <b>C / RShift</b> Hold &nbsp;|&nbsp; <b>P / Esc</b> Pause
+    </div>
+
     <div class="menu-btns">
       <button class="btn btn-cyan" onclick="startSolo()">
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -260,9 +259,7 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 
       <div class="divider"><span>— BATTLE MODE —</span></div>
 
-      <button class="btn btn-purple" onclick="createRoom()">
-        ⚔ Create Battle Room
-      </button>
+      <button class="btn btn-purple" onclick="createRoom()">⚔ Create Battle Room</button>
 
       <div class="room-input-wrap">
         <input id="join-code" class="inp" placeholder="ROOM CODE" maxlength="6" autocomplete="off"/>
@@ -270,9 +267,7 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       </div>
 
       <div class="divider"><span>—</span></div>
-      <button class="btn btn-ghost" onclick="showScreen('s-lb');loadLeaderboard()">
-        🏆 Leaderboard
-      </button>
+      <button class="btn btn-ghost" onclick="showScreen('s-lb');loadLeaderboard()">🏆 Leaderboard</button>
       <a href="index.html" style="text-decoration:none;">
         <button class="btn btn-ghost" style="width:100%">← Back to Dashboard</button>
       </a>
@@ -327,7 +322,6 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   </div>
 
   <div class="game-arena" id="game-arena">
-    <!-- Left panel: Hold + Next -->
     <div class="game-left" id="left-panel">
       <div class="panel-box">
         <div class="panel-label">HOLD</div>
@@ -348,7 +342,6 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       <div class="combo-display" id="ui-combo"></div>
     </div>
 
-    <!-- Main board -->
     <div class="main-board-wrap" id="main-board-wrap">
       <canvas id="canvas-main"></canvas>
       <div id="pause-overlay">
@@ -357,7 +350,6 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       </div>
     </div>
 
-    <!-- Right panel: Next pieces + garbage -->
     <div class="game-right" id="right-panel">
       <div class="panel-box">
         <div class="panel-label">NEXT</div>
@@ -377,7 +369,6 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       </div>
     </div>
 
-    <!-- Opponent board (battle mode only) -->
     <div class="opp-wrap hidden" id="opp-wrap">
       <div class="opp-name" id="opp-name">OPPONENT</div>
       <canvas id="canvas-opp"></canvas>
@@ -390,7 +381,6 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
     </div>
   </div>
 
-  <!-- Mobile controls -->
   <div id="mobile-ctrl">
     <div class="ctrl-row">
       <button class="ctrl-btn hold-btn" onclick="game&&game.hold()">HOLD</button>
@@ -399,9 +389,9 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       <button class="ctrl-btn" onclick="game&&game.rotate(1)">↻</button>
     </div>
     <div class="ctrl-row">
-      <button class="ctrl-btn wide" onpointerdown="startRepeat('left')" onpointerup="stopRepeat()" onpointerleave="stopRepeat()">◀◀</button>
-      <button class="ctrl-btn" onpointerdown="startRepeat('down')" onpointerup="stopRepeat()" onpointerleave="stopRepeat()">▼</button>
-      <button class="ctrl-btn wide" onpointerdown="startRepeat('right')" onpointerup="stopRepeat()" onpointerleave="stopRepeat()">▶▶</button>
+      <button class="ctrl-btn wide" onpointerdown="startRepeatMobile('left')" onpointerup="stopRepeat()" onpointerleave="stopRepeat()">◀◀</button>
+      <button class="ctrl-btn" onpointerdown="startRepeatMobile('down')" onpointerup="stopRepeat()" onpointerleave="stopRepeat()">▼</button>
+      <button class="ctrl-btn wide" onpointerdown="startRepeatMobile('right')" onpointerup="stopRepeat()" onpointerleave="stopRepeat()">▶▶</button>
     </div>
   </div>
 </div>
@@ -453,7 +443,6 @@ const roomsRef=rtdb.ref('tetris/rooms');
 const BOARD_W=10,BOARD_H=20;
 const PIECE_TYPES=['I','O','T','S','Z','J','L'];
 
-// SRS piece definitions: [row,col] offsets from bounding box top-left
 const PIECES={
   I:{color:'#00f5ff',dark:'rgba(0,245,255,0.15)',
     states:[[[1,0],[1,1],[1,2],[1,3]],[[0,2],[1,2],[2,2],[3,2]],
@@ -485,7 +474,6 @@ const PIECES={
     spawn:[0,3]},
 };
 
-// SRS wall kick data [row,col] offsets
 const KICKS_JLSTZ={
   '0->1':[[0,0],[0,-1],[-1,-1],[2,0],[2,-1]],
   '1->0':[[0,0],[0,1],[1,1],[-2,0],[-2,1]],
@@ -520,7 +508,7 @@ class TetrisEngine{
     this.score=0;this.level=1;this.lines=0;this.combo=-1;
     this.b2b=false;this.gameOver=false;this.paused=false;
     this.lockTimer=0;this.lockDelay=500;this.lockMoves=0;
-    this.lastDrop=0;this.garbage=[];this.linesThisTurn=0;
+    this.lastDrop=0;this.garbage=[];
     this.callbacks={onScore:null,onGameOver:null,onLineClear:null,onLock:null,onGarbage:null};
     this.fillQueue();this.spawn();
   }
@@ -577,9 +565,7 @@ class TetrisEngine{
   resetLock(){if(!this.collides(this.cur,1,0)){this.lockTimer=0;this.lockMoves++;}}
   lock(){
     if(this.gameOver)return;
-    // Apply garbage before locking
     if(this.garbage.length){const g=this.garbage.shift();this.applyGarbage(g);}
-    // Place piece
     for(const[r,c]of PIECES[this.cur.type].states[this.cur.state]){
       const nr=this.cur.row+r,nc=this.cur.col+c;
       if(nr>=0&&nr<BOARD_H)this.board[nr][nc]=PIECES[this.cur.type].color;
@@ -592,18 +578,15 @@ class TetrisEngine{
     const full=[];
     for(let r=0;r<BOARD_H;r++){if(this.board[r].every(c=>c!==null))full.push(r);}
     if(!full.length){this.combo=-1;return;}
-    // Remove lines
     full.forEach(r=>{this.board.splice(r,1);this.board.unshift(Array(BOARD_W).fill(null));});
     const n=full.length;this.lines+=n;this.combo++;
     const newLevel=Math.floor(this.lines/LEVEL_LINES)+1;
     const leveled=newLevel>this.level;if(leveled)this.level=Math.min(newLevel,20);
-    // Scoring
     let pts=SCORE_TABLE[n]||1200;pts*=this.level;
     if(this.combo>0)pts+=50*this.combo*this.level;
     const isB2B=n===4&&this.b2b;if(isB2B)pts=Math.floor(pts*1.5);
     if(n>=4||isB2B)this.b2b=true;else if(n>0&&n<4)this.b2b=false;
     this.score+=pts;
-    // Garbage to send
     const garb=GARBAGE_TABLE[n]||0;
     const totalGarb=garb+(this.combo>1?Math.floor(this.combo/2):0)+(isB2B?1:0);
     this.callbacks.onLineClear&&this.callbacks.onLineClear({lines:n,score:pts,combo:this.combo,b2b:isB2B,garbage:totalGarb,leveled});
@@ -631,14 +614,13 @@ class TetrisEngine{
 }
 
 // ── RENDERER ──────────────────────────────────────────────────────
-const C={}; // canvases
-const CTX={}; // contexts
-let CELL=28; // cell size in px
+const C={};
+const CTX={};
+let CELL=28;
 
 function initCanvases(){
   const mh=window.innerHeight-100;
   const mw=window.innerWidth;
-  // Compute cell size
   const isBattle=gameMode==='battle';
   if(isBattle){
     CELL=Math.min(Math.floor(mh/BOARD_H),Math.floor(mw*0.3/BOARD_W),28);
@@ -672,18 +654,14 @@ function drawCell(ctx,x,y,sz,color,ghost=false){
     ctx.strokeRect(x+1,y+1,sz-2,sz-2);
     ctx.globalAlpha=1;ctx.restore();return;
   }
-  // Fill
   ctx.fillStyle=color;
   ctx.fillRect(x+1,y+1,sz-2,sz-2);
-  // Highlight top-left
   ctx.fillStyle='rgba(255,255,255,0.25)';
   ctx.fillRect(x+1,y+1,sz-2,2);
   ctx.fillRect(x+1,y+1,2,sz-2);
-  // Shadow bottom-right
   ctx.fillStyle='rgba(0,0,0,0.35)';
   ctx.fillRect(x+1,y+sz-3,sz-2,2);
   ctx.fillRect(x+sz-3,y+1,2,sz-2);
-  // Glow
   ctx.shadowColor=color;ctx.shadowBlur=8;
   ctx.fillStyle=color;
   ctx.fillRect(x+3,y+3,sz-6,sz-6);
@@ -693,23 +671,19 @@ function drawCell(ctx,x,y,sz,color,ghost=false){
 
 function drawBoard(eng,ctx,cell){
   ctx.clearRect(0,0,BOARD_W*cell,BOARD_H*cell);
-  // Grid
   ctx.strokeStyle='rgba(0,245,255,0.04)';ctx.lineWidth=0.5;
   for(let r=0;r<BOARD_H;r++)for(let c=0;c<BOARD_W;c++){
     ctx.strokeRect(c*cell,r*cell,cell,cell);
   }
-  // Board cells
   for(let r=0;r<BOARD_H;r++)for(let c=0;c<BOARD_W;c++){
     if(eng.board[r][c])drawCell(ctx,c*cell,r*cell,cell,eng.board[r][c]);
   }
   if(!eng.cur||eng.gameOver)return;
-  // Ghost piece
   const gr=eng.ghostRow();
   for(const[r,c]of PIECES[eng.cur.type].states[eng.cur.state]){
     const pr=gr+r,pc=eng.cur.col+c;
     if(pr>=0)drawCell(ctx,pc*cell,pr*cell,cell,PIECES[eng.cur.type].color,true);
   }
-  // Current piece
   for(const[r,c]of PIECES[eng.cur.type].states[eng.cur.state]){
     const pr=eng.cur.row+r,pc=eng.cur.col+c;
     if(pr>=0)drawCell(ctx,pc*cell,pr*cell,cell,PIECES[eng.cur.type].color);
@@ -758,7 +732,7 @@ function renderOpp(boardData,oppCell){
   }
 }
 
-// ── AUDIO ENGINE ─────────────────────────────────────────────────
+// ── AUDIO ─────────────────────────────────────────────────────────
 let audioCtx=null;
 function getAudio(){if(!audioCtx){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}return audioCtx;}
 function playTone(freq,dur,type='sine',gain=0.15){
@@ -784,7 +758,7 @@ function sfx(name){
   }
 }
 
-// ── PARTICLES ────────────────────────────────────────────────────
+// ── PARTICLES ─────────────────────────────────────────────────────
 let pCanvas,pCtx,particles=[];
 function initParticles(){
   pCanvas=document.getElementById('particle-canvas');
@@ -820,35 +794,127 @@ function updateParticles(){
 }
 
 // ── INPUT HANDLER ─────────────────────────────────────────────────
-let keys={};let repeatTimers={};let repeatIntervals={};
+// ╔══════════════════════════════════════════════════════════════╗
+// ║  FIX: startRepeat() no longer calls fn() immediately.       ║
+// ║  The keydown handler already moved the piece once.          ║
+// ║  startRepeat() only sets up the DAS delay + repeat timer.   ║
+// ║  This prevents the double-step on first press.              ║
+// ║                                                             ║
+// ║  Also added: Left Shift = Rotate CCW                        ║
+// ╚══════════════════════════════════════════════════════════════╝
+
+let repeatTimers={};let repeatIntervals={};
+
 document.addEventListener('keydown',e=>{
-  if(e.repeat)return;keys[e.code]=true;
+  if(e.repeat)return; // native repeat — ignored, we handle our own
   if(!game||game.gameOver)return;
   switch(e.code){
-    case'ArrowLeft':case'KeyA':sfx('move');game.move(-1);startRepeat('left');break;
-    case'ArrowRight':case'KeyD':sfx('move');game.move(1);startRepeat('right');break;
-    case'ArrowDown':case'KeyS':startRepeat('down');break;
-    case'ArrowUp':case'KeyW':sfx('rotate');game.rotate(1);break;
-    case'KeyZ':sfx('rotate');game.rotate(-1);break;
-    case'KeyX':sfx('rotate');game.rotate(1);break;
-    case'Space':e.preventDefault();sfx('drop');game.hardDrop();break;
-    case'KeyC':case'ShiftLeft':case'ShiftRight':sfx('hold');game.hold();break;
-    case'KeyP':case'Escape':togglePause();break;
+    // ── Move left ──────────────────────────────────────────────
+    case'ArrowLeft':
+    case'KeyA':
+      e.preventDefault();
+      sfx('move');
+      game.move(-1);          // one clean step on first press
+      startRepeat('left');    // DAS kicks in after 150ms delay
+      break;
+
+    // ── Move right ─────────────────────────────────────────────
+    case'ArrowRight':
+    case'KeyD':
+      e.preventDefault();
+      sfx('move');
+      game.move(1);
+      startRepeat('right');
+      break;
+
+    // ── Soft drop ──────────────────────────────────────────────
+    case'ArrowDown':
+    case'KeyS':
+      e.preventDefault();
+      game.softDrop();
+      startRepeat('down');
+      break;
+
+    // ── Rotate CW ──────────────────────────────────────────────
+    case'ArrowUp':
+    case'KeyX':
+      e.preventDefault();
+      sfx('rotate');
+      game.rotate(1);
+      break;
+
+    // ── Rotate CCW — Z key OR Left Shift ───────────────────────
+    case'KeyZ':
+    case'ShiftLeft':          // ← NEW: Left Shift = rotate CCW
+      e.preventDefault();
+      sfx('rotate');
+      game.rotate(-1);
+      break;
+
+    // ── Hard drop ──────────────────────────────────────────────
+    case'Space':
+      e.preventDefault();
+      sfx('drop');
+      game.hardDrop();
+      break;
+
+    // ── Hold ───────────────────────────────────────────────────
+    case'KeyC':
+    case'ShiftRight':
+      e.preventDefault();
+      sfx('hold');
+      game.hold();
+      break;
+
+    // ── Pause ──────────────────────────────────────────────────
+    case'KeyP':
+    case'Escape':
+      togglePause();
+      break;
   }
 });
-document.addEventListener('keyup',e=>{keys[e.code]=false;stopRepeat();});
+
+document.addEventListener('keyup',e=>{
+  // Stop DAS repeat when key is released
+  switch(e.code){
+    case'ArrowLeft':case'KeyA':stopRepeat('left');break;
+    case'ArrowRight':case'KeyD':stopRepeat('right');break;
+    case'ArrowDown':case'KeyS':stopRepeat('down');break;
+  }
+});
+
+// DAS (Delayed Auto Shift) — called ONLY from keydown, no initial move here
 function startRepeat(dir){
-  stopRepeat();
-  const fn=dir==='left'?()=>game&&game.move(-1)&&sfx('move')
-          :dir==='right'?()=>game&&game.move(1)&&sfx('move')
-          :()=>game&&game.softDrop();
-  fn();
-  repeatTimers[dir]=setTimeout(()=>{repeatIntervals[dir]=setInterval(fn,50);},150);
+  stopRepeat(dir); // clear any existing for this direction
+  const fn = dir==='left' ? ()=>{if(game)game.move(-1)&&sfx('move');}
+           : dir==='right'? ()=>{if(game)game.move(1)&&sfx('move');}
+           :                ()=>{if(game)game.softDrop();};
+  // DAS: wait 150ms before starting the repeat interval at 50ms
+  repeatTimers[dir]=setTimeout(()=>{
+    repeatIntervals[dir]=setInterval(fn,50);
+  },150);
 }
-function stopRepeat(){
-  Object.values(repeatTimers).forEach(clearTimeout);
-  Object.values(repeatIntervals).forEach(clearInterval);
-  repeatTimers={};repeatIntervals={};
+
+function stopRepeat(dir){
+  if(dir){
+    clearTimeout(repeatTimers[dir]);
+    clearInterval(repeatIntervals[dir]);
+    delete repeatTimers[dir];
+    delete repeatIntervals[dir];
+  }else{
+    // Stop all (used on game over / menu)
+    Object.keys(repeatTimers).forEach(d=>{clearTimeout(repeatTimers[d]);delete repeatTimers[d];});
+    Object.keys(repeatIntervals).forEach(d=>{clearInterval(repeatIntervals[d]);delete repeatIntervals[d];});
+  }
+}
+
+// Mobile: tap fires one move, then DAS
+function startRepeatMobile(dir){
+  stopRepeat(dir);
+  if(dir==='left'){sfx('move');game&&game.move(-1);}
+  else if(dir==='right'){sfx('move');game&&game.move(1);}
+  else if(dir==='down'){game&&game.softDrop();}
+  startRepeat(dir);
 }
 
 // ── UI HELPERS ────────────────────────────────────────────────────
@@ -868,16 +934,16 @@ function updateUI(eng){
 }
 function showCombo(combo,b2b){
   const el=document.getElementById('ui-combo');
-  if(combo>0)el.textContent=`COMBO x${combo+1}${b2b?' · B2B':''}`; else el.textContent='';
+  if(combo>0)el.textContent=`COMBO x${combo+1}${b2b?' · B2B':''}`;else el.textContent='';
 }
 
 // ── GAME STATE ────────────────────────────────────────────────────
 let game=null;
-let gameMode='solo'; // 'solo' | 'battle'
+let gameMode='solo';
 let playerName='';
 let roomId=null;
 let roomRef=null;
-let mySlot=null; // 'player1' | 'player2'
+let mySlot=null;
 let oppSlot=null;
 let oppData=null;
 let roomListener=null;
@@ -885,24 +951,21 @@ let boardSyncTimer=0;
 let animFrame=null;
 let lastTimestamp=0;
 
-// ── CORE GAME LOOP ────────────────────────────────────────────────
+// ── GAME LOOP ─────────────────────────────────────────────────────
 function gameLoop(ts){
   animFrame=requestAnimationFrame(gameLoop);
   if(!game)return;
   const dt=ts-lastTimestamp;lastTimestamp=ts;
   if(!game.paused&&!game.gameOver){game.update(ts);}
-  // Draw
   drawBoard(game,CTX.main,CELL);
   if(game.hold)drawMini(CTX.hold,game.hold,0,C.hold.width,C.hold.height);
   else CTX.hold.clearRect(0,0,C.hold.width,C.hold.height);
   drawNextQueue(game.nextQueue);
   updateUI(game);
   updateParticles();
-  // Battle: sync board
   if(gameMode==='battle'&&game&&roomRef){
     boardSyncTimer+=dt;
     if(boardSyncTimer>100){boardSyncTimer=0;syncMyBoard();}
-    // Render opponent
     if(oppData&&oppData.board){
       try{const b=JSON.parse(oppData.board);renderOpp(b,C.opp._cell);}catch(e){}
     }
@@ -928,18 +991,14 @@ function setupRoomListeners(){
   roomListener=roomRef.on('value',snap=>{
     const data=snap.val();
     if(!data)return;
-    // Opponent data
     if(data[oppSlot]){
       oppData=data[oppSlot];
-      // Check if opp has garbage to send to us
       if(oppData.garbageFor&&oppData.garbageFor.to===mySlot&&oppData.garbageFor.amount>0){
         const amount=oppData.garbageFor.amount;
-        // Clear it on their side
         roomRef.child(oppSlot+'/garbageFor').remove();
         if(game&&!game.gameOver){
           game.receiveGarbage(amount);
           sfx('garbage');
-          // Update UI
           const gc=parseInt(document.getElementById('garbage-count').textContent)||0;
           document.getElementById('garbage-count').textContent=Math.max(0,gc+amount);
           document.getElementById('garbage-fill').style.height=Math.min(100,amount*15)+'%';
@@ -947,15 +1006,9 @@ function setupRoomListeners(){
           setTimeout(()=>document.getElementById('main-board-wrap').classList.remove('shake'),400);
         }
       }
-      // Check if opp lost
-      if(oppData.lost&&!game?.gameOver){
-        handleBattleEnd(playerName);
-      }
+      if(oppData.lost&&!game?.gameOver){handleBattleEnd(playerName);}
     }
-    // Check room status
-    if(data.status==='playing'&&!game){
-      startBattleGame();
-    }
+    if(data.status==='playing'&&!game){startBattleGame();}
   });
 }
 
@@ -977,7 +1030,6 @@ function setupGame(){
   if(animFrame)cancelAnimationFrame(animFrame);
   stopRepeat();
 
-  // Show game screen
   showScreen('s-game');
   document.getElementById('mode-badge').textContent=gameMode==='battle'?'⚔ BATTLE':'SOLO';
   document.getElementById('opp-wrap').classList.toggle('hidden',gameMode!=='battle');
@@ -1003,7 +1055,6 @@ function setupGame(){
   game.lastDrop=lastTimestamp;
   animFrame=requestAnimationFrame(gameLoop);
 
-  // Mobile controls visibility
   if('ontouchstart' in window||navigator.maxTouchPoints>0){
     document.getElementById('mobile-ctrl').style.display='flex';
   }
@@ -1020,10 +1071,8 @@ function handleLineClear({lines,score,combo,b2b,garbage,leveled}){
   if(leveled)sfx('levelup'),showToast(`🎉 LEVEL ${game.level}!`,1500);
   showCombo(combo,b2b);
   if(combo>0)showToast(`🔥 ${combo+1}x COMBO! +${score}`,1200);
-  // Particles
   const rect=C.main.getBoundingClientRect();
   spawnLineClearParticles(rect,lines,PIECES[game.cur?.type||'I']?.color||'#00f5ff');
-  // Send garbage in battle
   if(gameMode==='battle'&&garbage>0)sendGarbage(garbage);
 }
 
@@ -1043,9 +1092,7 @@ function handleBattleEnd(winner){
   if(game)game.paused=true;
   const iWon=winner===playerName;
   if(iWon){
-    // Update leaderboard
-    const me=lbRef.child(encodeURIComponent(playerName));
-    me.transaction(cur=>{
+    lbRef.child(encodeURIComponent(playerName)).transaction(cur=>{
       cur=cur||{name:playerName,wins:0,games:0};
       cur.wins=(cur.wins||0)+1;cur.games=(cur.games||0)+1;cur.name=playerName;return cur;
     });
@@ -1094,7 +1141,6 @@ function returnToMenu(){
 
 // ── ROOM MANAGEMENT ───────────────────────────────────────────────
 function genCode(){return Math.random().toString(36).substring(2,8).toUpperCase();}
-function encodeKey(s){return s.replace(/[.#$\[\]]/g,'_');}
 
 async function createRoom(){
   playerName=(document.getElementById('player-name').value||'').trim()||'Player';
@@ -1136,7 +1182,6 @@ async function createRoom(){
       },1200);
     }
   });
-  // Auto-cleanup after 5 min if no join
   setTimeout(()=>{if(roomRef&&!game)roomRef.remove().catch(()=>{});},300000);
 }
 
@@ -1211,14 +1256,13 @@ document.getElementById('player-name').addEventListener('keydown',e=>{if(e.key==
 document.getElementById('join-code').addEventListener('input',e=>{e.target.value=e.target.value.toUpperCase();});
 document.getElementById('join-code').addEventListener('keydown',e=>{if(e.key==='Enter')joinRoom();});
 
-// Load name from localStorage if set
 const savedName=localStorage.getItem('dops_name');
 if(savedName)document.getElementById('player-name').value=savedName;
 document.getElementById('player-name').addEventListener('change',e=>{localStorage.setItem('dops_name',e.target.value);});
 
 initParticles();
 console.log('%c TETRIS BATTLE 🎮 ', 'background:#050a14;color:#00f5ff;font-family:monospace;font-size:14px;font-weight:bold;');
-console.log('Controls: Arrow Keys / WASD · Space = Hard Drop · C/Shift = Hold · Z = CCW · P = Pause');
+console.log('Controls: ← → = Move (1 step) | ↑/X = CW | Z/LShift = CCW | ↓ = Soft Drop | Space = Hard Drop | C/RShift = Hold | P/Esc = Pause');
 </script>
 </body>
 </html>
