@@ -42,6 +42,21 @@ body{
 @keyframes lbSlide{from{transform:translateX(24px);opacity:0;}to{transform:translateX(0);opacity:1;}}
 @keyframes skinHover{0%,100%{transform:scale(1);}50%{transform:scale(1.04);}}
 
+/* ── NEW: Board shake on garbage impact ── */
+@keyframes boardShake{
+  0%,100%{transform:translateX(0);}
+  10%{transform:translateX(-9px);}
+  20%{transform:translateX(9px);}
+  30%{transform:translateX(-8px);}
+  40%{transform:translateX(8px);}
+  55%{transform:translateX(-5px);}
+  70%{transform:translateX(5px);}
+  85%{transform:translateX(-2px);}
+}
+
+/* ── NEW: Chat message slide-in ── */
+@keyframes chatMsgIn{from{opacity:0;transform:translateX(14px);}to{opacity:1;transform:translateX(0);}}
+
 .float-anim{animation:floatY 3.2s ease-in-out infinite;}
 .pop-in{animation:popIn .6s cubic-bezier(.34,1.56,.64,1) both;}
 .slide-up{animation:slideUp .38s ease both;}
@@ -107,6 +122,73 @@ body{
 .lb-entry:hover{background:rgba(99,102,241,.07);}
 .lb-rank{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;}
 
+/* ─── NEW: CHAT PANEL ─── */
+#chat-panel{
+  position:fixed;top:0;right:0;bottom:0;width:240px;
+  background:rgba(4,8,20,.98);
+  border-left:1px solid rgba(16,185,129,.2);
+  display:none;flex-direction:column;z-index:11;overflow:hidden;
+  box-shadow:-6px 0 30px rgba(0,0,0,.5);
+}
+#chat-panel.show{display:flex;}
+#chat-messages{
+  flex:1;overflow-y:auto;padding:6px 0;
+  display:flex;flex-direction:column;gap:1px;
+}
+.chat-msg{
+  padding:6px 10px;
+  word-break:break-word;
+  animation:chatMsgIn .2s ease both;
+  border-bottom:1px solid rgba(255,255,255,.03);
+}
+.chat-msg.mine{background:rgba(99,102,241,.07);}
+.chat-msg.mine .chat-bubble{background:rgba(99,102,241,.18);border:1px solid rgba(99,102,241,.3);}
+.chat-name{font-size:9px;font-weight:800;margin-bottom:3px;letter-spacing:.03em;display:block;}
+.chat-bubble{
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  border-radius:8px;padding:5px 8px;
+  font-size:12px;color:#cbd5e1;line-height:1.45;
+}
+.chat-system{
+  font-size:10px;color:#475569;font-style:italic;
+  text-align:center;padding:4px 8px;display:block;
+}
+.chat-input-wrap{
+  padding:8px 10px;
+  border-top:1px solid rgba(255,255,255,.07);
+  display:flex;gap:6px;align-items:center;
+  background:rgba(4,8,20,.95);
+}
+#chat-input-field{
+  flex:1;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:8px;padding:7px 10px;
+  color:white;font-size:12px;
+  font-family:'Sora',sans-serif;outline:none;
+  transition:border-color .2s,box-shadow .2s;
+}
+#chat-input-field:focus{border-color:rgba(16,185,129,.5);box-shadow:0 0 0 2px rgba(16,185,129,.1);}
+#chat-send-btn{
+  padding:7px 10px;border-radius:8px;
+  font-size:13px;font-weight:700;cursor:pointer;border:none;
+  background:rgba(16,185,129,.25);color:#6ee7b7;
+  font-family:'Sora',sans-serif;transition:all .2s;
+  line-height:1;
+}
+#chat-send-btn:hover{background:rgba(16,185,129,.4);}
+
+/* Unread badge */
+.chat-badge{
+  position:absolute;top:-4px;right:-4px;
+  min-width:16px;height:16px;
+  background:#ef4444;color:white;
+  font-size:9px;font-weight:800;
+  border-radius:8px;padding:0 3px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 6px rgba(239,68,68,.7);
+  display:none;
+}
+
 /* mode toggle */
 .mode-tab{padding:9px 20px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:'Sora',sans-serif;transition:all .2s;}
 .mode-tab.active{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;box-shadow:0 4px 14px rgba(99,102,241,.4);}
@@ -127,12 +209,14 @@ body{
   <p style="font-size:12px;color:#334155;font-family:'JetBrains Mono',monospace;letter-spacing:5px;text-transform:uppercase;">Get Ready</p>
 </div>
 
+<!-- ── NEW: Garbage throw animation container ── -->
+<div id="garb-throw-container" style="position:fixed;inset:0;pointer-events:none;z-index:500;overflow:hidden;"></div>
+
 <!-- ══════════════════════════════════════
      LOBBY SCREEN
 ══════════════════════════════════════ -->
 <div id="s-lobby" class="screen active flex-col items-center justify-center gap-5 p-6" style="overflow-y:auto;">
 
-  <!-- Back to dashboard -->
   <div style="position:absolute;top:16px;left:16px;">
     <a href="https://handling-monitoring.vercel.app/" class="back-btn">
       ← Dashboard
@@ -162,11 +246,9 @@ body{
       onblur="this.style.borderColor='rgba(255,255,255,.09)';this.style.boxShadow='none'"
       placeholder="Your name…"/>
 
-    <!-- BLOCK SKIN PICKER -->
     <label style="font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#64748b;font-weight:600;display:block;margin-bottom:8px;">Block Skin</label>
     <div id="skin-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;"></div>
 
-    <!-- Multiplayer section -->
     <div id="multi-section">
       <label style="font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#64748b;font-weight:600;display:block;margin-bottom:8px;">Max Players (Create Room)</label>
       <div id="mp-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:16px;"></div>
@@ -195,7 +277,6 @@ body{
       </button>
     </div>
 
-    <!-- Solo section -->
     <div id="solo-section" style="display:none;">
       <button onclick="startSolo()"
         style="width:100%;padding:13px;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(135deg,#10b981,#059669);color:white;font-family:'Sora',sans-serif;transition:all .2s;box-shadow:0 4px 20px rgba(16,185,129,.3);"
@@ -219,6 +300,16 @@ body{
   <div style="position:absolute;top:16px;left:16px;">
     <button onclick="cancelWait()" class="back-btn">← Leave Room</button>
   </div>
+
+  <!-- NEW: Chat button in waiting screen -->
+  <div style="position:absolute;top:16px;right:16px;">
+    <button onclick="toggleChat()" style="position:relative;padding:7px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;background:rgba(16,185,129,.12);color:#6ee7b7;border:1px solid rgba(16,185,129,.25);font-family:'Sora',sans-serif;transition:all .2s;"
+      onmouseover="this.style.background='rgba(16,185,129,.22)'" onmouseout="this.style.background='rgba(16,185,129,.12)'">
+      💬 Room Chat
+      <span id="wait-chat-badge" class="chat-badge"></span>
+    </button>
+  </div>
+
   <div class="text-center">
     <p style="font-size:11px;color:#64748b;font-family:'JetBrains Mono',monospace;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;">Room Code</p>
     <div style="background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);border-radius:16px;padding:16px 36px;display:inline-block;box-shadow:0 0 40px rgba(99,102,241,.15);">
@@ -311,7 +402,7 @@ body{
   </div>
 
   <!-- CENTER: Board -->
-  <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+  <div id="board-center" style="display:flex;flex-direction:column;align-items:center;gap:6px;">
     <div style="display:flex;align-items:center;gap:7px;">
       <div class="sdot sdot-green"></div>
       <span id="my-name-lbl" style="font-size:13px;font-weight:700;color:white;"></span>
@@ -322,7 +413,7 @@ body{
     <div id="alive-pill" style="font-size:10px;font-family:'JetBrains Mono',monospace;color:#475569;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:3px 12px;letter-spacing:1px;"></div>
   </div>
 
-  <!-- RIGHT: Next queue -->
+  <!-- RIGHT: Next queue + buttons -->
   <div style="display:flex;flex-direction:column;gap:8px;padding-top:2px;">
     <div class="glass rounded-xl p-2.5">
       <p style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#64748b;font-weight:600;margin-bottom:6px;">Next</p>
@@ -331,11 +422,18 @@ body{
     <div style="text-align:center;padding:6px 0;">
       <p id="room-chip" style="font-size:9px;font-family:'JetBrains Mono',monospace;color:#334155;letter-spacing:2px;"></p>
     </div>
-    <!-- Leaderboard toggle button -->
+    <!-- Leaderboard toggle -->
     <button onclick="toggleLeaderboard()" id="lb-toggle-btn"
       style="padding:7px 6px;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.25);font-family:'Sora',sans-serif;transition:all .2s;"
       onmouseover="this.style.background='rgba(251,191,36,.18)'" onmouseout="this.style.background='rgba(251,191,36,.1)'">
       🏆 Top Wins
+    </button>
+    <!-- NEW: Chat toggle button in game screen -->
+    <button onclick="toggleChat()" id="game-chat-btn"
+      style="position:relative;padding:7px 6px;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;background:rgba(16,185,129,.1);color:#6ee7b7;border:1px solid rgba(16,185,129,.25);font-family:'Sora',sans-serif;transition:all .2s;"
+      onmouseover="this.style.background='rgba(16,185,129,.2)'" onmouseout="this.style.background='rgba(16,185,129,.1)'">
+      💬 Chat
+      <span id="game-chat-badge" class="chat-badge"></span>
     </button>
   </div>
 
@@ -399,6 +497,30 @@ body{
   </div>
 </div>
 
+<!-- ══════════════════════════════════════
+     NEW: CHAT PANEL (fixed right side)
+══════════════════════════════════════ -->
+<div id="chat-panel">
+  <!-- Header -->
+  <div style="padding:12px 10px 8px;border-bottom:1px solid rgba(16,185,129,.12);display:flex;align-items:center;justify-content:space-between;background:rgba(4,10,24,.98);">
+    <div>
+      <p style="font-size:11px;font-weight:800;color:white;">💬 Room Chat</p>
+      <p style="font-size:9px;color:#064e3b;font-family:'JetBrains Mono',monospace;letter-spacing:1px;" id="chat-room-label">—</p>
+    </div>
+    <button onclick="toggleChat()" style="background:none;border:none;color:#475569;font-size:16px;cursor:pointer;padding:4px;line-height:1;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#475569'">✕</button>
+  </div>
+  <!-- Messages -->
+  <div id="chat-messages"></div>
+  <!-- Input -->
+  <div class="chat-input-wrap">
+    <input id="chat-input-field" type="text" maxlength="100" placeholder="Say something…"
+      onkeydown="if(event.key==='Enter')sendChat()"
+      onfocus="this.style.borderColor='rgba(16,185,129,.5)';this.style.boxShadow='0 0 0 2px rgba(16,185,129,.1)'"
+      onblur="this.style.borderColor='rgba(255,255,255,.1)';this.style.boxShadow='none'"/>
+    <button id="chat-send-btn" onclick="sendChat()">→</button>
+  </div>
+</div>
+
 <script>
 // ─────────────────── FIREBASE ───────────────────────────
 const fbCfg={
@@ -416,7 +538,6 @@ const DB=firebase.database();
 // ─────────────────── CONSTANTS ──────────────────────────
 const COLS=10,ROWS=20,CS=30,NEXT_SZ=18;
 
-// Colors per piece type
 const COLORS=[null,'#00E5FF','#FFE000','#CC44FF','#00FF88','#FF3355','#2979FF','#FF6D00','#1E293B'];
 const SHEEN =[null,'#80F5FF','#FFF080','#E580FF','#80FFBB','#FF8099','#80AAFF','#FFB380','#334155'];
 const SHADOW=[null,'#007A8C','#998600','#7A1A99','#00994D','#99001F','#0B3D99','#993D00','#0D1520'];
@@ -427,7 +548,6 @@ const GARBAGE_TABLE=[0,0,1,2,4];
 function levelSpeed(l){return Math.max(50,1000-(l-1)*88);}
 
 // ─────────────────── BLOCK SKINS ────────────────────────
-// Each skin defines a draw function: fn(ctx, x, y, size, ci)
 const SKINS = {
   'classic': {
     label:'Classic 3D', emoji:'🟦',
@@ -456,15 +576,11 @@ const SKINS = {
       const pad=1,w=size-pad,h=size-pad;
       const base=COLORS[ci]||'#293A52';
       ctx.save();ctx.globalAlpha=alpha;
-      // Dark fill
       ctx.fillStyle='rgba(0,0,0,.8)';ctx.fillRect(x+pad,y+pad,w-pad,h-pad);
-      // Neon border glow
       ctx.shadowColor=base;ctx.shadowBlur=8;
       ctx.strokeStyle=base;ctx.lineWidth=2;ctx.strokeRect(x+pad+1,y+pad+1,w-pad-2,h-pad-2);
       ctx.shadowBlur=0;
-      // Inner thin border
       ctx.strokeStyle=base+'44';ctx.lineWidth=1;ctx.strokeRect(x+pad+3,y+pad+3,w-pad-6,h-pad-6);
-      // Center dot
       ctx.fillStyle=base+'88';ctx.beginPath();ctx.arc(x+size/2,y+size/2,size*.12,0,Math.PI*2);ctx.fill();
       ctx.restore();
     }
@@ -475,19 +591,15 @@ const SKINS = {
       const pad=1,w=size-pad,h=size-pad;
       const base=COLORS[ci]||'#293A52',sheen=SHEEN[ci]||'#fff';
       ctx.save();ctx.globalAlpha=alpha;
-      // Base gradient - diagonal
       const g=ctx.createLinearGradient(x,y,x+size,y+size);
       g.addColorStop(0,sheen+'FF');g.addColorStop(.3,base+'CC');g.addColorStop(.7,base+'99');g.addColorStop(1,sheen+'44');
       ctx.fillStyle=g;ctx.fillRect(x+pad,y+pad,w-pad,h-pad);
-      // Facet lines
       ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1;
       ctx.beginPath();ctx.moveTo(x+pad,y+pad);ctx.lineTo(x+size*.6,y+size*.4);ctx.stroke();
       ctx.beginPath();ctx.moveTo(x+size*.6,y+size*.4);ctx.lineTo(x+w-pad,y+h-pad);ctx.stroke();
       ctx.beginPath();ctx.moveTo(x+pad,y+h-pad);ctx.lineTo(x+size*.4,y+size*.5);ctx.stroke();
-      // Top shine triangle
       ctx.beginPath();ctx.moveTo(x+pad,y+pad);ctx.lineTo(x+w-pad,y+pad);ctx.lineTo(x+size*.5,y+size*.45);ctx.closePath();
       ctx.fillStyle='rgba(255,255,255,.18)';ctx.fill();
-      // Border
       ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=1;ctx.strokeRect(x+pad,y+pad,w-pad,h-pad);
       ctx.restore();
     }
@@ -498,19 +610,14 @@ const SKINS = {
       const base=COLORS[ci]||'#293A52',sheen=SHEEN[ci]||'#fff',shad=SHADOW[ci]||'#000';
       const p=1;
       ctx.save();ctx.globalAlpha=alpha;
-      // Flat face
       ctx.fillStyle=base;ctx.fillRect(x+p,y+p,size-p*2,size-p*2);
-      // Top-left bright pixel strip (classic NES style)
       ctx.fillStyle=sheen;ctx.fillRect(x+p,y+p,size-p*2,Math.ceil(size*.15));
       ctx.fillRect(x+p,y+p,Math.ceil(size*.15),size-p*2);
-      // Bottom-right dark shadow
       ctx.fillStyle=shad;ctx.fillRect(x+p,y+size-p-Math.ceil(size*.15),size-p*2,Math.ceil(size*.15));
       ctx.fillRect(x+size-p-Math.ceil(size*.15),y+p,Math.ceil(size*.15),size-p*2);
-      // Dark outline (no anti-aliasing feel)
       ctx.fillStyle='rgba(0,0,0,.9)';
       ctx.fillRect(x,y,size,p);ctx.fillRect(x,y+size-p,size,p);
       ctx.fillRect(x,y,p,size);ctx.fillRect(x+size-p,y,p,size);
-      // Small inner square
       const inset=Math.floor(size*.3);
       ctx.fillStyle=sheen+'55';ctx.fillRect(x+inset,y+inset,size-inset*2,size-inset*2);
       ctx.restore();
@@ -534,7 +641,6 @@ function buildSkinGrid(){
       card.classList.add('selected');
       refreshSkinPreviews();
     };
-    // Mini preview canvas
     const cvs=document.createElement('canvas');
     cvs.className='skin-preview';cvs.width=64;cvs.height=64;
     card.appendChild(cvs);
@@ -552,7 +658,6 @@ function drawSkinPreview(cvs,key){
   const sz=18;
   ctx.fillStyle='#060d1c';ctx.fillRect(0,0,64,64);
   const skin=SKINS[key];
-  // Draw a mini T-tetromino preview using piece colors 1-4
   const preview=[[1,4],[2,3],[5,6],[7,3]];
   preview.forEach(([ci1,ci2],row)=>{
     skin.draw(ctx,4,4+row*sz,sz,ci1);
@@ -563,14 +668,10 @@ function drawSkinPreview(cvs,key){
 function refreshSkinPreviews(){
   Object.keys(SKINS).forEach(key=>{
     const card=document.getElementById(`skin-${key}`);
-    if(card){
-      const cvs=card.querySelector('canvas');
-      if(cvs)drawSkinPreview(cvs,key);
-    }
+    if(card){const cvs=card.querySelector('canvas');if(cvs)drawSkinPreview(cvs,key);}
   });
 }
 
-// Draw a single cell using the active skin
 function drawCell(ctx,col,row,ci,size,alpha=1,opts={}){
   const x=opts.offX!==undefined?opts.offX:col*size;
   const y=opts.offY!==undefined?opts.offY:row*size;
@@ -594,7 +695,7 @@ let playerBoards={};
 let eliminatedRanks=[];
 let selectedMax=2;
 let isSoloMode=false;
-let gameMode='multi'; // 'multi' or 'solo'
+let gameMode='multi';
 
 // ─────────────────── LEADERBOARD ────────────────────────
 const lbRef=DB.ref('tetris2/leaderboard');
@@ -648,8 +749,11 @@ let lbVisible=false;
 function toggleLeaderboard(){
   lbVisible=!lbVisible;
   const panel=document.getElementById('leaderboard-panel');
-  if(lbVisible){panel.classList.add('show');listenLeaderboard();}
-  else{panel.classList.remove('show');lbRef.off('value');}
+  if(lbVisible){
+    // Close chat if open
+    if(chatVisible){chatVisible=false;document.getElementById('chat-panel').classList.remove('show');}
+    panel.classList.add('show');listenLeaderboard();
+  }else{panel.classList.remove('show');lbRef.off('value');}
 }
 
 // ─────────────────── MODE SWITCHER ──────────────────────
@@ -685,6 +789,7 @@ function rotateCW(s){const R=s.length,C=s[0].length,r=Array.from({length:C},()=>
 function getShape(ti,rot){let s=SHAPES[ti].map(r=>[...r]);for(let i=0;i<rot%4;i++)s=rotateCW(s);return s;}
 
 // Full SRS wall kick tables
+// Kicks stored as [col_offset, row_offset] in standard math coords (positive row = UP)
 const WK_JLSTZ=[
   [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],  // 0->1
   [[0,0],[1,0],[1,-1],[0,2],[1,2]],       // 1->2
@@ -698,19 +803,20 @@ const WK_I=[
   [[0,0],[1,0],[-2,0],[1,-2],[-2,1]],    // 3->0
 ];
 
+// ─────────────────── IMPROVED ROTATION ──────────────────
+// Returns SRS wall kick offsets for a given rotation direction.
+// For CW (dir=1): uses fromRot as table row index.
+// For CCW (dir=-1): uses toRot as table row index, negates offsets.
 function getWallKicksForRotation(ti, fromRot, dir){
   const toRot=(fromRot+dir+4)%4;
-  // index into table: 0->1=0, 1->2=1, 2->3=2, 3->0=3
-  // for CCW we use the reverse: 1->0=3, 2->1=0, ...
-  let tableIdx;
-  if(dir===1){tableIdx=fromRot;}          // CW: from is the row index
-  else{tableIdx=toRot;}                   // CCW: to is the row index
   const table=ti===1?WK_I:WK_JLSTZ;
-  // For CCW rotations, negate the kick offsets
-  const kicks=table[tableIdx];
-  if(dir===1)return kicks;
-  // CCW: negate x and y of each kick
-  return kicks.map(([kx,ky])=>[-kx,-ky]);
+  if(dir===1){
+    // CW — standard table row = fromRot
+    return table[fromRot];
+  } else {
+    // CCW — negate the kicks from the reverse rotation's row
+    return table[toRot].map(([kx,ky])=>[-kx,-ky]);
+  }
 }
 
 function newBag(){const b=[1,2,3,4,5,6,7];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]];}return b;}
@@ -751,6 +857,7 @@ function startSolo(){
   document.getElementById('alive-pill').textContent='SOLO';
   document.getElementById('garbage-box').style.display='none';
   document.getElementById('opponents-panel').innerHTML='';
+  document.getElementById('game-chat-btn').style.display='none';
   showScreen('s-game');
   doCountdown(()=>initGame());
 }
@@ -800,24 +907,27 @@ function hardDrop(){
   G.piece.py+=d;G.score+=d*2;clearLock();lock();
 }
 
-/**
- * FIXED ROTATION — uses proper SRS with directional wall kicks.
- * dir = 1 for CW, -1 for CCW
- */
+// ─────────────────── IMPROVED ROTATION ──────────────────
+// Fixed SRS rotation: arrow-up rotates CW with proper wall kicks for ALL positions,
+// including when the piece is near the right wall.
 function rotate(dir){
   if(!live())return;
   const newRot=(G.piece.rot+dir+4)%4;
   const kicks=getWallKicksForRotation(G.piece.ti,G.piece.rot,dir);
+
   for(const[kx,ky]of kicks){
-    // Note: SRS kicks are in [col_offset, row_offset] where positive Y = up in SRS
-    // We flip Y since our board Y increases downward
-    if(valid(G.board,G.piece,kx,-ky,newRot)){
+    // kx = column delta (same in screen and standard coords)
+    // ky = row delta in standard math coords (positive = up)
+    // Convert to screen coords: screen_dy = -ky (positive screen_dy = down)
+    const screenDy=-ky;
+    if(valid(G.board,G.piece,kx,screenDy,newRot)){
       G.piece.rot=newRot;
       G.piece.px+=kx;
-      G.piece.py-=ky;
+      G.piece.py+=screenDy;
       resetLock();renderBoard();return;
     }
   }
+  // No valid kick found — rotation blocked (expected SRS behavior)
 }
 
 function holdPiece(){
@@ -1073,7 +1183,7 @@ document.addEventListener('keydown',e=>{
     case'ArrowLeft':e.preventDefault();moveH(-1);startRep('L',()=>moveH(-1));break;
     case'ArrowRight':e.preventDefault();moveH(1);startRep('R',()=>moveH(1));break;
     case'ArrowDown':e.preventDefault();softDrop();startRep('D',softDrop);break;
-    case'ArrowUp':e.preventDefault();rotate(1);break;   // ↑ = CW rotate (fixed)
+    case'ArrowUp':e.preventDefault();rotate(1);break;   // CW (SRS-corrected)
     case'KeyX':e.preventDefault();rotate(1);break;      // X = CW
     case'KeyZ':e.preventDefault();rotate(-1);break;     // Z = CCW
     case'Space':e.preventDefault();hardDrop();break;
@@ -1115,6 +1225,7 @@ async function createRoom(){
   await roomRef.set(roomData).catch(console.error);
   roomRef.onDisconnect().update({status:'abandoned'});
   document.getElementById('wait-code').textContent=roomId;
+  setupRoomChat();
   showScreen('s-waiting');listenRoom();
 }
 
@@ -1136,6 +1247,9 @@ async function joinRoom(){
   mySlot=slot;
   await roomRef.child(mySlot).set({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).catch(console.error);
   document.getElementById('wait-code').textContent=roomId;
+  setupRoomChat();
+  // Post join message
+  postSystemChat(`${myName} joined the room!`);
   showScreen('s-waiting');listenRoom();
 }
 
@@ -1182,13 +1296,19 @@ function renderWaitingRoom(slots,data){
   document.getElementById('start-btn').style.display=(myIsCreator&&slots.length>=2)?'block':'none';
 }
 
-function hostStart(){if(!myIsCreator||!roomRef)return;roomRef.update({status:'playing'});}
+function hostStart(){
+  if(!myIsCreator||!roomRef)return;
+  postSystemChat('🎮 Host started the game! Good luck everyone!');
+  roomRef.update({status:'playing'});
+}
 
 function cancelWait(){
   if(roomListener&&roomRef){roomRef.off('value',roomListener);roomListener=null;}
   if(roomRef&&myIsCreator)roomRef.remove();
   else if(roomRef&&mySlot)roomRef.child(mySlot).remove();
-  roomRef=null;showScreen('s-lobby');
+  roomRef=null;
+  stopChat();
+  showScreen('s-lobby');
 }
 function copyCode(){
   navigator.clipboard.writeText(roomId).then(()=>{
@@ -1205,6 +1325,7 @@ function beginBattle(slots,data){
   document.getElementById('solo-badge').style.display='none';
   document.getElementById('room-chip').textContent=`ROOM: ${roomId}`;
   document.getElementById('alive-pill').textContent=`${slots.length} / ${slots.length} ALIVE`;
+  document.getElementById('game-chat-btn').style.display='block';
   setupOpponentPanels(slots);
   for(const s of slots){if(s===mySlot)continue;const el=document.getElementById(`opp-name-${s}`);if(el&&data[s])el.textContent=data[s].name;}
   for(const slot of slots){
@@ -1218,10 +1339,23 @@ function beginBattle(slots,data){
     });
   }
   garbListener=garbRef.on('value',snap=>{
-    const v=snap.val()||0;if(v>0){G.pendingGarbage+=v;garbRef.set(0);updateGarbage();}
+    const v=snap.val()||0;
+    if(v>0){
+      G.pendingGarbage+=v;
+      garbRef.set(0);
+      updateGarbage();
+      // NEW: Trigger throw animation + board shake
+      showGarbThrowAnim(v);
+    }
   });
+  // Update chat panel room label
+  const lbl=document.getElementById('chat-room-label');
+  if(lbl)lbl.textContent=`ROOM ${roomId}`;
   showScreen('s-game');
-  doCountdown(()=>initGame());
+  doCountdown(()=>{
+    initGame();
+    postSystemChat(`🚀 Battle started! ${slots.length} players — last one standing wins!`);
+  });
 }
 
 function eliminatePlayer(slot,name){
@@ -1231,7 +1365,9 @@ function eliminatePlayer(slot,name){
   const dot=document.getElementById(`dot-${slot}`);if(dot){dot.classList.remove('sdot-orange');dot.classList.add('sdot-red');}
   const mask=document.getElementById(`elim-${slot}`);if(mask)mask.classList.add('show');
   const p=currentPlayers.find(x=>x.slot===slot);if(p&&!p.dead){p.dead=true;eliminatedRanks.push({slot,name});}
-  updateAliveCount();checkWinner();
+  updateAliveCount();
+  postSystemChat(`💀 ${name} was eliminated!`);
+  checkWinner();
 }
 
 function sendGarbage(n){
@@ -1274,7 +1410,10 @@ function checkWinner(){
   if(alive.length>1)return;
   const won=alive.length===1&&alive[0].slot===mySlot;
   const winnerName=alive.length===1?alive[0].name:'Nobody';
-  if(won)recordWin(myName);
+  if(won){
+    recordWin(myName);
+    postSystemChat(`🏆 ${myName} wins the battle!`);
+  }
   cleanupListeners();
   setTimeout(()=>showGameOver(won,winnerName,false),900);
 }
@@ -1327,9 +1466,7 @@ function doCountdown(cb){
 
 // ─────────────────── PLAY AGAIN / LOBBY ─────────────────
 async function playAgain(){
-  if(isSoloMode){
-    showScreen('s-game');doCountdown(()=>initGame());return;
-  }
+  if(isSoloMode){showScreen('s-game');doCountdown(()=>initGame());return;}
   if(!roomRef){goLobby();return;}
   if(myIsCreator){
     const updates={status:'waiting',garbage:null};
@@ -1347,8 +1484,9 @@ function goLobby(){
   roomRef=null;myRef=null;currentPlayers=[];eliminatedRanks=[];
   playerBoards={};oppListeners={};isSoloMode=false;
   document.getElementById('solo-badge').style.display='none';
-  // Hide leaderboard if open
+  document.getElementById('game-chat-btn').style.display='none';
   if(lbVisible){lbVisible=false;document.getElementById('leaderboard-panel').classList.remove('show');lbRef.off('value');}
+  stopChat();
   showScreen('s-lobby');
 }
 
@@ -1360,6 +1498,250 @@ const sn=localStorage.getItem('tb_name2');if(sn)document.getElementById('inp-nam
 document.getElementById('inp-name').addEventListener('input',e=>localStorage.setItem('tb_name2',e.target.value));
 
 showScreen('s-lobby');
+
+// ═══════════════════════════════════════════════════════════
+//  NEW: REAL-TIME CHAT SYSTEM
+// ═══════════════════════════════════════════════════════════
+
+let chatRef=null;
+let chatListener=null;
+let chatVisible=false;
+let unreadCount=0;
+
+// Slot colors for chat names
+function slotColor(slot){
+  const map={p1:'#a5b4fc',p2:'#f9a8d4',p3:'#86efac',p4:'#fde68a',p5:'#93c5fd',p6:'#c4b5fd',p7:'#fb923c',p8:'#22d3ee',p9:'#f472b6',p10:'#a3e635'};
+  return map[slot]||'#94a3b8';
+}
+
+function escHtml(t){
+  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Set up Firebase chat listener for current room
+function setupRoomChat(){
+  if(!roomId)return;
+  // Stop any existing listener
+  if(chatRef&&chatListener){chatRef.off('value',chatListener);chatListener=null;}
+  chatRef=DB.ref(`tetris2/rooms/${roomId}/chat`);
+  // Update room label in chat panel
+  const lbl=document.getElementById('chat-room-label');
+  if(lbl)lbl.textContent=`ROOM ${roomId}`;
+  chatListener=chatRef.limitToLast(60).on('value',snap=>{
+    const msgs=[];
+    snap.forEach(c=>{const v=c.val();if(v)msgs.push(v);});
+    renderChatMsgs(msgs);
+    // Badge when panel is closed
+    if(!chatVisible){
+      unreadCount++;
+      updateChatBadge();
+    }
+  });
+  // Post a welcome system message when host creates room
+  if(myIsCreator){
+    setTimeout(()=>postSystemChat(`👋 Room ${roomId} created! Share the code with friends.`),400);
+  }
+}
+
+function stopChat(){
+  if(chatRef&&chatListener){chatRef.off('value',chatListener);chatListener=null;}
+  chatRef=null;chatVisible=false;unreadCount=0;
+  document.getElementById('chat-panel').classList.remove('show');
+  updateChatBadge();
+}
+
+function toggleChat(){
+  if(!chatRef&&!roomId){
+    // No room yet
+    return;
+  }
+  chatVisible=!chatVisible;
+  const panel=document.getElementById('chat-panel');
+  if(chatVisible){
+    // Close leaderboard
+    if(lbVisible){lbVisible=false;document.getElementById('leaderboard-panel').classList.remove('show');lbRef.off('value');}
+    panel.classList.add('show');
+    unreadCount=0;
+    updateChatBadge();
+    // Scroll to bottom
+    setTimeout(()=>{
+      const msgs=document.getElementById('chat-messages');
+      if(msgs)msgs.scrollTop=msgs.scrollHeight;
+      const inp=document.getElementById('chat-input-field');
+      if(inp)inp.focus();
+    },80);
+  }else{
+    panel.classList.remove('show');
+  }
+}
+
+function updateChatBadge(){
+  const n=Math.min(unreadCount,99);
+  ['game-chat-badge','wait-chat-badge'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    if(n>0){el.style.display='flex';el.textContent=n>9?'9+':n;}
+    else{el.style.display='none';}
+  });
+}
+
+function renderChatMsgs(msgs){
+  const list=document.getElementById('chat-messages');
+  const wasAtBottom=list.scrollTop+list.clientHeight>=list.scrollHeight-20;
+  list.innerHTML='';
+  msgs.forEach((m,i)=>{
+    if(!m)return;
+    const div=document.createElement('div');
+    if(m.slot==='system'){
+      div.className='chat-msg';
+      div.innerHTML=`<span class="chat-system">${escHtml(m.text)}</span>`;
+    }else{
+      const isMine=m.slot===mySlot;
+      div.className='chat-msg'+(isMine?' mine':'');
+      div.innerHTML=`
+        <span class="chat-name" style="color:${slotColor(m.slot)}">${escHtml(m.name)}</span>
+        <div class="chat-bubble">${escHtml(m.text)}</div>`;
+    }
+    div.style.animationDelay=(i===msgs.length-1?'0':'0')+'ms';
+    list.appendChild(div);
+  });
+  if(wasAtBottom||chatVisible)list.scrollTop=list.scrollHeight;
+}
+
+function sendChat(){
+  const inp=document.getElementById('chat-input-field');
+  if(!inp)return;
+  const text=inp.value.trim();
+  if(!text)return;
+  if(!chatRef){inp.value='';return;}
+  chatRef.push({
+    name:myName||'Player',
+    slot:mySlot||'p1',
+    text,
+    ts:Date.now()
+  });
+  inp.value='';
+}
+
+function postSystemChat(text){
+  if(!chatRef||!roomId)return;
+  chatRef.push({slot:'system',name:'',text,ts:Date.now()});
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NEW: GARBAGE THROW ANIMATION
+// ═══════════════════════════════════════════════════════════
+
+// Emit a fireball/comet animation from opponents area → player's board
+function showGarbThrowAnim(amount){
+  const toEl=document.getElementById('my-canvas');
+  if(!toEl)return;
+  const toRect=toEl.getBoundingClientRect();
+  const endX=toRect.left+toRect.width/2;
+  const endY=toRect.top+toRect.height*0.35;
+
+  // Find the source: try opponents panel, fallback to right edge
+  let startX,startY;
+  const oppPanel=document.getElementById('opponents-panel');
+  if(oppPanel&&oppPanel.children.length>0){
+    // Pick a random live opponent's canvas as source
+    const liveSlots=Object.entries(playerBoards)
+      .filter(([,pb])=>!pb.eliminated)
+      .map(([slot])=>slot);
+    const srcSlot=liveSlots[Math.floor(Math.random()*liveSlots.length)];
+    const srcCanvas=srcSlot?document.getElementById(`canvas-${srcSlot}`):null;
+    if(srcCanvas){
+      const r=srcCanvas.getBoundingClientRect();
+      startX=r.left+r.width/2;
+      startY=r.top+r.height/2;
+    }else{
+      const pr=oppPanel.getBoundingClientRect();
+      startX=pr.left+pr.width/2;
+      startY=pr.top+Math.random()*pr.height*0.5;
+    }
+  }else{
+    startX=window.innerWidth*0.82;
+    startY=window.innerHeight*0.22;
+  }
+
+  const container=document.getElementById('garb-throw-container');
+  // Number of projectiles scales with garbage amount
+  const count=Math.min(amount,6);
+  const icons=amount>=4?['☄️','💥','🔥','⚡','💣']:amount>=2?['⚡','🔥','💥']:['⚡'];
+
+  for(let i=0;i<count;i++){
+    // Stagger each particle slightly
+    setTimeout(()=>spawnGarbParticle(container,startX,startY,endX,endY,amount,i,icons),i*70);
+  }
+
+  // Shake the board at impact time (after the last particle lands)
+  setTimeout(()=>shakeBoard(),count*70+680);
+}
+
+function spawnGarbParticle(container,sx,sy,ex,ey,amount,idx,icons){
+  const el=document.createElement('div');
+  el.textContent=icons[idx%icons.length];
+  const baseSz=22+Math.min(amount,5)*2;
+  el.style.cssText=`
+    position:fixed;
+    font-size:${baseSz}px;
+    left:${sx}px;top:${sy}px;
+    transform:translate(-50%,-50%);
+    pointer-events:none;
+    z-index:500;
+    filter:drop-shadow(0 0 8px rgba(255,120,0,.9));
+    will-change:transform,left,top,opacity;
+  `;
+  container.appendChild(el);
+
+  // Slight random spread on destination
+  const spreadX=(Math.random()-0.5)*50;
+  const spreadY=(Math.random()-0.5)*40;
+  const dstX=ex+spreadX;
+  const dstY=ey+spreadY;
+  const arcH=80+Math.random()*60; // arc height
+  const duration=650+Math.random()*120;
+  const startTime=performance.now();
+  const spinDir=idx%2===0?1:-1;
+
+  function frame(now){
+    const t=Math.min(1,(now-startTime)/duration);
+    // Ease: cubic out
+    const e=1-Math.pow(1-t,3);
+    const x=sx+(dstX-sx)*e;
+    const y=sy+(dstY-sy)*e - Math.sin(t*Math.PI)*arcH;
+    const scale=0.6+Math.sin(t*Math.PI)*0.9;
+    const rot=t*360*spinDir;
+    const opacity=t>0.82?(1-(t-0.82)/0.18):1;
+
+    el.style.left=x+'px';
+    el.style.top=y+'px';
+    el.style.opacity=opacity;
+    el.style.transform=`translate(-50%,-50%) scale(${scale}) rotate(${rot}deg)`;
+
+    if(t<1){requestAnimationFrame(frame);}
+    else{
+      // Impact flash
+      el.style.transform='translate(-50%,-50%) scale(2.5)';
+      el.style.filter='drop-shadow(0 0 20px rgba(255,50,50,1))';
+      el.style.opacity='0.9';
+      el.style.transition='all 0.25s ease';
+      setTimeout(()=>el.remove(),260);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+// Shake the center board div
+function shakeBoard(){
+  const center=document.getElementById('board-center');
+  if(!center)return;
+  center.style.animation='none';
+  void center.offsetWidth; // reflow
+  center.style.animation='boardShake 0.45s ease';
+  setTimeout(()=>{center.style.animation='';},460);
+}
+
 </script>
 </body>
 </html>
