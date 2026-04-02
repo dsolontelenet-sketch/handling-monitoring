@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -40,9 +41,6 @@ body{
 @keyframes winPulse{0%,100%{box-shadow:0 0 20px rgba(16,185,129,.3),0 0 60px rgba(16,185,129,.1);}50%{box-shadow:0 0 40px rgba(16,185,129,.7),0 0 80px rgba(16,185,129,.25);}}
 @keyframes comboShake{0%,100%{transform:translateX(0) scale(1);}25%{transform:translateX(-5px) scale(1.05);}75%{transform:translateX(5px) scale(1.05);}}
 @keyframes lbSlide{from{transform:translateX(24px);opacity:0;}to{transform:translateX(0);opacity:1;}}
-@keyframes skinHover{0%,100%{transform:scale(1);}50%{transform:scale(1.04);}}
-
-/* ── NEW: Board shake on garbage impact ── */
 @keyframes boardShake{
   0%,100%{transform:translateX(0);}
   10%{transform:translateX(-9px);}
@@ -53,9 +51,9 @@ body{
   70%{transform:translateX(5px);}
   85%{transform:translateX(-2px);}
 }
-
-/* ── NEW: Chat message slide-in ── */
 @keyframes chatMsgIn{from{opacity:0;transform:translateX(14px);}to{opacity:1;transform:translateX(0);}}
+@keyframes lobbyChatIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes lobbyChatToggle{from{opacity:0;transform:translateY(20px) scale(.95);}to{opacity:1;transform:translateY(0) scale(1);}}
 
 .float-anim{animation:floatY 3.2s ease-in-out infinite;}
 .pop-in{animation:popIn .6s cubic-bezier(.34,1.56,.64,1) both;}
@@ -104,25 +102,22 @@ body{
 .elim-mask{position:absolute;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;border-radius:4px;font-family:'JetBrains Mono',monospace;font-weight:700;color:#ef4444;letter-spacing:3px;font-size:10px;text-shadow:0 0 12px #ef4444;}
 .elim-mask.show{display:flex;}
 
-/* ─── BACK BTN ─── */
 .back-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.07);color:#94a3b8;border:1px solid rgba(255,255,255,.12);font-family:'Sora',sans-serif;transition:all .2s;text-decoration:none;}
 .back-btn:hover{background:rgba(255,255,255,.13);color:white;transform:translateX(-2px);}
 
-/* ─── SKIN PICKER ─── */
 .skin-card{cursor:pointer;border-radius:14px;border:2px solid rgba(255,255,255,.08);padding:10px;background:rgba(255,255,255,.04);transition:all .2s;position:relative;overflow:hidden;}
 .skin-card:hover{border-color:rgba(99,102,241,.5);background:rgba(99,102,241,.08);transform:translateY(-2px);}
 .skin-card.selected{border-color:#6366f1;background:rgba(99,102,241,.15);box-shadow:0 0 20px rgba(99,102,241,.3);}
 .skin-card.selected::after{content:'✓';position:absolute;top:6px;right:8px;font-size:12px;color:#a5b4fc;font-weight:800;}
 .skin-preview{border-radius:6px;display:block;background:#060d1c;image-rendering:pixelated;}
 
-/* ─── LEADERBOARD PANEL ─── */
 #leaderboard-panel{position:fixed;top:0;right:0;bottom:0;width:200px;background:rgba(6,10,24,.97);border-left:1px solid rgba(99,102,241,.2);display:none;flex-direction:column;z-index:10;overflow:hidden;}
 #leaderboard-panel.show{display:flex;}
 .lb-entry{display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.04);animation:lbSlide .3s ease both;}
 .lb-entry:hover{background:rgba(99,102,241,.07);}
 .lb-rank{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;}
 
-/* ─── NEW: CHAT PANEL ─── */
+/* ROOM CHAT PANEL */
 #chat-panel{
   position:fixed;top:0;right:0;bottom:0;width:240px;
   background:rgba(4,8,20,.98);
@@ -131,53 +126,97 @@ body{
   box-shadow:-6px 0 30px rgba(0,0,0,.5);
 }
 #chat-panel.show{display:flex;}
-#chat-messages{
-  flex:1;overflow-y:auto;padding:6px 0;
-  display:flex;flex-direction:column;gap:1px;
-}
-.chat-msg{
-  padding:6px 10px;
-  word-break:break-word;
-  animation:chatMsgIn .2s ease both;
-  border-bottom:1px solid rgba(255,255,255,.03);
-}
+#chat-messages{flex:1;overflow-y:auto;padding:6px 0;display:flex;flex-direction:column;gap:1px;}
+.chat-msg{padding:6px 10px;word-break:break-word;animation:chatMsgIn .2s ease both;border-bottom:1px solid rgba(255,255,255,.03);}
 .chat-msg.mine{background:rgba(99,102,241,.07);}
 .chat-msg.mine .chat-bubble{background:rgba(99,102,241,.18);border:1px solid rgba(99,102,241,.3);}
 .chat-name{font-size:9px;font-weight:800;margin-bottom:3px;letter-spacing:.03em;display:block;}
-.chat-bubble{
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
-  border-radius:8px;padding:5px 8px;
-  font-size:12px;color:#cbd5e1;line-height:1.45;
+.chat-bubble{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:5px 8px;font-size:12px;color:#cbd5e1;line-height:1.45;}
+.chat-system{font-size:10px;color:#475569;font-style:italic;text-align:center;padding:4px 8px;display:block;}
+.chat-input-wrap{padding:8px 10px;border-top:1px solid rgba(255,255,255,.07);display:flex;gap:6px;align-items:center;background:rgba(4,8,20,.95);}
+#chat-input-field{flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:7px 10px;color:white;font-size:12px;font-family:'Sora',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;}
+#chat-input-field:focus{border-color:rgba(16,185,129,.5);box-shadow:0 0 0 2px rgba(16,185,129,.1);}
+#chat-send-btn{padding:7px 10px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:rgba(16,185,129,.25);color:#6ee7b7;font-family:'Sora',sans-serif;transition:all .2s;line-height:1;}
+#chat-send-btn:hover{background:rgba(16,185,129,.4);}
+
+/* LOBBY GLOBAL CHAT */
+#lobby-chat-bubble{
+  position:fixed;bottom:24px;right:24px;z-index:50;
 }
-.chat-system{
-  font-size:10px;color:#475569;font-style:italic;
-  text-align:center;padding:4px 8px;display:block;
+#lobby-chat-fab{
+  width:54px;height:54px;border-radius:50%;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;
+  box-shadow:0 4px 20px rgba(99,102,241,.5);
+  transition:transform .2s,box-shadow .2s;
+  position:relative;
 }
-.chat-input-wrap{
+#lobby-chat-fab:hover{transform:scale(1.08);box-shadow:0 8px 32px rgba(99,102,241,.65);}
+#lobby-fab-badge{
+  position:absolute;top:-4px;right:-4px;
+  min-width:18px;height:18px;
+  background:#ef4444;color:white;
+  font-size:9px;font-weight:800;
+  border-radius:9px;padding:0 4px;
+  display:none;align-items:center;justify-content:center;
+  box-shadow:0 0 8px rgba(239,68,68,.7);
+  font-family:'Sora',sans-serif;
+}
+#lobby-chat-window{
+  position:absolute;bottom:66px;right:0;
+  width:300px;height:400px;
+  background:rgba(6,10,24,.98);
+  border:1px solid rgba(99,102,241,.3);
+  border-radius:18px;
+  display:none;
+  flex-direction:column;
+  overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,.7),0 0 0 1px rgba(99,102,241,.15);
+  animation:lobbyChatToggle .22s cubic-bezier(.34,1.4,.64,1) both;
+}
+#lobby-chat-window.show{display:flex;}
+#lobby-chat-msgs{
+  flex:1;overflow-y:auto;
+  padding:8px 0;
+  display:flex;flex-direction:column;gap:1px;
+}
+.lobby-msg{
+  padding:6px 12px;
+  word-break:break-word;
+  animation:lobbyChatIn .18s ease both;
+  border-bottom:1px solid rgba(255,255,255,.03);
+}
+.lobby-msg.lmine{background:rgba(99,102,241,.08);}
+.lobby-msg.lmine .lobby-bubble{background:rgba(99,102,241,.2);border:1px solid rgba(99,102,241,.35);}
+.lobby-msg-name{font-size:9px;font-weight:800;margin-bottom:3px;letter-spacing:.03em;display:block;}
+.lobby-bubble{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:5px 9px;font-size:12px;color:#cbd5e1;line-height:1.45;}
+.lobby-sys{font-size:10px;color:#475569;font-style:italic;text-align:center;padding:4px 10px;display:block;}
+#lobby-chat-input-wrap{
   padding:8px 10px;
   border-top:1px solid rgba(255,255,255,.07);
   display:flex;gap:6px;align-items:center;
-  background:rgba(4,8,20,.95);
+  background:rgba(4,8,20,.97);
+  border-radius:0 0 18px 18px;
 }
-#chat-input-field{
+#lobby-chat-inp{
   flex:1;background:rgba(255,255,255,.07);
   border:1px solid rgba(255,255,255,.1);
   border-radius:8px;padding:7px 10px;
   color:white;font-size:12px;
   font-family:'Sora',sans-serif;outline:none;
-  transition:border-color .2s,box-shadow .2s;
+  transition:border-color .2s;
 }
-#chat-input-field:focus{border-color:rgba(16,185,129,.5);box-shadow:0 0 0 2px rgba(16,185,129,.1);}
-#chat-send-btn{
+#lobby-chat-inp:focus{border-color:rgba(99,102,241,.5);box-shadow:0 0 0 2px rgba(99,102,241,.1);}
+#lobby-chat-send{
   padding:7px 10px;border-radius:8px;
   font-size:13px;font-weight:700;cursor:pointer;border:none;
-  background:rgba(16,185,129,.25);color:#6ee7b7;
-  font-family:'Sora',sans-serif;transition:all .2s;
-  line-height:1;
+  background:rgba(99,102,241,.3);color:#a5b4fc;
+  font-family:'Sora',sans-serif;transition:all .2s;line-height:1;
 }
-#chat-send-btn:hover{background:rgba(16,185,129,.4);}
+#lobby-chat-send:hover{background:rgba(99,102,241,.5);}
 
-/* Unread badge */
 .chat-badge{
   position:absolute;top:-4px;right:-4px;
   min-width:16px;height:16px;
@@ -189,10 +228,16 @@ body{
   display:none;
 }
 
-/* mode toggle */
 .mode-tab{padding:9px 20px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:'Sora',sans-serif;transition:all .2s;}
 .mode-tab.active{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;box-shadow:0 4px 14px rgba(99,102,241,.4);}
 .mode-tab:not(.active){background:rgba(255,255,255,.06);color:#64748b;}
+
+/* WebGL comet canvas overlay */
+#comet-canvas{
+  position:fixed;inset:0;
+  pointer-events:none;
+  z-index:500;
+}
 
 @media(max-height:680px){#s-game{padding:5px;gap:6px;}}
 </style>
@@ -209,18 +254,14 @@ body{
   <p style="font-size:12px;color:#334155;font-family:'JetBrains Mono',monospace;letter-spacing:5px;text-transform:uppercase;">Get Ready</p>
 </div>
 
-<!-- ── NEW: Garbage throw animation container ── -->
-<div id="garb-throw-container" style="position:fixed;inset:0;pointer-events:none;z-index:500;overflow:hidden;"></div>
+<!-- 3D comet canvas (replaces old garb-throw-container) -->
+<canvas id="comet-canvas"></canvas>
 
-<!-- ══════════════════════════════════════
-     LOBBY SCREEN
-══════════════════════════════════════ -->
+<!-- ════ LOBBY SCREEN ════ -->
 <div id="s-lobby" class="screen active flex-col items-center justify-center gap-5 p-6" style="overflow-y:auto;">
 
   <div style="position:absolute;top:16px;left:16px;">
-    <a href="https://handling-monitoring.vercel.app/" class="back-btn">
-      ← Dashboard
-    </a>
+    <a href="https://handling-monitoring.vercel.app/" class="back-btn">← Dashboard</a>
   </div>
 
   <div class="text-center select-none">
@@ -229,7 +270,6 @@ body{
     <p style="font-size:11px;color:#475569;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:4px;margin-top:5px;">Battle Royale · 2–10 Players · Solo Mode</p>
   </div>
 
-  <!-- Mode selector -->
   <div style="display:flex;gap:8px;background:rgba(255,255,255,.04);border-radius:14px;padding:5px;border:1px solid rgba(255,255,255,.07);">
     <button class="mode-tab active" id="tab-multi" onclick="setMode('multi')">⚔️ Multiplayer</button>
     <button class="mode-tab" id="tab-solo" onclick="setMode('solo')">🎯 Solo</button>
@@ -293,15 +333,35 @@ body{
   </p>
 </div>
 
-<!-- ══════════════════════════════════════
-     WAITING SCREEN
-══════════════════════════════════════ -->
+<!-- ════ LOBBY GLOBAL CHAT BUBBLE (always present when on lobby) ════ -->
+<div id="lobby-chat-bubble">
+  <div id="lobby-chat-window">
+    <div style="padding:12px 14px 8px;border-bottom:1px solid rgba(99,102,241,.15);display:flex;align-items:center;justify-content:space-between;background:rgba(4,8,24,.98);">
+      <div>
+        <p style="font-size:12px;font-weight:800;color:white;">🌐 Global Chat</p>
+        <p style="font-size:9px;color:#334155;font-family:'JetBrains Mono',monospace;letter-spacing:1px;">Everyone in the lobby</p>
+      </div>
+      <button onclick="toggleLobbyChat()" style="background:none;border:none;color:#475569;font-size:16px;cursor:pointer;padding:4px;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#475569'">✕</button>
+    </div>
+    <div id="lobby-chat-msgs"></div>
+    <div id="lobby-chat-input-wrap">
+      <input id="lobby-chat-inp" type="text" maxlength="100" placeholder="Chat with everyone…"
+        onkeydown="if(event.key==='Enter')sendLobbyChat()"
+        onfocus="this.style.borderColor='rgba(99,102,241,.5)'" onblur="this.style.borderColor='rgba(255,255,255,.1)'"/>
+      <button id="lobby-chat-send" onclick="sendLobbyChat()">→</button>
+    </div>
+  </div>
+  <button id="lobby-chat-fab" onclick="toggleLobbyChat()" title="Global Chat">
+    💬
+    <span id="lobby-fab-badge"></span>
+  </button>
+</div>
+
+<!-- ════ WAITING SCREEN ════ -->
 <div id="s-waiting" class="screen flex-col items-center justify-center gap-5 p-6" style="overflow-y:auto;">
   <div style="position:absolute;top:16px;left:16px;">
     <button onclick="cancelWait()" class="back-btn">← Leave Room</button>
   </div>
-
-  <!-- NEW: Chat button in waiting screen -->
   <div style="position:absolute;top:16px;right:16px;">
     <button onclick="toggleChat()" style="position:relative;padding:7px 14px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;background:rgba(16,185,129,.12);color:#6ee7b7;border:1px solid rgba(16,185,129,.25);font-family:'Sora',sans-serif;transition:all .2s;"
       onmouseover="this.style.background='rgba(16,185,129,.22)'" onmouseout="this.style.background='rgba(16,185,129,.12)'">
@@ -340,12 +400,9 @@ body{
   </button>
 </div>
 
-<!-- ══════════════════════════════════════
-     GAME SCREEN
-══════════════════════════════════════ -->
+<!-- ════ GAME SCREEN ════ -->
 <div id="s-game" class="screen flex-row items-start justify-center gap-2 p-2" style="overflow:auto;">
 
-  <!-- LEFT: Hold + Stats + Controls -->
   <div style="display:flex;flex-direction:column;gap:8px;min-width:92px;padding-top:2px;">
     <div class="glass rounded-xl p-2.5">
       <p style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#64748b;font-weight:600;margin-bottom:6px;">Hold</p>
@@ -401,7 +458,6 @@ body{
     <div class="ctrl-btn" onpointerdown="holdPiece()" style="width:124px;height:32px;font-size:10px;font-weight:700;letter-spacing:.07em;">HOLD (C)</div>
   </div>
 
-  <!-- CENTER: Board -->
   <div id="board-center" style="display:flex;flex-direction:column;align-items:center;gap:6px;">
     <div style="display:flex;align-items:center;gap:7px;">
       <div class="sdot sdot-green"></div>
@@ -413,7 +469,6 @@ body{
     <div id="alive-pill" style="font-size:10px;font-family:'JetBrains Mono',monospace;color:#475569;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:3px 12px;letter-spacing:1px;"></div>
   </div>
 
-  <!-- RIGHT: Next queue + buttons -->
   <div style="display:flex;flex-direction:column;gap:8px;padding-top:2px;">
     <div class="glass rounded-xl p-2.5">
       <p style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#64748b;font-weight:600;margin-bottom:6px;">Next</p>
@@ -422,13 +477,11 @@ body{
     <div style="text-align:center;padding:6px 0;">
       <p id="room-chip" style="font-size:9px;font-family:'JetBrains Mono',monospace;color:#334155;letter-spacing:2px;"></p>
     </div>
-    <!-- Leaderboard toggle -->
     <button onclick="toggleLeaderboard()" id="lb-toggle-btn"
       style="padding:7px 6px;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.25);font-family:'Sora',sans-serif;transition:all .2s;"
       onmouseover="this.style.background='rgba(251,191,36,.18)'" onmouseout="this.style.background='rgba(251,191,36,.1)'">
       🏆 Top Wins
     </button>
-    <!-- NEW: Chat toggle button in game screen -->
     <button onclick="toggleChat()" id="game-chat-btn"
       style="position:relative;padding:7px 6px;border-radius:10px;font-size:10px;font-weight:700;cursor:pointer;background:rgba(16,185,129,.1);color:#6ee7b7;border:1px solid rgba(16,185,129,.25);font-family:'Sora',sans-serif;transition:all .2s;"
       onmouseover="this.style.background='rgba(16,185,129,.2)'" onmouseout="this.style.background='rgba(16,185,129,.1)'">
@@ -437,13 +490,10 @@ body{
     </button>
   </div>
 
-  <!-- OPPONENTS -->
   <div id="opponents-panel" style="display:flex;flex-direction:column;flex-wrap:wrap;gap:8px;max-height:100vh;overflow-y:auto;padding:2px;"></div>
 </div>
 
-<!-- ══════════════════════════════════════
-     GAME OVER SCREEN
-══════════════════════════════════════ -->
+<!-- ════ GAME OVER SCREEN ════ -->
 <div id="s-gameover" class="screen flex-col items-center justify-center gap-5 p-6" style="overflow-y:auto;">
   <div style="position:absolute;top:16px;left:16px;">
     <a href="https://handling-monitoring.vercel.app/" class="back-btn">← Dashboard</a>
@@ -480,9 +530,7 @@ body{
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     LEADERBOARD PANEL (fixed right side)
-══════════════════════════════════════ -->
+<!-- ════ LEADERBOARD PANEL ════ -->
 <div id="leaderboard-panel">
   <div style="padding:12px 10px 8px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:space-between;">
     <div>
@@ -497,11 +545,8 @@ body{
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     NEW: CHAT PANEL (fixed right side)
-══════════════════════════════════════ -->
+<!-- ════ ROOM CHAT PANEL ════ -->
 <div id="chat-panel">
-  <!-- Header -->
   <div style="padding:12px 10px 8px;border-bottom:1px solid rgba(16,185,129,.12);display:flex;align-items:center;justify-content:space-between;background:rgba(4,10,24,.98);">
     <div>
       <p style="font-size:11px;font-weight:800;color:white;">💬 Room Chat</p>
@@ -509,9 +554,7 @@ body{
     </div>
     <button onclick="toggleChat()" style="background:none;border:none;color:#475569;font-size:16px;cursor:pointer;padding:4px;line-height:1;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#475569'">✕</button>
   </div>
-  <!-- Messages -->
   <div id="chat-messages"></div>
-  <!-- Input -->
   <div class="chat-input-wrap">
     <input id="chat-input-field" type="text" maxlength="100" placeholder="Say something…"
       onkeydown="if(event.key==='Enter')sendChat()"
@@ -537,11 +580,9 @@ const DB=firebase.database();
 
 // ─────────────────── CONSTANTS ──────────────────────────
 const COLS=10,ROWS=20,CS=30,NEXT_SZ=18;
-
 const COLORS=[null,'#00E5FF','#FFE000','#CC44FF','#00FF88','#FF3355','#2979FF','#FF6D00','#1E293B'];
 const SHEEN =[null,'#80F5FF','#FFF080','#E580FF','#80FFBB','#FF8099','#80AAFF','#FFB380','#334155'];
 const SHADOW=[null,'#007A8C','#998600','#7A1A99','#00994D','#99001F','#0B3D99','#993D00','#0D1520'];
-
 const SHAPES=[null,[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[0,1,1],[1,1,0]],[[1,1,0],[0,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]]];
 const SCORE_TABLE=[0,100,300,500,800];
 const GARBAGE_TABLE=[0,0,1,2,4];
@@ -551,7 +592,7 @@ function levelSpeed(l){return Math.max(50,1000-(l-1)*88);}
 const SKINS = {
   'classic': {
     label:'Classic 3D', emoji:'🟦',
-    draw(ctx, x, y, size, ci, alpha=1) {
+    draw(ctx,x,y,size,ci,alpha=1){
       const pad=1,w=size-pad,h=size-pad;
       const bevel=Math.max(2,Math.floor(size*.18));
       const base=COLORS[ci]||'#293A52',sheen=SHEEN[ci]||'#fff',shad=SHADOW[ci]||'#000';
@@ -572,7 +613,7 @@ const SKINS = {
   },
   'neon': {
     label:'Neon Glow', emoji:'✨',
-    draw(ctx, x, y, size, ci, alpha=1) {
+    draw(ctx,x,y,size,ci,alpha=1){
       const pad=1,w=size-pad,h=size-pad;
       const base=COLORS[ci]||'#293A52';
       ctx.save();ctx.globalAlpha=alpha;
@@ -587,7 +628,7 @@ const SKINS = {
   },
   'crystal': {
     label:'Crystal', emoji:'💎',
-    draw(ctx, x, y, size, ci, alpha=1) {
+    draw(ctx,x,y,size,ci,alpha=1){
       const pad=1,w=size-pad,h=size-pad;
       const base=COLORS[ci]||'#293A52',sheen=SHEEN[ci]||'#fff';
       ctx.save();ctx.globalAlpha=alpha;
@@ -606,7 +647,7 @@ const SKINS = {
   },
   'retro': {
     label:'Retro Pixel', emoji:'👾',
-    draw(ctx, x, y, size, ci, alpha=1) {
+    draw(ctx,x,y,size,ci,alpha=1){
       const base=COLORS[ci]||'#293A52',sheen=SHEEN[ci]||'#fff',shad=SHADOW[ci]||'#000';
       const p=1;
       ctx.save();ctx.globalAlpha=alpha;
@@ -624,10 +665,8 @@ const SKINS = {
     }
   }
 };
-
 let activeSkin='classic';
 
-// ─────────────────── BUILD SKIN PICKER ──────────────────
 function buildSkinGrid(){
   const grid=document.getElementById('skin-grid');
   grid.innerHTML='';
@@ -739,8 +778,7 @@ function renderLeaderboard(entries){
       <div style="text-align:right;flex-shrink:0;">
         <p style="font-size:12px;font-weight:800;color:#fbbf24;font-family:'JetBrains Mono',monospace;">${e.wins}</p>
         <p style="font-size:8px;color:#475569;letter-spacing:.05em;">WIN${e.wins!==1?'S':''}</p>
-      </div>
-    `;
+      </div>`;
     list.appendChild(item);
   });
 }
@@ -750,7 +788,6 @@ function toggleLeaderboard(){
   lbVisible=!lbVisible;
   const panel=document.getElementById('leaderboard-panel');
   if(lbVisible){
-    // Close chat if open
     if(chatVisible){chatVisible=false;document.getElementById('chat-panel').classList.remove('show');}
     panel.classList.add('show');listenLeaderboard();
   }else{panel.classList.remove('show');lbRef.off('value');}
@@ -788,35 +825,24 @@ function setMpBtn(b,sel){
 function rotateCW(s){const R=s.length,C=s[0].length,r=Array.from({length:C},()=>Array(R).fill(0));for(let i=0;i<R;i++)for(let j=0;j<C;j++)r[j][R-1-i]=s[i][j];return r;}
 function getShape(ti,rot){let s=SHAPES[ti].map(r=>[...r]);for(let i=0;i<rot%4;i++)s=rotateCW(s);return s;}
 
-// Full SRS wall kick tables
-// Kicks stored as [col_offset, row_offset] in standard math coords (positive row = UP)
 const WK_JLSTZ=[
-  [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],  // 0->1
-  [[0,0],[1,0],[1,-1],[0,2],[1,2]],       // 1->2
-  [[0,0],[1,0],[1,1],[0,-2],[1,-2]],      // 2->3
-  [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],   // 3->0
+  [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+  [[0,0],[1,0],[1,-1],[0,2],[1,2]],
+  [[0,0],[1,0],[1,1],[0,-2],[1,-2]],
+  [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
 ];
 const WK_I=[
-  [[0,0],[-2,0],[1,0],[-2,-1],[1,2]],    // 0->1
-  [[0,0],[-1,0],[2,0],[-1,2],[2,-1]],    // 1->2
-  [[0,0],[2,0],[-1,0],[2,1],[-1,-2]],    // 2->3
-  [[0,0],[1,0],[-2,0],[1,-2],[-2,1]],    // 3->0
+  [[0,0],[-2,0],[1,0],[-2,-1],[1,2]],
+  [[0,0],[-1,0],[2,0],[-1,2],[2,-1]],
+  [[0,0],[2,0],[-1,0],[2,1],[-1,-2]],
+  [[0,0],[1,0],[-2,0],[1,-2],[-2,1]],
 ];
 
-// ─────────────────── IMPROVED ROTATION ──────────────────
-// Returns SRS wall kick offsets for a given rotation direction.
-// For CW (dir=1): uses fromRot as table row index.
-// For CCW (dir=-1): uses toRot as table row index, negates offsets.
-function getWallKicksForRotation(ti, fromRot, dir){
+function getWallKicksForRotation(ti,fromRot,dir){
   const toRot=(fromRot+dir+4)%4;
   const table=ti===1?WK_I:WK_JLSTZ;
-  if(dir===1){
-    // CW — standard table row = fromRot
-    return table[fromRot];
-  } else {
-    // CCW — negate the kicks from the reverse rotation's row
-    return table[toRot].map(([kx,ky])=>[-kx,-ky]);
-  }
+  if(dir===1){return table[fromRot];}
+  else{return table[toRot].map(([kx,ky])=>[-kx,-ky]);}
 }
 
 function newBag(){const b=[1,2,3,4,5,6,7];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]];}return b;}
@@ -881,7 +907,6 @@ function spawn(){
   return true;
 }
 
-// ─────────────────── DROP TIMER ─────────────────────────
 function startDrop(){
   clearInterval(G.dropTimer);
   if(!G.running||G.dead||G.paused)return;
@@ -893,12 +918,10 @@ function autoDown(){
   else startLock();
 }
 
-// ─────────────────── LOCK DELAY ─────────────────────────
 function startLock(){if(G.lockTimeout)return;G.lockTimeout=setTimeout(()=>{G.lockTimeout=null;if(!valid(G.board,G.piece,0,1))lock();},480);}
 function clearLock(){clearTimeout(G.lockTimeout);G.lockTimeout=null;}
 function resetLock(){if(G.lockTimeout){clearLock();startLock();}}
 
-// ─────────────────── PIECE ACTIONS ──────────────────────
 function moveH(dx){if(!live())return;if(valid(G.board,G.piece,dx,0)){G.piece.px+=dx;resetLock();renderBoard();}}
 function softDrop(){if(!live())return;if(valid(G.board,G.piece,0,1)){G.piece.py++;G.score++;clearLock();renderBoard();}else startLock();}
 function hardDrop(){
@@ -907,27 +930,17 @@ function hardDrop(){
   G.piece.py+=d;G.score+=d*2;clearLock();lock();
 }
 
-// ─────────────────── IMPROVED ROTATION ──────────────────
-// Fixed SRS rotation: arrow-up rotates CW with proper wall kicks for ALL positions,
-// including when the piece is near the right wall.
 function rotate(dir){
   if(!live())return;
   const newRot=(G.piece.rot+dir+4)%4;
   const kicks=getWallKicksForRotation(G.piece.ti,G.piece.rot,dir);
-
   for(const[kx,ky]of kicks){
-    // kx = column delta (same in screen and standard coords)
-    // ky = row delta in standard math coords (positive = up)
-    // Convert to screen coords: screen_dy = -ky (positive screen_dy = down)
     const screenDy=-ky;
     if(valid(G.board,G.piece,kx,screenDy,newRot)){
-      G.piece.rot=newRot;
-      G.piece.px+=kx;
-      G.piece.py+=screenDy;
+      G.piece.rot=newRot;G.piece.px+=kx;G.piece.py+=screenDy;
       resetLock();renderBoard();return;
     }
   }
-  // No valid kick found — rotation blocked (expected SRS behavior)
 }
 
 function holdPiece(){
@@ -939,7 +952,6 @@ function holdPiece(){
 }
 function live(){return G.running&&!G.paused&&!G.dead;}
 
-// ─────────────────── LOCK + LINE CLEAR ──────────────────
 function lock(){
   clearLock();
   for(const[x,y]of cells(G.piece)){if(y<0){die();return;}G.board[y][x]=G.piece.ti;}
@@ -958,10 +970,7 @@ function lock(){
       G.pendingGarbage=Math.max(0,G.pendingGarbage-cleared);
       if(G.pendingGarbage>0){applyGarbage(G.pendingGarbage);G.pendingGarbage=0;updateGarbage();}
     }
-    updateCombo();
-    showClearFx(cleared,0);
-    updateStats();
-    startDrop();
+    updateCombo();showClearFx(cleared,0);updateStats();startDrop();
   }
   if(!isSoloMode)syncState();
   if(!spawn())return;
@@ -984,7 +993,6 @@ function applyGarbage(n){
   }
 }
 
-// ─────────────────── GHOST ──────────────────────────────
 function ghost(){
   if(!G.piece)return null;
   let gy=G.piece.py;
@@ -1064,7 +1072,6 @@ function renderHold(){
     if(s[r][c])drawCell(HC,0,0,G.hold,sz,alpha,{offX:ox+c*sz,offY:oy+r*sz});
 }
 
-// ─────────────────── OPPONENT RENDERING ─────────────────
 function getOCS(){
   const n=Object.keys(playerBoards).length;
   if(n<=1)return 18;if(n<=3)return 15;if(n<=5)return 13;if(n<=7)return 11;return 10;
@@ -1152,9 +1159,6 @@ function updateCombo(){
   if(G.combo>0){
     box.style.display='block';
     document.getElementById('combo-val').textContent=G.combo+'x';
-    document.getElementById('combo-val').classList.remove('c-shake');
-    void document.getElementById('combo-val').offsetWidth;
-    document.getElementById('combo-val').classList.add('c-shake');
   }else{box.style.display='none';}
 }
 function updateAliveCount(){
@@ -1174,7 +1178,7 @@ function showClearFx(lines,gar){
   setTimeout(()=>pop.classList.remove('show'),1500);
 }
 
-// ─────────────────── INPUT ───────────────────────────────
+// ─────────────────── INPUT ──────────────────────────────
 const HELD={},REPS={};
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT')return;
@@ -1183,9 +1187,9 @@ document.addEventListener('keydown',e=>{
     case'ArrowLeft':e.preventDefault();moveH(-1);startRep('L',()=>moveH(-1));break;
     case'ArrowRight':e.preventDefault();moveH(1);startRep('R',()=>moveH(1));break;
     case'ArrowDown':e.preventDefault();softDrop();startRep('D',softDrop);break;
-    case'ArrowUp':e.preventDefault();rotate(1);break;   // CW (SRS-corrected)
-    case'KeyX':e.preventDefault();rotate(1);break;      // X = CW
-    case'KeyZ':e.preventDefault();rotate(-1);break;     // Z = CCW
+    case'ArrowUp':e.preventDefault();rotate(1);break;
+    case'KeyX':e.preventDefault();rotate(1);break;
+    case'KeyZ':e.preventDefault();rotate(-1);break;
     case'Space':e.preventDefault();hardDrop();break;
     case'KeyC':case'ShiftLeft':case'ShiftRight':e.preventDefault();holdPiece();break;
     case'KeyP':e.preventDefault();togglePause();break;
@@ -1248,7 +1252,6 @@ async function joinRoom(){
   await roomRef.child(mySlot).set({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).catch(console.error);
   document.getElementById('wait-code').textContent=roomId;
   setupRoomChat();
-  // Post join message
   postSystemChat(`${myName} joined the room!`);
   showScreen('s-waiting');listenRoom();
 }
@@ -1344,11 +1347,9 @@ function beginBattle(slots,data){
       G.pendingGarbage+=v;
       garbRef.set(0);
       updateGarbage();
-      // NEW: Trigger throw animation + board shake
       showGarbThrowAnim(v);
     }
   });
-  // Update chat panel room label
   const lbl=document.getElementById('chat-room-label');
   if(lbl)lbl.textContent=`ROOM ${roomId}`;
   showScreen('s-game');
@@ -1410,10 +1411,7 @@ function checkWinner(){
   if(alive.length>1)return;
   const won=alive.length===1&&alive[0].slot===mySlot;
   const winnerName=alive.length===1?alive[0].name:'Nobody';
-  if(won){
-    recordWin(myName);
-    postSystemChat(`🏆 ${myName} wins the battle!`);
-  }
+  if(won){recordWin(myName);postSystemChat(`🏆 ${myName} wins the battle!`);}
   cleanupListeners();
   setTimeout(()=>showGameOver(won,winnerName,false),900);
 }
@@ -1488,10 +1486,18 @@ function goLobby(){
   if(lbVisible){lbVisible=false;document.getElementById('leaderboard-panel').classList.remove('show');lbRef.off('value');}
   stopChat();
   showScreen('s-lobby');
+  // Re-show lobby chat bubble on lobby
+  document.getElementById('lobby-chat-bubble').style.display='block';
 }
 
 // ─────────────────── UTILS ──────────────────────────────
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  // Hide lobby chat bubble except on lobby screen
+  const lobbyBubble=document.getElementById('lobby-chat-bubble');
+  if(lobbyBubble)lobbyBubble.style.display=(id==='s-lobby')?'block':'none';
+}
 function shakeEl(id){const el=document.getElementById(id);el.style.animation='none';void el.offsetWidth;el.style.animation='shakeInput .35s ease';}
 
 const sn=localStorage.getItem('tb_name2');if(sn)document.getElementById('inp-name').value=sn;
@@ -1500,44 +1506,31 @@ document.getElementById('inp-name').addEventListener('input',e=>localStorage.set
 showScreen('s-lobby');
 
 // ═══════════════════════════════════════════════════════════
-//  NEW: REAL-TIME CHAT SYSTEM
+//  ROOM CHAT SYSTEM
 // ═══════════════════════════════════════════════════════════
-
 let chatRef=null;
 let chatListener=null;
 let chatVisible=false;
 let unreadCount=0;
 
-// Slot colors for chat names
 function slotColor(slot){
   const map={p1:'#a5b4fc',p2:'#f9a8d4',p3:'#86efac',p4:'#fde68a',p5:'#93c5fd',p6:'#c4b5fd',p7:'#fb923c',p8:'#22d3ee',p9:'#f472b6',p10:'#a3e635'};
   return map[slot]||'#94a3b8';
 }
+function escHtml(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-function escHtml(t){
-  return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// Set up Firebase chat listener for current room
 function setupRoomChat(){
   if(!roomId)return;
-  // Stop any existing listener
   if(chatRef&&chatListener){chatRef.off('value',chatListener);chatListener=null;}
   chatRef=DB.ref(`tetris2/rooms/${roomId}/chat`);
-  // Update room label in chat panel
   const lbl=document.getElementById('chat-room-label');
   if(lbl)lbl.textContent=`ROOM ${roomId}`;
   chatListener=chatRef.limitToLast(60).on('value',snap=>{
     const msgs=[];
     snap.forEach(c=>{const v=c.val();if(v)msgs.push(v);});
     renderChatMsgs(msgs);
-    // Badge when panel is closed
-    if(!chatVisible){
-      unreadCount++;
-      updateChatBadge();
-    }
+    if(!chatVisible){unreadCount++;updateChatBadge();}
   });
-  // Post a welcome system message when host creates room
   if(myIsCreator){
     setTimeout(()=>postSystemChat(`👋 Room ${roomId} created! Share the code with friends.`),400);
   }
@@ -1551,28 +1544,20 @@ function stopChat(){
 }
 
 function toggleChat(){
-  if(!chatRef&&!roomId){
-    // No room yet
-    return;
-  }
+  if(!chatRef&&!roomId)return;
   chatVisible=!chatVisible;
   const panel=document.getElementById('chat-panel');
   if(chatVisible){
-    // Close leaderboard
     if(lbVisible){lbVisible=false;document.getElementById('leaderboard-panel').classList.remove('show');lbRef.off('value');}
     panel.classList.add('show');
-    unreadCount=0;
-    updateChatBadge();
-    // Scroll to bottom
+    unreadCount=0;updateChatBadge();
     setTimeout(()=>{
       const msgs=document.getElementById('chat-messages');
       if(msgs)msgs.scrollTop=msgs.scrollHeight;
       const inp=document.getElementById('chat-input-field');
       if(inp)inp.focus();
     },80);
-  }else{
-    panel.classList.remove('show');
-  }
+  }else{panel.classList.remove('show');}
 }
 
 function updateChatBadge(){
@@ -1589,7 +1574,7 @@ function renderChatMsgs(msgs){
   const list=document.getElementById('chat-messages');
   const wasAtBottom=list.scrollTop+list.clientHeight>=list.scrollHeight-20;
   list.innerHTML='';
-  msgs.forEach((m,i)=>{
+  msgs.forEach((m)=>{
     if(!m)return;
     const div=document.createElement('div');
     if(m.slot==='system'){
@@ -1598,11 +1583,8 @@ function renderChatMsgs(msgs){
     }else{
       const isMine=m.slot===mySlot;
       div.className='chat-msg'+(isMine?' mine':'');
-      div.innerHTML=`
-        <span class="chat-name" style="color:${slotColor(m.slot)}">${escHtml(m.name)}</span>
-        <div class="chat-bubble">${escHtml(m.text)}</div>`;
+      div.innerHTML=`<span class="chat-name" style="color:${slotColor(m.slot)}">${escHtml(m.name)}</span><div class="chat-bubble">${escHtml(m.text)}</div>`;
     }
-    div.style.animationDelay=(i===msgs.length-1?'0':'0')+'ms';
     list.appendChild(div);
   });
   if(wasAtBottom||chatVisible)list.scrollTop=list.scrollHeight;
@@ -1614,12 +1596,7 @@ function sendChat(){
   const text=inp.value.trim();
   if(!text)return;
   if(!chatRef){inp.value='';return;}
-  chatRef.push({
-    name:myName||'Player',
-    slot:mySlot||'p1',
-    text,
-    ts:Date.now()
-  });
+  chatRef.push({name:myName||'Player',slot:mySlot||'p1',text,ts:Date.now()});
   inp.value='';
 }
 
@@ -1629,115 +1606,462 @@ function postSystemChat(text){
 }
 
 // ═══════════════════════════════════════════════════════════
-//  NEW: GARBAGE THROW ANIMATION
+//  GLOBAL LOBBY CHAT
+// ═══════════════════════════════════════════════════════════
+const globalChatRef=DB.ref('tetris2/global-chat');
+let globalChatListener=null;
+let lobbyChatOpen=false;
+let lobbyUnread=0;
+// Generate or retrieve a stable anonymous ID for this session
+const lobbyAnonId=sessionStorage.getItem('tb_anon')||(()=>{const id='anon_'+Math.random().toString(36).slice(2,9);sessionStorage.setItem('tb_anon',id);return id;})();
+
+function getLobbyName(){return document.getElementById('inp-name').value.trim()||'Guest';}
+
+(function initLobbyChat(){
+  // Listen to last 80 messages
+  globalChatListener=globalChatRef.limitToLast(80).on('value',snap=>{
+    const msgs=[];
+    snap.forEach(c=>{const v=c.val();if(v)msgs.push(v);});
+    renderLobbyMsgs(msgs);
+    if(!lobbyChatOpen){
+      lobbyUnread++;
+      updateLobbyBadge();
+    }
+  });
+})();
+
+function toggleLobbyChat(){
+  lobbyChatOpen=!lobbyChatOpen;
+  const win=document.getElementById('lobby-chat-window');
+  if(lobbyChatOpen){
+    win.classList.add('show');
+    lobbyUnread=0;updateLobbyBadge();
+    setTimeout(()=>{
+      const msgs=document.getElementById('lobby-chat-msgs');
+      if(msgs)msgs.scrollTop=msgs.scrollHeight;
+      const inp=document.getElementById('lobby-chat-inp');
+      if(inp)inp.focus();
+    },80);
+  }else{win.classList.remove('show');}
+}
+
+function updateLobbyBadge(){
+  const badge=document.getElementById('lobby-fab-badge');
+  if(!badge)return;
+  const n=Math.min(lobbyUnread,99);
+  if(n>0){badge.style.display='flex';badge.textContent=n>9?'9+':n;}
+  else{badge.style.display='none';}
+}
+
+function renderLobbyMsgs(msgs){
+  const list=document.getElementById('lobby-chat-msgs');
+  if(!list)return;
+  const wasAtBottom=list.scrollTop+list.clientHeight>=list.scrollHeight-20;
+  list.innerHTML='';
+  msgs.forEach((m)=>{
+    if(!m)return;
+    const div=document.createElement('div');
+    if(m.type==='system'){
+      div.innerHTML=`<span class="lobby-sys">${escHtml(m.text)}</span>`;
+      div.className='lobby-msg';
+    }else{
+      const isMine=m.anonId===lobbyAnonId;
+      div.className='lobby-msg'+(isMine?' lmine':'');
+      const hue=strToHue(m.anonId||m.name||'');
+      const nameColor=`hsl(${hue},70%,72%)`;
+      div.innerHTML=`<span class="lobby-msg-name" style="color:${nameColor}">${escHtml(m.name||'Guest')}</span><div class="lobby-bubble">${escHtml(m.text)}</div>`;
+    }
+    list.appendChild(div);
+  });
+  if(wasAtBottom||lobbyChatOpen)list.scrollTop=list.scrollHeight;
+}
+
+function strToHue(s){
+  let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))%360;return h;
+}
+
+function sendLobbyChat(){
+  const inp=document.getElementById('lobby-chat-inp');
+  if(!inp)return;
+  const text=inp.value.trim();
+  if(!text)return;
+  const name=getLobbyName();
+  globalChatRef.push({name,anonId:lobbyAnonId,text,ts:Date.now()});
+  // Keep only last 200 messages by pruning old ones
+  globalChatRef.once('value',snap=>{
+    if(snap.numChildren()>200){
+      let count=0;const toDelete=[];
+      snap.forEach(c=>{if(count++<snap.numChildren()-200)toDelete.push(c.key);});
+      toDelete.forEach(k=>globalChatRef.child(k).remove());
+    }
+  });
+  inp.value='';
+}
+
+// Allow Enter key in lobby chat
+document.getElementById('lobby-chat-inp').addEventListener('keydown',e=>{if(e.key==='Enter')sendLobbyChat();});
+
+// ═══════════════════════════════════════════════════════════
+//  3D COMET GARBAGE ANIMATION (Canvas 2D with 3D perspective tricks)
 // ═══════════════════════════════════════════════════════════
 
-// Emit a fireball/comet animation from opponents area → player's board
+const cometCanvas=document.getElementById('comet-canvas');
+const cometCtx=cometCanvas.getContext('2d');
+let cometW=0,cometH=0;
+let activeCometBursts=[];
+let cometRafId=null;
+
+function resizeComet(){
+  cometW=cometCanvas.width=window.innerWidth;
+  cometH=cometCanvas.height=window.innerHeight;
+}
+resizeComet();
+window.addEventListener('resize',resizeComet);
+
+// Particle system for one comet
+class CometProjectile {
+  constructor(sx,sy,ex,ey,amount,delay){
+    this.sx=sx; this.sy=sy;
+    this.ex=ex; this.ey=ey;
+    this.amount=amount;
+    this.delay=delay;
+    this.t=0; // 0→1 flight progress
+    this.duration=700+Math.random()*150;
+    this.startTime=null;
+    this.done=false;
+    this.impacted=false;
+    this.impactT=0;
+
+    // Visual personality
+    const palette=[
+      ['#FF3355','#FF8C69','#FFE000'],
+      ['#CC44FF','#FF6DFF','#FFFFFF'],
+      ['#00E5FF','#2979FF','#00FF88'],
+      ['#FF6D00','#FF3355','#FFE000'],
+    ];
+    this.colors=palette[Math.floor(Math.random()*palette.length)];
+
+    // Trail particles — stored as relative aged positions
+    this.trail=[];
+    this.maxTrail=28;
+
+    // Impact sparks spawned at collision
+    this.sparks=[];
+
+    // 3D spin state
+    this.spin=Math.random()*Math.PI*2;
+    this.spinSpeed=(Math.random()-0.5)*0.22;
+
+    // Comet size scales with amount
+    this.radius=10+Math.min(amount,8)*1.8;
+
+    // Arc height (higher = more dramatic)
+    this.arcH=Math.min(window.innerHeight*0.38,120+amount*8);
+  }
+
+  start(now){this.startTime=now;}
+
+  // Bezier arc: sx,sy → midpoint (lifted) → ex,ey
+  pos(t){
+    const mx=(this.sx+this.ex)/2;
+    const my=Math.min(this.sy,this.ey)-this.arcH;
+    // Quadratic Bezier
+    const u=1-t;
+    return{
+      x:u*u*this.sx+2*u*t*mx+t*t*this.ex,
+      y:u*u*this.sy+2*u*t*my+t*t*this.ey
+    };
+  }
+
+  // tangent for orientation
+  tangent(t){
+    const mx=(this.sx+this.ex)/2;
+    const my=Math.min(this.sy,this.ey)-this.arcH;
+    const dx=2*(1-t)*(mx-this.sx)+2*t*(this.ex-mx);
+    const dy=2*(1-t)*(my-this.sy)+2*t*(this.ey-my);
+    const len=Math.sqrt(dx*dx+dy*dy)||1;
+    return{dx:dx/len,dy:dy/len};
+  }
+
+  update(now,dt){
+    if(!this.startTime){
+      if(now-this._created>=this.delay){this.startTime=now;}
+      return;
+    }
+    if(this.done)return;
+
+    if(!this.impacted){
+      const elapsed=now-this.startTime;
+      // Ease-in-out cubic
+      const raw=Math.min(1,elapsed/this.duration);
+      this.t=raw<0.5?4*raw*raw*raw:(1-Math.pow(-2*raw+2,3)/2);
+      this.spin+=this.spinSpeed;
+
+      // Record trail
+      const p=this.pos(this.t);
+      this.trail.unshift({x:p.x,y:p.y,age:0});
+      if(this.trail.length>this.maxTrail)this.trail.pop();
+      this.trail.forEach(tp=>{tp.age+=dt/800;});
+
+      if(raw>=1){
+        this.impacted=true;
+        this.spawnImpactSparks();
+      }
+    }else{
+      // Impact explosion
+      this.impactT+=dt/600;
+      this.sparks.forEach(s=>{
+        s.x+=s.vx*dt/16;
+        s.y+=s.vy*dt/16;
+        s.vy+=0.18;
+        s.life-=dt/500;
+        s.vx*=0.97;
+      });
+      this.sparks=this.sparks.filter(s=>s.life>0);
+      if(this.impactT>1&&!this.sparks.length)this.done=true;
+    }
+  }
+
+  spawnImpactSparks(){
+    const count=20+this.amount*3;
+    for(let i=0;i<count;i++){
+      const angle=Math.random()*Math.PI*2;
+      const speed=2+Math.random()*6;
+      const c=this.colors[Math.floor(Math.random()*this.colors.length)];
+      this.sparks.push({
+        x:this.ex, y:this.ey,
+        vx:Math.cos(angle)*speed,
+        vy:Math.sin(angle)*speed-3,
+        life:1, maxLife:1,
+        r:2+Math.random()*3,
+        color:c
+      });
+    }
+  }
+
+  draw(ctx){
+    if(this.done||!this.startTime)return;
+
+    if(!this.impacted){
+      this._drawTrail(ctx);
+      this._drawHead(ctx);
+    }else{
+      this._drawImpact(ctx);
+    }
+  }
+
+  _drawTrail(ctx){
+    if(this.trail.length<2)return;
+    ctx.save();
+    // Draw trail as tapering glow segments
+    for(let i=0;i<this.trail.length-1;i++){
+      const a=this.trail[i],b=this.trail[i+1];
+      const frac=1-i/this.trail.length;
+      const r=this.radius*frac*0.55;
+      const alpha=frac*(1-a.age)*0.7;
+      if(alpha<=0||r<=0)continue;
+
+      // Outer glow
+      ctx.beginPath();
+      ctx.strokeStyle=this.colors[0];
+      ctx.globalAlpha=alpha*0.25;
+      ctx.lineWidth=r*2.5;
+      ctx.lineCap='round';
+      ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);
+      ctx.stroke();
+
+      // Core
+      ctx.beginPath();
+      ctx.strokeStyle=this.colors[1];
+      ctx.globalAlpha=alpha*0.7;
+      ctx.lineWidth=r;
+      ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  _drawHead(ctx){
+    const p=this.pos(this.t);
+    const tang=this.tangent(this.t);
+    const r=this.radius;
+    ctx.save();
+    ctx.translate(p.x,p.y);
+
+    // Outer halo
+    const grad=ctx.createRadialGradient(0,0,r*0.1,0,0,r*2.8);
+    grad.addColorStop(0,this.colors[0]+'FF');
+    grad.addColorStop(0.4,this.colors[1]+'88');
+    grad.addColorStop(1,'transparent');
+    ctx.globalAlpha=0.6;
+    ctx.fillStyle=grad;
+    ctx.beginPath();ctx.arc(0,0,r*2.8,0,Math.PI*2);ctx.fill();
+
+    // 3D sphere illusion: radial gradient offset for highlight
+    const sphereGrad=ctx.createRadialGradient(-r*0.3,-r*0.35,r*0.05,-r*0.0,-r*0.0,r);
+    sphereGrad.addColorStop(0,'rgba(255,255,255,0.92)');
+    sphereGrad.addColorStop(0.3,this.colors[0]+'EE');
+    sphereGrad.addColorStop(0.7,this.colors[1]+'CC');
+    sphereGrad.addColorStop(1,this.colors[2]+'44');
+    ctx.globalAlpha=1;
+    ctx.fillStyle=sphereGrad;
+    ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.fill();
+
+    // Specular highlight (small bright dot, upper-left)
+    ctx.globalAlpha=0.9;
+    const specGrad=ctx.createRadialGradient(-r*0.38,-r*0.38,0,-r*0.38,-r*0.38,r*0.38);
+    specGrad.addColorStop(0,'rgba(255,255,255,1)');
+    specGrad.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=specGrad;
+    ctx.beginPath();ctx.arc(-r*0.38,-r*0.38,r*0.38,0,Math.PI*2);ctx.fill();
+
+    // Edge ring (3D depth cue)
+    ctx.globalAlpha=0.45;
+    ctx.strokeStyle=this.colors[2];
+    ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);ctx.stroke();
+
+    // Spinning energy rings (simulated rotation)
+    ctx.globalAlpha=0.35;
+    ctx.strokeStyle=this.colors[0];
+    ctx.lineWidth=1.2;
+    // Outer ellipse tilted like a rotating ring
+    ctx.save();
+    ctx.rotate(this.spin);
+    ctx.scale(1,0.28);
+    ctx.beginPath();ctx.arc(0,0,r*0.9,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+    ctx.save();
+    ctx.rotate(this.spin+Math.PI/3);
+    ctx.scale(0.28,1);
+    ctx.beginPath();ctx.arc(0,0,r*0.9,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  _drawImpact(ctx){
+    ctx.save();
+    const progress=Math.min(1,this.impactT);
+
+    // Shockwave ring
+    const ringR=this.radius*(1+progress*5);
+    const ringAlpha=Math.max(0,1-progress);
+    ctx.globalAlpha=ringAlpha*0.6;
+    ctx.strokeStyle=this.colors[0];
+    ctx.lineWidth=3*(1-progress)+0.5;
+    ctx.beginPath();ctx.arc(this.ex,this.ey,ringR,0,Math.PI*2);ctx.stroke();
+
+    // Secondary ring
+    ctx.globalAlpha=ringAlpha*0.35;
+    ctx.strokeStyle=this.colors[1];
+    ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(this.ex,this.ey,ringR*1.6,0,Math.PI*2);ctx.stroke();
+
+    // Flash
+    if(progress<0.15){
+      const flashAlpha=(0.15-progress)/0.15;
+      const flashGrad=ctx.createRadialGradient(this.ex,this.ey,0,this.ex,this.ey,this.radius*4);
+      flashGrad.addColorStop(0,`rgba(255,255,255,${flashAlpha})`);
+      flashGrad.addColorStop(1,'transparent');
+      ctx.globalAlpha=1;
+      ctx.fillStyle=flashGrad;
+      ctx.beginPath();ctx.arc(this.ex,this.ey,this.radius*4,0,Math.PI*2);ctx.fill();
+    }
+
+    // Sparks
+    ctx.globalAlpha=1;
+    this.sparks.forEach(s=>{
+      const a=s.life/s.maxLife;
+      ctx.globalAlpha=a*0.9;
+      ctx.fillStyle=s.color;
+      ctx.shadowColor=s.color;
+      ctx.shadowBlur=6;
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r*a,0,Math.PI*2);ctx.fill();
+      // Streak behind spark
+      ctx.globalAlpha=a*0.4;
+      ctx.strokeStyle=s.color;
+      ctx.lineWidth=s.r*0.5;
+      ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x-s.vx*2,s.y-s.vy*2);ctx.stroke();
+    });
+    ctx.shadowBlur=0;
+    ctx.restore();
+  }
+}
+
+CometProjectile.prototype._created=0;
+
+function cometLoop(now){
+  cometCtx.clearRect(0,0,cometW,cometH);
+  let anyActive=false;
+  const dt=16; // approximate
+
+  for(let i=activeCometBursts.length-1;i>=0;i--){
+    const burst=activeCometBursts[i];
+    let burstDone=true;
+    for(const comet of burst){
+      if(!comet._created)comet._created=now;
+      comet.update(now,dt);
+      comet.draw(cometCtx);
+      if(!comet.done)burstDone=false;
+    }
+    if(burstDone)activeCometBursts.splice(i,1);
+    else anyActive=true;
+  }
+
+  if(anyActive||activeCometBursts.length>0){
+    cometRafId=requestAnimationFrame(cometLoop);
+  }else{
+    cometRafId=null;
+  }
+}
+
 function showGarbThrowAnim(amount){
   const toEl=document.getElementById('my-canvas');
   if(!toEl)return;
   const toRect=toEl.getBoundingClientRect();
   const endX=toRect.left+toRect.width/2;
-  const endY=toRect.top+toRect.height*0.35;
+  const endY=toRect.top+toRect.height*0.3;
 
-  // Find the source: try opponents panel, fallback to right edge
+  // Find source canvas
   let startX,startY;
-  const oppPanel=document.getElementById('opponents-panel');
-  if(oppPanel&&oppPanel.children.length>0){
-    // Pick a random live opponent's canvas as source
-    const liveSlots=Object.entries(playerBoards)
-      .filter(([,pb])=>!pb.eliminated)
-      .map(([slot])=>slot);
-    const srcSlot=liveSlots[Math.floor(Math.random()*liveSlots.length)];
-    const srcCanvas=srcSlot?document.getElementById(`canvas-${srcSlot}`):null;
-    if(srcCanvas){
-      const r=srcCanvas.getBoundingClientRect();
-      startX=r.left+r.width/2;
-      startY=r.top+r.height/2;
-    }else{
-      const pr=oppPanel.getBoundingClientRect();
-      startX=pr.left+pr.width/2;
-      startY=pr.top+Math.random()*pr.height*0.5;
-    }
+  const liveSlots=Object.entries(playerBoards)
+    .filter(([,pb])=>!pb.eliminated)
+    .map(([slot])=>slot);
+  const srcSlot=liveSlots[Math.floor(Math.random()*liveSlots.length)];
+  const srcCanvas=srcSlot?document.getElementById(`canvas-${srcSlot}`):null;
+  if(srcCanvas){
+    const r=srcCanvas.getBoundingClientRect();
+    startX=r.left+r.width/2;
+    startY=r.top+r.height*0.4;
   }else{
     startX=window.innerWidth*0.82;
     startY=window.innerHeight*0.22;
   }
 
-  const container=document.getElementById('garb-throw-container');
-  // Number of projectiles scales with garbage amount
   const count=Math.min(amount,6);
-  const icons=amount>=4?['☄️','💥','🔥','⚡','💣']:amount>=2?['⚡','🔥','💥']:['⚡'];
-
+  const burst=[];
   for(let i=0;i<count;i++){
-    // Stagger each particle slightly
-    setTimeout(()=>spawnGarbParticle(container,startX,startY,endX,endY,amount,i,icons),i*70);
+    const c=new CometProjectile(startX,startY,endX,endY,amount,i*90);
+    c._created=0; // will be set on first update
+    burst.push(c);
+  }
+  activeCometBursts.push(burst);
+
+  // Start loop if not running
+  if(!cometRafId){
+    cometRafId=requestAnimationFrame(cometLoop);
   }
 
-  // Shake the board at impact time (after the last particle lands)
-  setTimeout(()=>shakeBoard(),count*70+680);
+  // Shake board after longest particle lands
+  setTimeout(()=>shakeBoard(),(count-1)*90+700+600);
 }
 
-function spawnGarbParticle(container,sx,sy,ex,ey,amount,idx,icons){
-  const el=document.createElement('div');
-  el.textContent=icons[idx%icons.length];
-  const baseSz=22+Math.min(amount,5)*2;
-  el.style.cssText=`
-    position:fixed;
-    font-size:${baseSz}px;
-    left:${sx}px;top:${sy}px;
-    transform:translate(-50%,-50%);
-    pointer-events:none;
-    z-index:500;
-    filter:drop-shadow(0 0 8px rgba(255,120,0,.9));
-    will-change:transform,left,top,opacity;
-  `;
-  container.appendChild(el);
-
-  // Slight random spread on destination
-  const spreadX=(Math.random()-0.5)*50;
-  const spreadY=(Math.random()-0.5)*40;
-  const dstX=ex+spreadX;
-  const dstY=ey+spreadY;
-  const arcH=80+Math.random()*60; // arc height
-  const duration=650+Math.random()*120;
-  const startTime=performance.now();
-  const spinDir=idx%2===0?1:-1;
-
-  function frame(now){
-    const t=Math.min(1,(now-startTime)/duration);
-    // Ease: cubic out
-    const e=1-Math.pow(1-t,3);
-    const x=sx+(dstX-sx)*e;
-    const y=sy+(dstY-sy)*e - Math.sin(t*Math.PI)*arcH;
-    const scale=0.6+Math.sin(t*Math.PI)*0.9;
-    const rot=t*360*spinDir;
-    const opacity=t>0.82?(1-(t-0.82)/0.18):1;
-
-    el.style.left=x+'px';
-    el.style.top=y+'px';
-    el.style.opacity=opacity;
-    el.style.transform=`translate(-50%,-50%) scale(${scale}) rotate(${rot}deg)`;
-
-    if(t<1){requestAnimationFrame(frame);}
-    else{
-      // Impact flash
-      el.style.transform='translate(-50%,-50%) scale(2.5)';
-      el.style.filter='drop-shadow(0 0 20px rgba(255,50,50,1))';
-      el.style.opacity='0.9';
-      el.style.transition='all 0.25s ease';
-      setTimeout(()=>el.remove(),260);
-    }
-  }
-  requestAnimationFrame(frame);
-}
-
-// Shake the center board div
 function shakeBoard(){
   const center=document.getElementById('board-center');
   if(!center)return;
   center.style.animation='none';
-  void center.offsetWidth; // reflow
+  void center.offsetWidth;
   center.style.animation='boardShake 0.45s ease';
   setTimeout(()=>{center.style.animation='';},460);
 }
