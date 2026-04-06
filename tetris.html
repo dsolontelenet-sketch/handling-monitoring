@@ -46,7 +46,8 @@ body{
 @keyframes winPulse{0%,100%{box-shadow:0 0 20px rgba(16,185,129,.3),0 0 60px rgba(16,185,129,.1);}50%{box-shadow:0 0 40px rgba(16,185,129,.7),0 0 80px rgba(16,185,129,.25);}}
 @keyframes lbSlide{from{transform:translateX(24px);opacity:0;}to{transform:translateX(0);opacity:1;}}
 @keyframes roomPulse{0%,100%{border-color:rgba(99,102,241,.25);}50%{border-color:rgba(99,102,241,.55);}}
-@keyframes rematchPulse{0%,100%{box-shadow:0 0 20px rgba(251,191,36,.25);}50%{box-shadow:0 0 40px rgba(251,191,36,.6);}}
+@keyframes timerPulse{0%,100%{color:#f59e0b;}50%{color:#ef4444;transform:scale(1.1);}}
+@keyframes autoStartPop{from{transform:scale(.8);opacity:0;}to{transform:scale(1);opacity:1;}}
 
 .float-anim{animation:floatY 3.2s ease-in-out infinite;}
 .pop-in{animation:popIn .6s cubic-bezier(.34,1.56,.64,1) both;}
@@ -91,9 +92,15 @@ body{
 .room-join-btn{padding:5px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;font-family:'Sora',sans-serif;flex-shrink:0;transition:all .15s;}
 .room-join-btn:hover{transform:scale(1.05);box-shadow:0 4px 14px rgba(99,102,241,.4);}
 
-/* ─── REMATCH BANNER ─── */
-#rematch-banner{position:fixed;top:0;left:0;right:0;z-index:500;padding:12px 20px;background:rgba(251,191,36,.12);border-bottom:1px solid rgba(251,191,36,.3);display:none;align-items:center;justify-content:center;gap:14px;backdrop-filter:blur(12px);}
-#rematch-banner.show{display:flex;animation:rematchPulse 1.5s ease infinite;}
+/* ─── ROOM EXPIRY TIMER ─── */
+#room-expiry-bar{height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;margin-top:8px;}
+#room-expiry-fill{height:100%;background:linear-gradient(90deg,#10b981,#f59e0b,#ef4444);border-radius:2px;transition:width 1s linear;width:100%;}
+#room-expiry-label{font-size:10px;color:#64748b;font-family:'JetBrains Mono',monospace;text-align:center;margin-top:4px;}
+#room-expiry-label.urgent{animation:timerPulse .8s ease infinite;color:#f59e0b;}
+
+/* ─── AUTO-START BANNER ─── */
+#autostart-banner{position:fixed;top:0;left:0;right:0;z-index:500;padding:10px 20px;background:rgba(16,185,129,.14);border-bottom:1px solid rgba(16,185,129,.35);display:none;align-items:center;justify-content:center;gap:10px;backdrop-filter:blur(12px);}
+#autostart-banner.show{display:flex;animation:autoStartPop .3s ease;}
 
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
@@ -132,10 +139,9 @@ body{
 </head>
 <body>
 
-<!-- ── REMATCH BANNER (shown to non-hosts during game over) ── -->
-<div id="rematch-banner">
-  <span style="font-size:13px;font-weight:700;color:#fbbf24;">🔄 Host is starting a rematch!</span>
-  <button onclick="acceptRematch()" style="padding:7px 18px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;font-family:'Sora',sans-serif;">Join Rematch</button>
+<!-- ── AUTO-START BANNER ── -->
+<div id="autostart-banner">
+  <span style="font-size:13px;font-weight:700;color:#6ee7b7;">⚡ Room full — game starting automatically!</span>
 </div>
 
 <div id="clear-popup">
@@ -263,7 +269,14 @@ body{
         📋 Copy code
       </button>
     </div>
+
+    <!-- Room expiry timer (only visible to host) -->
+    <div id="expiry-container" style="display:none;margin-top:10px;max-width:260px;margin-left:auto;margin-right:auto;">
+      <div id="room-expiry-bar"><div id="room-expiry-fill"></div></div>
+      <p id="room-expiry-label">⏳ Room expires in <span id="expiry-seconds">30</span>s if game doesn't start</p>
+    </div>
   </div>
+
   <div style="width:100%;max-width:360px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
       <h3 style="font-size:13px;font-weight:700;color:white;">Players</h3>
@@ -271,10 +284,13 @@ body{
     </div>
     <div id="wait-player-list" style="display:flex;flex-direction:column;gap:8px;min-height:80px;"></div>
   </div>
-  <div style="display:flex;align-items:center;gap:12px;">
+
+  <div id="wait-status" style="display:flex;align-items:center;gap:12px;">
     <div class="spinner"></div>
     <p style="font-size:14px;font-weight:600;color:#94a3b8;">Waiting for players…</p>
   </div>
+
+  <!-- Host manual start button (only shown when ≥2 players) -->
   <button id="start-btn" onclick="hostStart()" style="display:none;padding:12px 36px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(135deg,#10b981,#059669);color:white;font-family:'Sora',sans-serif;box-shadow:0 0 30px rgba(16,185,129,.35);animation:winPulse 2s ease infinite;transition:transform .2s;"
     onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
     🎮 Start Game!
@@ -401,15 +417,20 @@ body{
       </div>
     </div>
 
-    <!-- Rematch row -->
-    <div id="rematch-row" style="display:flex;gap:8px;margin-bottom:8px;">
-      <!-- Host sees "Rematch" button; non-hosts see "Request Rematch" -->
+    <!-- Rematch row — HOST ONLY -->
+    <div id="rematch-row" style="display:none;gap:8px;margin-bottom:8px;">
       <button id="btn-rematch" onclick="playAgain()"
         style="flex:1;padding:12px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;font-family:'Sora',sans-serif;transition:all .2s;box-shadow:0 4px 20px rgba(245,158,11,.3);"
         onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
         🔄 Rematch
       </button>
     </div>
+
+    <!-- Non-host waiting message -->
+    <div id="rematch-wait-msg" style="display:none;text-align:center;padding:12px;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.2);border-radius:12px;margin-bottom:8px;">
+      <p style="font-size:13px;color:#fbbf24;font-weight:600;">⏳ Waiting for host to start rematch…</p>
+    </div>
+
     <button onclick="goLobby()"
       style="width:100%;padding:11px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.06);color:#64748b;border:1px solid rgba(255,255,255,.1);font-family:'Sora',sans-serif;transition:all .2s;"
       onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">
@@ -455,6 +476,7 @@ const SHADOW=[null,'#007A8C','#998600','#7A1A99','#00994D','#99001F','#0B3D99','
 const SHAPES=[null,[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[0,1,1],[1,1,0]],[[1,1,0],[0,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]]];
 const SCORE_TABLE=[0,100,300,500,800];
 const GARBAGE_TABLE=[0,0,1,2,4];
+const ROOM_EXPIRE_SECONDS=30; // auto-delete room if not started
 function levelSpeed(l){return Math.max(50,1000-(l-1)*88);}
 
 // ─────────────────── BLOCK SKINS ────────────────────────
@@ -585,6 +607,40 @@ let selectedMax=2;
 let isSoloMode=false;
 let gameMode='multi';
 
+// Room expiry
+let expiryTimer=null;
+let expirySecondsLeft=ROOM_EXPIRE_SECONDS;
+
+// ─────────────────── ROOM EXPIRY ────────────────────────
+function startRoomExpiry(){
+  if(!myIsCreator)return;
+  expirySecondsLeft=ROOM_EXPIRE_SECONDS;
+  document.getElementById('expiry-container').style.display='block';
+  updateExpiryUI();
+  expiryTimer=setInterval(()=>{
+    expirySecondsLeft--;
+    updateExpiryUI();
+    if(expirySecondsLeft<=0){
+      clearInterval(expiryTimer);expiryTimer=null;
+      // Delete room
+      if(roomRef)roomRef.remove();
+      alert('Room expired — no one joined in 30 seconds.');
+      showScreen('s-lobby');startRoomsBrowser();
+    }
+  },1000);
+}
+function stopRoomExpiry(){
+  if(expiryTimer){clearInterval(expiryTimer);expiryTimer=null;}
+  document.getElementById('expiry-container').style.display='none';
+}
+function updateExpiryUI(){
+  const pct=(expirySecondsLeft/ROOM_EXPIRE_SECONDS)*100;
+  document.getElementById('room-expiry-fill').style.width=pct+'%';
+  document.getElementById('expiry-seconds').textContent=expirySecondsLeft;
+  const lbl=document.getElementById('room-expiry-label');
+  if(expirySecondsLeft<=10)lbl.classList.add('urgent');else lbl.classList.remove('urgent');
+}
+
 // ─────────────────── ROOM BROWSER ───────────────────────
 let roomsRef=null,roomsListener=null;
 
@@ -596,16 +652,14 @@ function startRoomsBrowser(){
   roomsListener=roomsRef.on('value',snap=>{
     if(spinner)spinner.style.display='none';
     const list=document.getElementById('rooms-list');
-    const emptyMsg=document.getElementById('rooms-empty');
     const rooms=[];
     snap.forEach(child=>{
       const d=child.val();
       if(!d)return;
       if(d.status!=='waiting')return;
-      // Count current players
       let count=0,maxP=d.maxPlayers||2;
       for(let i=1;i<=maxP;i++){if(d[`p${i}`])count++;}
-      if(count>=maxP)return; // full
+      if(count>=maxP)return;
       rooms.push({code:child.key,host:d.p1?d.p1.name:'?',count,max:maxP});
     });
     list.innerHTML='';
@@ -633,10 +687,7 @@ function startRoomsBrowser(){
 function stopRoomsBrowser(){
   if(roomsListener&&roomsRef){roomsRef.off('value',roomsListener);roomsListener=null;}
 }
-
-function refreshRooms(){
-  startRoomsBrowser();
-}
+function refreshRooms(){startRoomsBrowser();}
 
 async function quickJoin(code){
   const name=document.getElementById('inp-name').value.trim();
@@ -748,8 +799,6 @@ function startSolo(){
   document.getElementById('alive-pill').textContent='SOLO';
   document.getElementById('garbage-box').style.display='none';
   document.getElementById('opponents-panel').innerHTML='';
-  document.getElementById('rematch-row').style.display='flex';
-  document.getElementById('btn-rematch').textContent='🔄 Play Again';
   showScreen('s-game');doCountdown(()=>initGame());
 }
 
@@ -1035,9 +1084,11 @@ async function createRoom(){
   const roomData={status:'waiting',createdAt:Date.now(),maxPlayers,hostName:myName};
   roomData.p1={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false};
   await roomRef.set(roomData).catch(console.error);
-  roomRef.onDisconnect().update({status:'abandoned'});
+  roomRef.onDisconnect().remove(); // full remove on disconnect
   document.getElementById('wait-code').textContent=roomId;
-  showScreen('s-waiting');listenRoom();
+  showScreen('s-waiting');
+  startRoomExpiry(); // start 30s expiry
+  listenRoom();
 }
 
 async function joinRoom(){
@@ -1071,19 +1122,41 @@ function listenRoom(){
     for(let i=1;i<=maxPlayers;i++){if(d[`p${i}`]){slots.push(`p${i}`);playerData[`p${i}`]=d[`p${i}`];}}
     if(d.status==='waiting'){
       renderWaitingRoom(slots,playerData);
-      if(slots.length>=maxPlayers&&myIsCreator)roomRef.update({status:'playing'});
+      // AUTO-START: if room is full, host triggers start automatically
+      if(myIsCreator&&slots.length>=maxPlayers){
+        stopRoomExpiry();
+        showAutostartBanner();
+        setTimeout(()=>{
+          hideAutostartBanner();
+          roomRef.update({status:'playing'});
+        },1200);
+      }
     }
     if(d.status==='playing'){
+      stopRoomExpiry();
       roomRef.off('value',roomListener);roomListener=null;
       currentPlayers=slots.map(s=>({slot:s,name:playerData[s].name,dead:false}));
       beginBattle(slots,playerData);
     }
     if(d.status==='abandoned'){alert('Room abandoned.');cancelWait();}
-    // Detect rematch: room goes back to waiting while we are on game over screen
+    // Rematch: host reset room to waiting, non-hosts see this and re-join
     if(d.status==='rematch'&&!myIsCreator){
-      showRematchBanner();
+      // non-host: go to waiting screen
+      if(gameoverRoomListener&&roomRef){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
+      roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
+        document.getElementById('wait-code').textContent=roomId;
+        showScreen('s-waiting');
+        listenRoom();
+      });
     }
   });
+}
+
+function showAutostartBanner(){
+  document.getElementById('autostart-banner').classList.add('show');
+}
+function hideAutostartBanner(){
+  document.getElementById('autostart-banner').classList.remove('show');
 }
 
 function renderWaitingRoom(slots,data){
@@ -1104,12 +1177,14 @@ function renderWaitingRoom(slots,data){
     list.appendChild(item);
   }
   document.getElementById('wait-count').textContent=`${slots.length} / ${maxPlayers}`;
-  document.getElementById('start-btn').style.display=(myIsCreator&&slots.length>=2)?'block':'none';
+  // Only show manual start button to host when ≥2 players but room not yet full
+  document.getElementById('start-btn').style.display=(myIsCreator&&slots.length>=2&&slots.length<maxPlayers)?'block':'none';
 }
 
-function hostStart(){if(!myIsCreator||!roomRef)return;roomRef.update({status:'playing'});}
+function hostStart(){if(!myIsCreator||!roomRef)return;stopRoomExpiry();roomRef.update({status:'playing'});}
 
 function cancelWait(){
+  stopRoomExpiry();
   if(roomListener&&roomRef){roomRef.off('value',roomListener);roomListener=null;}
   if(roomRef&&myIsCreator)roomRef.remove();
   else if(roomRef&&mySlot)roomRef.child(mySlot).remove();
@@ -1130,10 +1205,6 @@ function beginBattle(slots,data){
   document.getElementById('solo-badge').style.display='none';
   document.getElementById('room-chip').textContent=`ROOM: ${roomId}`;
   document.getElementById('alive-pill').textContent=`${slots.length} / ${slots.length} ALIVE`;
-  // Rematch button label based on role
-  document.getElementById('btn-rematch').textContent=myIsCreator?'🔄 Rematch':'⏳ Waiting for host…';
-  document.getElementById('btn-rematch').disabled=!myIsCreator;
-  document.getElementById('btn-rematch').style.opacity=myIsCreator?'1':'0.5';
   setupOpponentPanels(slots);
   for(const s of slots){if(s===mySlot)continue;const el=document.getElementById(`opp-name-${s}`);if(el&&data[s])el.textContent=data[s].name;}
   for(const slot of slots){
@@ -1199,21 +1270,20 @@ function checkWinner(){
   if(won)recordWin(myName);
   cleanupListeners();
 
-  // Non-host: watch for rematch signal from host
+  // Non-host: watch for host-initiated rematch
   if(!myIsCreator&&roomRef){
     gameoverRoomListener=roomRef.on('value',snap=>{
       const d=snap.val();if(!d)return;
-      if(d.status==='rematch'){showRematchBanner();}
-      if(d.status==='playing'){
-        // Host started rematch — join
+      if(d.status==='rematch'){
+        // Host triggered rematch: non-host goes to waiting screen
         roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;
-        hideRematchBanner();
-        const slots=[],playerData={};
-        for(let i=1;i<=maxPlayers;i++){if(d[`p${i}`]){slots.push(`p${i}`);playerData[`p${i}`]=d[`p${i}`];}}
-        currentPlayers=slots.map(s=>({slot:s,name:playerData[s].name,dead:false}));
-        beginBattle(slots,playerData);
+        roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
+          document.getElementById('wait-code').textContent=roomId;
+          showScreen('s-waiting');
+          listenRoom();
+        });
       }
-      if(d.status==='abandoned'){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;hideRematchBanner();}
+      if(d.status==='abandoned'){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
     });
   }
 
@@ -1247,44 +1317,62 @@ function showGameOver(won,winnerName,isSolo=false){
       rankDiv.appendChild(item);
     }
   }
-  // Rematch row visibility
-  document.getElementById('rematch-row').style.display=isSolo?'flex':'flex';
-  if(!isSolo){
-    if(myIsCreator){
-      document.getElementById('btn-rematch').textContent='🔄 Rematch';
-      document.getElementById('btn-rematch').disabled=false;
-      document.getElementById('btn-rematch').style.opacity='1';
-    }else{
-      document.getElementById('btn-rematch').textContent='⏳ Waiting for host rematch…';
-      document.getElementById('btn-rematch').disabled=true;
-      document.getElementById('btn-rematch').style.opacity='0.5';
-    }
-  }else{
+
+  // ── HOST ONLY sees Rematch button; non-host sees a waiting message ──
+  const rematchRow=document.getElementById('rematch-row');
+  const rematchWaitMsg=document.getElementById('rematch-wait-msg');
+  if(isSolo){
+    // Solo: always show play again
+    rematchRow.style.display='flex';
+    rematchWaitMsg.style.display='none';
     document.getElementById('btn-rematch').textContent='🔄 Play Again';
-    document.getElementById('btn-rematch').disabled=false;
-    document.getElementById('btn-rematch').style.opacity='1';
+  } else if(myIsCreator){
+    rematchRow.style.display='flex';
+    rematchWaitMsg.style.display='none';
+    document.getElementById('btn-rematch').textContent='🔄 Rematch';
+  } else {
+    // Non-host: hide rematch button, show waiting msg
+    rematchRow.style.display='none';
+    rematchWaitMsg.style.display='block';
   }
   showScreen('s-gameover');
 }
 
-// ─────────────────── REMATCH BANNER (non-host) ───────────
-function showRematchBanner(){
-  const banner=document.getElementById('rematch-banner');
-  banner.classList.add('show');
-}
-function hideRematchBanner(){
-  document.getElementById('rematch-banner').classList.remove('show');
-}
-function acceptRematch(){
-  hideRematchBanner();
+// ─────────────────── PLAY AGAIN / REMATCH (HOST ONLY) ───
+async function playAgain(){
+  if(isSoloMode){showScreen('s-game');doCountdown(()=>initGame());return;}
+  if(!roomRef||!myIsCreator){return;} // only host can call this
+
   if(gameoverRoomListener&&roomRef){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
-  if(!roomRef)return;
-  // Re-register as ready in our slot
-  roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
-    // Go to waiting screen so we can see countdown
-    document.getElementById('wait-code').textContent=roomId;
-    showScreen('s-waiting');listenRoom();
-  });
+
+  // Signal rematch — non-hosts detect this and move to waiting
+  await roomRef.update({status:'rematch'});
+
+  // Reset all non-host player slots so they re-register
+  const updates={garbage:null};
+  for(let i=2;i<=maxPlayers;i++)updates[`p${i}`]=null;
+  updates.p1={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false};
+  // Reset status to waiting AFTER a short pause so non-hosts catch the 'rematch' signal
+  await roomRef.update(updates);
+
+  currentPlayers=[];eliminatedRanks=[];
+  document.getElementById('wait-code').textContent=roomId;
+  showScreen('s-waiting');
+  startRoomExpiry(); // restart expiry timer for rematch
+  listenRoom();
+}
+
+function goLobby(){
+  stopDrop();clearLock();cleanupListeners();stopRoomExpiry();hideAutostartBanner();
+  if(roomListener&&roomRef){roomRef.off('value',roomListener);roomListener=null;}
+  if(gameoverRoomListener&&roomRef){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
+  if(myRef&&!isSoloMode)myRef.update({status:'left'}).catch(()=>{});
+  if(myIsCreator&&roomRef)roomRef.remove().catch(()=>{});
+  roomRef=null;myRef=null;currentPlayers=[];eliminatedRanks=[];
+  playerBoards={};oppListeners={};isSoloMode=false;myIsCreator=false;
+  document.getElementById('solo-badge').style.display='none';
+  if(lbVisible){lbVisible=false;document.getElementById('leaderboard-panel').classList.remove('show');lbRef.off('value');}
+  showScreen('s-lobby');startRoomsBrowser();
 }
 
 // ─────────────────── COUNTDOWN ──────────────────────────
@@ -1299,39 +1387,6 @@ function doCountdown(cb){
     else if(n<0){clearInterval(iv);el.classList.add('hidden');cb();}
     else{numEl.textContent=n;numEl.style.color=cdColors[n-1]||'white';}
   },900);
-}
-
-// ─────────────────── PLAY AGAIN / REMATCH ───────────────
-async function playAgain(){
-  if(isSoloMode){showScreen('s-game');doCountdown(()=>initGame());return;}
-  if(!roomRef){goLobby();return;}
-
-  if(myIsCreator){
-    // Signal all players rematch is coming
-    await roomRef.update({status:'rematch'});
-    // Reset all player slots
-    const updates={status:'waiting',garbage:null};
-    for(let i=2;i<=maxPlayers;i++)updates[`p${i}`]=null;
-    updates.p1={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false};
-    await roomRef.update(updates);
-    currentPlayers=[];eliminatedRanks=[];
-    if(gameoverRoomListener&&roomRef){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
-    showScreen('s-waiting');listenRoom();
-  }
-}
-
-function goLobby(){
-  stopDrop();clearLock();cleanupListeners();
-  if(roomListener&&roomRef){roomRef.off('value',roomListener);roomListener=null;}
-  if(gameoverRoomListener&&roomRef){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
-  hideRematchBanner();
-  if(myRef&&!isSoloMode)myRef.update({status:'left'}).catch(()=>{});
-  if(myIsCreator&&roomRef)roomRef.update({status:'abandoned'}).catch(()=>{});
-  roomRef=null;myRef=null;currentPlayers=[];eliminatedRanks=[];
-  playerBoards={};oppListeners={};isSoloMode=false;myIsCreator=false;
-  document.getElementById('solo-badge').style.display='none';
-  if(lbVisible){lbVisible=false;document.getElementById('leaderboard-panel').classList.remove('show');lbRef.off('value');}
-  showScreen('s-lobby');startRoomsBrowser();
 }
 
 // ─────────────────── UTILS ──────────────────────────────
