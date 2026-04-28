@@ -406,10 +406,10 @@ function levelSpeed(l){return Math.max(50,1000-(l-1)*88);}
 // ══════════════════════════════════════════════════════
 const BOT_CONFIGS={
   easy:{
-    thinkMs:300,
-    dropInterval:50,
+    thinkMs:50,
+    dropInterval:120,
     errorRate:0.3,       // 40% chance to pick a bad move
-    garbageMult:1.5,
+    garbageMult:1,
     lookahead:1,          // no lookahead
     useHold:false,        // never uses hold
     label:'🟢 Easy Bot',
