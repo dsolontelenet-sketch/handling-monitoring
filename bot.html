@@ -406,21 +406,21 @@ function levelSpeed(l){return Math.max(50,1000-(l-1)*88);}
 // ══════════════════════════════════════════════════════
 const BOT_CONFIGS={
   easy:{
-    thinkMs:1100,
-    dropInterval:260,
-    errorRate:0.40,       // 40% chance to pick a bad move
-    garbageMult:0.5,
-    lookahead:0,          // no lookahead
+    thinkMs:300,
+    dropInterval:100,
+    errorRate:0.3,       // 40% chance to pick a bad move
+    garbageMult:1.5,
+    lookahead:1,          // no lookahead
     useHold:false,        // never uses hold
     label:'🟢 Easy Bot',
     desc:'⏳ Thinks slowly, makes lots of mistakes, and never uses the hold piece. Great for beginners!'
   },
   medium:{
-    thinkMs:480,
-    dropInterval:100,
-    errorRate:0.10,       // 10% mistake rate
-    garbageMult:0.85,
-    lookahead:1,          // 1-piece lookahead
+    thinkMs:130,
+    dropInterval:50,
+    errorRate:0.03,       // 10% mistake rate
+    garbageMult:2.85,
+    lookahead:2,          // 1-piece lookahead
     useHold:true,         // uses hold piece
     label:'🟡 Medium Bot',
     desc:'⚡ Uses hold piece, reads 1 piece ahead, and makes occasional mistakes. A solid challenge!'
@@ -429,8 +429,8 @@ const BOT_CONFIGS={
     thinkMs:80,
     dropInterval:22,      // near-instant drop
     errorRate:0.0,        // no mistakes
-    garbageMult:1.0,
-    lookahead:2,          // 2-piece lookahead
+    garbageMult:4.0,
+    lookahead:3,          // 2-piece lookahead
     useHold:true,         // always considers hold
     label:'🔴 Hard Bot',
     desc:'🔥 2-piece lookahead, perfect hold usage, combo building & near-optimal Tetris AI. Extremely tough!'
