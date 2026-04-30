@@ -407,9 +407,9 @@ function levelSpeed(l){return Math.max(50,1000-(l-1)*88);}
 const BOT_CONFIGS={
   easy:{
     thinkMs:40,
-    dropInterval:120,
-    errorRate:0.2,       // 40% chance to pick a bad move
-    garbageMult:1,
+    dropInterval:90,
+    errorRate:0.1,       // 40% chance to pick a bad move
+    garbageMult:2,
     lookahead:1,          // no lookahead
     useHold:true,        // never uses hold
     label:'🟢 Easy Bot',
@@ -427,10 +427,10 @@ const BOT_CONFIGS={
   },
   hard:{
     thinkMs:80,
-    dropInterval:22,      // near-instant drop
+    dropInterval:40,      // near-instant drop
     errorRate:0.0,        // no mistakes
     garbageMult:3.0,
-    lookahead:2,          // 2-piece lookahead
+    lookahead:3,          // 2-piece lookahead
     useHold:true,         // always considers hold
     label:'🔴 Hard Bot',
     desc:'🔥 2-piece lookahead, perfect hold usage, combo building & near-optimal Tetris AI. Extremely tough!'
