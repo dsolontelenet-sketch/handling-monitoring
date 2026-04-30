@@ -407,19 +407,19 @@ function levelSpeed(l){return Math.max(50,1000-(l-1)*88);}
 const BOT_CONFIGS={
   easy:{
     thinkMs:40,
-    dropInterval:90,
+    dropInterval:50,
     errorRate:0.1,       // 40% chance to pick a bad move
-    garbageMult:2,
-    lookahead:1,          // no lookahead
+    garbageMult:1.5,
+    lookahead:3,          // no lookahead
     useHold:true,        // never uses hold
     label:'🟢 Easy Bot',
     desc:'⏳ Thinks slowly, makes lots of mistakes, and never uses the hold piece. Great for beginners!'
   },
   medium:{
     thinkMs:120,
-    dropInterval:60,
+    dropInterval:40,
     errorRate:0.2,       // 10% mistake rate
-    garbageMult:1.5,
+    garbageMult:2,
     lookahead:2,          // 1-piece lookahead
     useHold:true,         // uses hold piece
     label:'🟡 Medium Bot',
@@ -427,7 +427,7 @@ const BOT_CONFIGS={
   },
   hard:{
     thinkMs:80,
-    dropInterval:40,      // near-instant drop
+    dropInterval:30,      // near-instant drop
     errorRate:0.0,        // no mistakes
     garbageMult:3.0,
     lookahead:3,          // 2-piece lookahead
