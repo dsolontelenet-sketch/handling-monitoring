@@ -470,13 +470,14 @@ const DB=firebase.database();
 
 // ─────────────────── CONSTANTS ──────────────────────────
 const COLS=10,ROWS=20,CS=30,NEXT_SZ=18;
-const COLORS=[null,'#00E5FF','#FFE000','#CC44FF','#00FF88','#FF3355','#2979FF','#FF6D00','#1E293B'];
-const SHEEN =[null,'#80F5FF','#FFF080','#E580FF','#80FFBB','#FF8099','#80AAFF','#FFB380','#334155'];
-const SHADOW=[null,'#007A8C','#998600','#7A1A99','#00994D','#99001F','#0B3D99','#993D00','#0D1520'];
+// Index 8 = garbage block → changed to light gray solid
+const COLORS=[null,'#00E5FF','#FFE000','#CC44FF','#00FF88','#FF3355','#2979FF','#FF6D00','#C0C4CC'];
+const SHEEN =[null,'#80F5FF','#FFF080','#E580FF','#80FFBB','#FF8099','#80AAFF','#FFB380','#E8EAED'];
+const SHADOW=[null,'#007A8C','#998600','#7A1A99','#00994D','#99001F','#0B3D99','#993D00','#888D96'];
 const SHAPES=[null,[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[0,1,1],[1,1,0]],[[1,1,0],[0,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]]];
 const SCORE_TABLE=[0,100,300,500,800];
 const GARBAGE_TABLE=[0,0,1,2,4];
-const ROOM_EXPIRE_SECONDS=30; // auto-delete room if not started
+const ROOM_EXPIRE_SECONDS=30;
 function levelSpeed(l){return Math.max(50,1000-(l-1)*88);}
 
 // ─────────────────── BLOCK SKINS ────────────────────────
@@ -622,7 +623,6 @@ function startRoomExpiry(){
     updateExpiryUI();
     if(expirySecondsLeft<=0){
       clearInterval(expiryTimer);expiryTimer=null;
-      // Delete room
       if(roomRef)roomRef.remove();
       alert('Room expired — no one joined in 30 seconds.');
       showScreen('s-lobby');startRoomsBrowser();
@@ -1084,10 +1084,10 @@ async function createRoom(){
   const roomData={status:'waiting',createdAt:Date.now(),maxPlayers,hostName:myName};
   roomData.p1={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false};
   await roomRef.set(roomData).catch(console.error);
-  roomRef.onDisconnect().remove(); // full remove on disconnect
+  roomRef.onDisconnect().remove();
   document.getElementById('wait-code').textContent=roomId;
   showScreen('s-waiting');
-  startRoomExpiry(); // start 30s expiry
+  startRoomExpiry();
   listenRoom();
 }
 
@@ -1122,7 +1122,6 @@ function listenRoom(){
     for(let i=1;i<=maxPlayers;i++){if(d[`p${i}`]){slots.push(`p${i}`);playerData[`p${i}`]=d[`p${i}`];}}
     if(d.status==='waiting'){
       renderWaitingRoom(slots,playerData);
-      // AUTO-START: if room is full, host triggers start automatically
       if(myIsCreator&&slots.length>=maxPlayers){
         stopRoomExpiry();
         showAutostartBanner();
@@ -1139,9 +1138,7 @@ function listenRoom(){
       beginBattle(slots,playerData);
     }
     if(d.status==='abandoned'){alert('Room abandoned.');cancelWait();}
-    // Rematch: host reset room to waiting, non-hosts see this and re-join
     if(d.status==='rematch'&&!myIsCreator){
-      // non-host: go to waiting screen
       if(gameoverRoomListener&&roomRef){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
       roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
         document.getElementById('wait-code').textContent=roomId;
@@ -1177,7 +1174,6 @@ function renderWaitingRoom(slots,data){
     list.appendChild(item);
   }
   document.getElementById('wait-count').textContent=`${slots.length} / ${maxPlayers}`;
-  // Only show manual start button to host when ≥2 players but room not yet full
   document.getElementById('start-btn').style.display=(myIsCreator&&slots.length>=2&&slots.length<maxPlayers)?'block':'none';
 }
 
@@ -1270,12 +1266,10 @@ function checkWinner(){
   if(won)recordWin(myName);
   cleanupListeners();
 
-  // Non-host: watch for host-initiated rematch
   if(!myIsCreator&&roomRef){
     gameoverRoomListener=roomRef.on('value',snap=>{
       const d=snap.val();if(!d)return;
       if(d.status==='rematch'){
-        // Host triggered rematch: non-host goes to waiting screen
         roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;
         roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
           document.getElementById('wait-code').textContent=roomId;
@@ -1318,11 +1312,9 @@ function showGameOver(won,winnerName,isSolo=false){
     }
   }
 
-  // ── HOST ONLY sees Rematch button; non-host sees a waiting message ──
   const rematchRow=document.getElementById('rematch-row');
   const rematchWaitMsg=document.getElementById('rematch-wait-msg');
   if(isSolo){
-    // Solo: always show play again
     rematchRow.style.display='flex';
     rematchWaitMsg.style.display='none';
     document.getElementById('btn-rematch').textContent='🔄 Play Again';
@@ -1331,7 +1323,6 @@ function showGameOver(won,winnerName,isSolo=false){
     rematchWaitMsg.style.display='none';
     document.getElementById('btn-rematch').textContent='🔄 Rematch';
   } else {
-    // Non-host: hide rematch button, show waiting msg
     rematchRow.style.display='none';
     rematchWaitMsg.style.display='block';
   }
@@ -1341,24 +1332,21 @@ function showGameOver(won,winnerName,isSolo=false){
 // ─────────────────── PLAY AGAIN / REMATCH (HOST ONLY) ───
 async function playAgain(){
   if(isSoloMode){showScreen('s-game');doCountdown(()=>initGame());return;}
-  if(!roomRef||!myIsCreator){return;} // only host can call this
+  if(!roomRef||!myIsCreator){return;}
 
   if(gameoverRoomListener&&roomRef){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
 
-  // Signal rematch — non-hosts detect this and move to waiting
   await roomRef.update({status:'rematch'});
 
-  // Reset all non-host player slots so they re-register
   const updates={garbage:null};
   for(let i=2;i<=maxPlayers;i++)updates[`p${i}`]=null;
   updates.p1={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false};
-  // Reset status to waiting AFTER a short pause so non-hosts catch the 'rematch' signal
   await roomRef.update(updates);
 
   currentPlayers=[];eliminatedRanks=[];
   document.getElementById('wait-code').textContent=roomId;
   showScreen('s-waiting');
-  startRoomExpiry(); // restart expiry timer for rematch
+  startRoomExpiry();
   listenRoom();
 }
 
