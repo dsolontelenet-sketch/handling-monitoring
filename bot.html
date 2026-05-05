@@ -406,9 +406,9 @@ function levelSpeed(l){return Math.max(50,1000-(l-1)*88);}
 // ══════════════════════════════════════════════════════
 const BOT_CONFIGS={
   easy:{
-    thinkMs:40,
-    dropInterval:50,
-    errorRate:0.1,       // 40% chance to pick a bad move
+    thinkMs:150,
+    dropInterval:100,
+    errorRate:0.2,       // 40% chance to pick a bad move
     garbageMult:1.5,
     lookahead:3,          // no lookahead
     useHold:true,        // never uses hold
@@ -417,8 +417,8 @@ const BOT_CONFIGS={
   },
   medium:{
     thinkMs:120,
-    dropInterval:40,
-    errorRate:0.2,       // 10% mistake rate
+    dropInterval:50,
+    errorRate:0.1,       // 10% mistake rate
     garbageMult:2,
     lookahead:2,          // 1-piece lookahead
     useHold:true,         // uses hold piece
