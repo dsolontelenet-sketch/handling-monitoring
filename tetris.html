@@ -50,6 +50,40 @@ body{
 @keyframes autoStartPop{from{transform:scale(.8);opacity:0;}to{transform:scale(1);opacity:1;}}
 @keyframes colPulse{0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,0);}50%{box-shadow:0 0 0 4px rgba(99,102,241,.25);}}
 
+/* ── FLASH POWER ANIMATIONS ── */
+@keyframes flashBlast{
+  0%{opacity:0;}
+  5%{opacity:1;}
+  30%{opacity:.85;}
+  100%{opacity:0;}
+}
+@keyframes powerPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,0),0 0 8px rgba(251,191,36,.2);}
+  50%{box-shadow:0 0 0 5px rgba(251,191,36,.25),0 0 16px rgba(251,191,36,.45);}
+}
+@keyframes powerUsedFade{
+  from{opacity:1;}to{opacity:.35;}
+}
+@keyframes screenShake{
+  0%,100%{transform:translateX(0) translateY(0);}
+  15%{transform:translateX(-6px) translateY(3px);}
+  30%{transform:translateX(7px) translateY(-4px);}
+  45%{transform:translateX(-5px) translateY(5px);}
+  60%{transform:translateX(6px) translateY(-2px);}
+  75%{transform:translateX(-3px) translateY(4px);}
+  90%{transform:translateX(4px) translateY(-3px);}
+}
+@keyframes flashPopup{
+  0%{transform:translate(-50%,-50%) scale(.6);opacity:0;}
+  20%{transform:translate(-50%,-50%) scale(1.15);opacity:1;}
+  70%{transform:translate(-50%,-50%) scale(1);opacity:1;}
+  100%{transform:translate(-50%,-50%) scale(.9);opacity:0;}
+}
+@keyframes chargeGlow{
+  0%,100%{text-shadow:0 0 8px #fbbf24,0 0 20px rgba(251,191,36,.4);}
+  50%{text-shadow:0 0 16px #fbbf24,0 0 40px rgba(251,191,36,.8),0 0 60px rgba(251,191,36,.3);}
+}
+
 .float-anim{animation:floatY 3.2s ease-in-out infinite;}
 .pop-in{animation:popIn .6s cubic-bezier(.34,1.56,.64,1) both;}
 .slide-up{animation:slideUp .38s ease both;}
@@ -57,6 +91,23 @@ body{
 
 #clear-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:300;text-align:center;opacity:0;}
 #clear-popup.show{animation:clearPop 1.5s ease forwards;}
+
+/* ── FLASH OVERLAY (covers whole screen when hit) ── */
+#flash-overlay{
+  position:fixed;inset:0;z-index:9000;pointer-events:none;opacity:0;
+  background:radial-gradient(ellipse at center,#ffffff 0%,#ffe87a 40%,#fff 100%);
+}
+#flash-overlay.blasting{animation:flashBlast 1s ease forwards;}
+
+/* ── FLASH HIT POPUP ── */
+#flash-hit-popup{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:9001;pointer-events:none;opacity:0;text-align:center;
+}
+#flash-hit-popup.show{animation:flashPopup 1.2s ease forwards;}
+
+/* ── SCREEN SHAKE on hit ── */
+body.shaking{animation:screenShake .55s ease;}
 
 #countdown{position:fixed;inset:0;z-index:400;background:rgba(2,6,18,.88);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
 #countdown.hidden{display:none;}
@@ -77,6 +128,29 @@ body{
 .ctrl-btn{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-bottom:3px solid rgba(255,255,255,.05);border-radius:10px;color:white;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;transition:background .08s,transform .06s,border-bottom .06s;touch-action:manipulation;}
 .ctrl-btn:active{background:rgba(99,102,241,.45);transform:scale(.87) translateY(2px);border-bottom-width:1px;}
 .ctrl-btn.crot{background:rgba(99,102,241,.16);border-color:rgba(99,102,241,.4);}
+
+/* ── POWER BUTTON STYLES ── */
+#power-btn{
+  width:100%;padding:8px 4px;border-radius:10px;font-size:10px;font-weight:800;
+  cursor:pointer;border:1.5px solid rgba(251,191,36,.45);
+  background:rgba(251,191,36,.13);color:#fbbf24;
+  font-family:'Sora',sans-serif;letter-spacing:.04em;
+  transition:all .25s;animation:powerPulse 2.2s ease infinite;
+  text-align:center;line-height:1.4;
+}
+#power-btn:hover:not(.used){
+  background:rgba(251,191,36,.24);
+  transform:scale(1.03);
+}
+#power-btn:active:not(.used){transform:scale(.94);}
+#power-btn.used{
+  animation:none;
+  background:rgba(255,255,255,.04);
+  border-color:rgba(255,255,255,.08);
+  color:#334155;cursor:default;
+  opacity:.45;
+}
+#power-btn.solo-hidden{display:none;}
 
 .logo-grad{background:linear-gradient(135deg,#a5b4fc 0%,#e879f9 40%,#f472b6 70%,#fb923c 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .glass{background:rgba(8,12,28,.94);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(99,102,241,.2);}
@@ -156,6 +230,15 @@ body{
 </head>
 <body>
 
+<!-- ── FLASH OVERLAY (shown on hit) ── -->
+<div id="flash-overlay"></div>
+
+<!-- ── FLASH HIT POPUP ── -->
+<div id="flash-hit-popup">
+  <div style="font-size:60px;line-height:1;">⚡</div>
+  <div style="font-size:28px;font-weight:800;color:#fff;font-family:'JetBrains Mono',monospace;text-shadow:0 0 30px #fbbf24,0 0 60px #f59e0b;letter-spacing:.04em;">FLASHED!</div>
+</div>
+
 <!-- ── AUTO-START BANNER ── -->
 <div id="autostart-banner">
   <span style="font-size:13px;font-weight:700;color:#6ee7b7;">⚡ Room full — game starting automatically!</span>
@@ -210,22 +293,16 @@ body{
     <!-- ── BOARD WIDTH PICKER ── -->
     <label style="font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#64748b;font-weight:600;display:block;margin-bottom:8px;">Board Width</label>
     <div style="display:flex;gap:8px;margin-bottom:16px;" id="col-picker">
-
-      <!-- Normal (10) -->
       <button class="col-option active" id="col-btn-10" onclick="selectCols(10)">
         <div class="col-preview" id="col-prev-10"></div>
         <span style="font-size:13px;font-weight:800;color:inherit;">10</span>
         <span style="font-size:9px;letter-spacing:.06em;opacity:.7;">NORMAL</span>
       </button>
-
-      <!-- 14 columns -->
       <button class="col-option" id="col-btn-14" onclick="selectCols(14)">
         <div class="col-preview" id="col-prev-14"></div>
         <span style="font-size:13px;font-weight:800;color:inherit;">14</span>
         <span style="font-size:9px;letter-spacing:.06em;opacity:.7;">WIDE</span>
       </button>
-
-      <!-- 16 columns -->
       <button class="col-option" id="col-btn-16" onclick="selectCols(16)">
         <div class="col-preview" id="col-prev-16"></div>
         <span style="font-size:13px;font-weight:800;color:inherit;">16</span>
@@ -289,7 +366,7 @@ body{
 
   <p style="font-size:11px;color:#2d3748;text-align:center;max-width:380px;line-height:1.8;">
     ← → move &nbsp;·&nbsp; ↓ soft drop &nbsp;·&nbsp; ↑/X rotate ↻ &nbsp;·&nbsp; Z rotate ↺<br>
-    Space hard drop &nbsp;·&nbsp; C/Shift hold &nbsp;·&nbsp; P pause
+    Space hard drop &nbsp;·&nbsp; C/Shift hold &nbsp;·&nbsp; P pause &nbsp;·&nbsp; <span style="color:#fbbf24;">Enter ⚡ FLASH</span>
   </p>
 </div>
 
@@ -313,7 +390,6 @@ body{
       </button>
     </div>
 
-    <!-- Room expiry timer (only visible to host) -->
     <div id="expiry-container" style="display:none;margin-top:10px;max-width:260px;margin-left:auto;margin-right:auto;">
       <div id="room-expiry-bar"><div id="room-expiry-fill"></div></div>
       <p id="room-expiry-label">⏳ Room expires in <span id="expiry-seconds">30</span>s if game doesn't start</p>
@@ -333,7 +409,6 @@ body{
     <p style="font-size:14px;font-weight:600;color:#94a3b8;">Waiting for players…</p>
   </div>
 
-  <!-- Host manual start button (only shown when ≥2 players) -->
   <button id="start-btn" onclick="hostStart()" style="display:none;padding:12px 36px;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(135deg,#10b981,#059669);color:white;font-family:'Sora',sans-serif;box-shadow:0 0 30px rgba(16,185,129,.35);animation:winPulse 2s ease infinite;transition:transform .2s;"
     onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
     🎮 Start Game!
@@ -379,6 +454,13 @@ body{
         <div id="garbage-bar" style="height:100%;background:linear-gradient(90deg,#ef4444,#f97316);border-radius:4px;transition:width .3s ease;width:0%;box-shadow:0 0 8px #f97316;"></div>
       </div>
     </div>
+
+    <!-- ⚡ FLASH POWER BUTTON -->
+    <button id="power-btn" onclick="useFlashPower()" onpointerdown="useFlashPower()">
+      ⚡ FLASH<br>
+      <span style="font-size:8px;letter-spacing:.06em;opacity:.75;">[Enter]</span>
+    </button>
+
     <button id="pause-btn" onclick="togglePause()"
       style="padding:8px 4px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.06);color:#94a3b8;border:1px solid rgba(255,255,255,.1);font-family:'Sora',sans-serif;transition:all .2s;"
       onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">
@@ -408,7 +490,6 @@ body{
       <span id="my-name-lbl" style="font-size:13px;font-weight:700;color:white;"></span>
       <span style="font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(99,102,241,.22);color:#a5b4fc;border:1px solid rgba(99,102,241,.35);border-radius:20px;padding:2px 8px;">YOU</span>
       <span id="solo-badge" style="display:none;font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);border-radius:20px;padding:2px 8px;">SOLO</span>
-      <!-- Board width badge shown in-game -->
       <span id="width-badge" style="font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);border-radius:20px;padding:2px 8px;"></span>
     </div>
     <canvas id="my-canvas" width="300" height="600"></canvas>
@@ -462,7 +543,6 @@ body{
       </div>
     </div>
 
-    <!-- Rematch row — HOST ONLY -->
     <div id="rematch-row" style="display:none;gap:8px;margin-bottom:8px;">
       <button id="btn-rematch" onclick="playAgain()"
         style="flex:1;padding:12px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;font-family:'Sora',sans-serif;transition:all .2s;box-shadow:0 4px 20px rgba(245,158,11,.3);"
@@ -471,7 +551,6 @@ body{
       </button>
     </div>
 
-    <!-- Non-host waiting message -->
     <div id="rematch-wait-msg" style="display:none;text-align:center;padding:12px;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.2);border-radius:12px;margin-bottom:8px;">
       <p style="font-size:13px;color:#fbbf24;font-weight:600;">⏳ Waiting for host to start rematch…</p>
     </div>
@@ -514,7 +593,6 @@ firebase.initializeApp(fbCfg);
 const DB=firebase.database();
 
 // ─────────────────── CONSTANTS ──────────────────────────
-// COLS is now a mutable variable controlled by the board-width picker
 let COLS=10;
 const ROWS=20,CS=30,NEXT_SZ=18;
 const COLORS=[null,'#00E5FF','#FFE000','#CC44FF','#00FF88','#FF3355','#2979FF','#FF6D00','#C0C4CC'];
@@ -528,7 +606,6 @@ function levelSpeed(l){return Math.max(50,1000-(l-1)*88);}
 
 // ─────────────────── BOARD WIDTH PICKER ─────────────────
 const COL_OPTIONS=[10,14,16];
-const COL_LABELS={10:'NORMAL',14:'WIDE',16:'ULTRA'};
 let selectedCols=10;
 
 function selectCols(n){
@@ -544,8 +621,7 @@ function renderColPreviews(){
   COL_OPTIONS.forEach(cols=>{
     const wrap=document.getElementById(`col-prev-${cols}`);if(!wrap)return;
     wrap.innerHTML='';
-    // Show mini bar chart preview proportional to col count
-    const bars=Math.min(cols,12); // max visible bars
+    const bars=Math.min(cols,12);
     const heights=[8,14,10,18,12,16,8,18,14,10,16,12];
     for(let i=0;i<bars;i++){
       const d=document.createElement('div');
@@ -556,15 +632,11 @@ function renderColPreviews(){
   });
 }
 
-// ─────────────────── BOARD RESIZE ───────────────────────
 function applyBoardWidth(){
   COLS=selectedCols;
   const cvs=document.getElementById('my-canvas');
-  cvs.width=COLS*CS;
-  cvs.height=ROWS*CS;
-  // Update canvas CSS glow to match new size
+  cvs.width=COLS*CS;cvs.height=ROWS*CS;
   cvs.style.width='';cvs.style.height='';
-  // Update the in-game width badge
   const badge=document.getElementById('width-badge');
   if(badge){
     if(COLS===10)badge.textContent='10 COL';
@@ -653,7 +725,6 @@ const SKINS = {
 
 let activeSkin='classic';
 
-// ─────────────────── BUILD SKIN PICKER ──────────────────
 function buildSkinGrid(){
   const grid=document.getElementById('skin-grid');grid.innerHTML='';
   Object.entries(SKINS).forEach(([key,skin])=>{
@@ -688,7 +759,7 @@ function drawCell(ctx,col,row,ci,size,alpha=1,opts={}){
 }
 
 // ─────────────────── GAME STATE ─────────────────────────
-let G={board:null,piece:null,bag:[],hold:null,holdUsed:false,score:0,lines:0,level:1,combo:-1,pendingGarbage:0,running:false,paused:false,dead:false,dropTimer:null,lockTimeout:null};
+let G={board:null,piece:null,bag:[],hold:null,holdUsed:false,score:0,lines:0,level:1,combo:-1,pendingGarbage:0,running:false,paused:false,dead:false,dropTimer:null,lockTimeout:null,powerUsed:false};
 
 // ─────────────────── ROOM / NETWORK ─────────────────────
 let roomId='',mySlot='',myName='',myIsCreator=false,maxPlayers=2;
@@ -705,6 +776,121 @@ let gameMode='multi';
 let expiryTimer=null;
 let expirySecondsLeft=ROOM_EXPIRE_SECONDS;
 
+// ─────────────────── FLASH POWER STATE ──────────────────
+let flashRef=null;
+let flashListener=null;
+let lastFlashTs={};  // tracks last seen timestamp per slot to avoid re-firing
+
+// ─────────────────── FLASH POWER FUNCTIONS ──────────────
+
+/** Called by the player to use their one-time flash power */
+function useFlashPower(){
+  // Block: must be in live multiplayer game, power not yet used
+  if(G.powerUsed)return;
+  if(isSoloMode)return;
+  if(!G.running||G.dead||G.paused)return;
+  if(!roomRef||!mySlot)return;
+
+  G.powerUsed=true;
+  updatePowerUI();
+
+  // Write a flash event to Firebase — all opponents will see this
+  DB.ref(`tetris2/rooms/${roomId}/flash/${mySlot}`).set({
+    ts:Date.now(),
+    by:myName
+  });
+}
+
+/** Applied to THIS player's screen when an opponent fires flash at them */
+function applyFlash(attackerName){
+  const overlay=document.getElementById('flash-overlay');
+  const popup=document.getElementById('flash-hit-popup');
+
+  // Show full-screen white blast
+  overlay.classList.remove('blasting');
+  void overlay.offsetWidth; // force reflow to restart animation
+  overlay.classList.add('blasting');
+
+  // Show "FLASHED!" popup in center
+  popup.innerHTML=`
+    <div style="font-size:54px;line-height:1;margin-bottom:6px;">⚡</div>
+    <div style="font-size:26px;font-weight:800;color:#fff;font-family:'JetBrains Mono',monospace;
+      text-shadow:0 0 30px #fbbf24,0 0 60px #f59e0b;letter-spacing:.04em;">FLASHED!</div>
+    ${attackerName?`<div style="font-size:12px;color:#fde68a;margin-top:6px;font-family:'Sora',sans-serif;font-weight:600;">by ${attackerName}</div>`:''}
+  `;
+  popup.classList.remove('show');
+  void popup.offsetWidth;
+  popup.classList.add('show');
+
+  // Shake the body briefly
+  document.body.classList.remove('shaking');
+  void document.body.offsetWidth;
+  document.body.classList.add('shaking');
+
+  // Pause the game briefly to maximize disruption (0.8 seconds)
+  if(G.running&&!G.dead&&!G.paused){
+    G.paused=true;
+    stopDrop();clearLock();
+    setTimeout(()=>{
+      if(G.running&&!G.dead){
+        G.paused=false;
+        startDrop();
+        renderBoard();
+      }
+    },800);
+  }
+
+  // Clean up body shake class after animation
+  setTimeout(()=>document.body.classList.remove('shaking'),600);
+  // Clean up overlay class after animation
+  setTimeout(()=>{overlay.classList.remove('blasting');popup.classList.remove('show');},1200);
+}
+
+/** Update the power button visual state */
+function updatePowerUI(){
+  const btn=document.getElementById('power-btn');if(!btn)return;
+  if(isSoloMode){
+    btn.classList.add('solo-hidden');return;
+  }
+  btn.classList.remove('solo-hidden');
+  if(G.powerUsed){
+    btn.classList.add('used');
+    btn.innerHTML='⚡ USED<br><span style="font-size:8px;letter-spacing:.06em;opacity:.5;">once per game</span>';
+  } else {
+    btn.classList.remove('used');
+    btn.innerHTML='⚡ FLASH<br><span style="font-size:8px;letter-spacing:.06em;opacity:.75;">[Enter]</span>';
+  }
+}
+
+/** Start listening to flash events from all opponents */
+function listenFlash(slots){
+  if(flashRef&&flashListener){flashRef.off('value',flashListener);flashListener=null;}
+  flashRef=DB.ref(`tetris2/rooms/${roomId}/flash`);
+  lastFlashTs={};
+
+  flashListener=flashRef.on('value',snap=>{
+    const d=snap.val();if(!d)return;
+    for(const slot of Object.keys(d)){
+      if(slot===mySlot)continue; // ignore my own flash events
+      const entry=d[slot];
+      if(!entry)continue;
+      const ts=entry.ts||0;
+      if(!lastFlashTs[slot])lastFlashTs[slot]=0;
+      if(ts>lastFlashTs[slot]){
+        lastFlashTs[slot]=ts;
+        // A new flash from an opponent — apply to my screen!
+        applyFlash(entry.by||'Someone');
+      }
+    }
+  });
+}
+
+/** Stop listening and clean up flash state */
+function stopFlashListener(){
+  if(flashRef&&flashListener){flashRef.off('value',flashListener);flashListener=null;}
+  flashRef=null;lastFlashTs={};
+}
+
 // ─────────────────── ROOM EXPIRY ────────────────────────
 function startRoomExpiry(){
   if(!myIsCreator)return;
@@ -712,8 +898,7 @@ function startRoomExpiry(){
   document.getElementById('expiry-container').style.display='block';
   updateExpiryUI();
   expiryTimer=setInterval(()=>{
-    expirySecondsLeft--;
-    updateExpiryUI();
+    expirySecondsLeft--;updateExpiryUI();
     if(expirySecondsLeft<=0){
       clearInterval(expiryTimer);expiryTimer=null;
       if(roomRef)roomRef.remove();
@@ -747,8 +932,7 @@ function startRoomsBrowser(){
     const list=document.getElementById('rooms-list');
     const rooms=[];
     snap.forEach(child=>{
-      const d=child.val();
-      if(!d)return;
+      const d=child.val();if(!d)return;
       if(d.status!=='waiting')return;
       let count=0,maxP=d.maxPlayers||2;
       for(let i=1;i<=maxP;i++){if(d[`p${i}`])count++;}
@@ -889,7 +1073,7 @@ function startSolo(){
   const name=document.getElementById('inp-name').value.trim();
   if(!name){shakeEl('inp-name');return;}
   myName=name;isSoloMode=true;stopRoomsBrowser();
-  applyBoardWidth(); // apply chosen columns before game starts
+  applyBoardWidth();
   currentPlayers=[{slot:'p1',name:myName,dead:false}];eliminatedRanks=[];
   myRef=null;garbRef=null;roomRef=null;
   document.getElementById('my-name-lbl').textContent=myName;
@@ -898,6 +1082,8 @@ function startSolo(){
   document.getElementById('alive-pill').textContent='SOLO';
   document.getElementById('garbage-box').style.display='none';
   document.getElementById('opponents-panel').innerHTML='';
+  // Hide power button in solo
+  const pb=document.getElementById('power-btn');if(pb)pb.classList.add('solo-hidden');
   showScreen('s-game');doCountdown(()=>initGame());
 }
 
@@ -907,7 +1093,9 @@ function initGame(){
   G.bag=[...newBag(),...newBag(),...newBag()];
   G.hold=null;G.holdUsed=false;G.score=0;G.lines=0;G.level=1;G.combo=-1;G.pendingGarbage=0;
   G.running=true;G.paused=false;G.dead=false;
+  G.powerUsed=false;  // reset flash power each game
   updateStats();updateGarbage();updateCombo();
+  updatePowerUI();  // refresh power button state
   if(!spawn())return;startDrop();renderAll();
 }
 function spawn(){
@@ -1153,6 +1341,8 @@ document.addEventListener('keydown',e=>{
     case'Space':e.preventDefault();hardDrop();break;
     case'KeyC':case'ShiftLeft':case'ShiftRight':e.preventDefault();holdPiece();break;
     case'KeyP':e.preventDefault();togglePause();break;
+    // ⚡ FLASH POWER — press Enter
+    case'Enter':e.preventDefault();useFlashPower();break;
   }
 });
 document.addEventListener('keyup',e=>{
@@ -1203,7 +1393,6 @@ async function joinRoom(){
   const d=snap.val();
   if(d.status!=='waiting'){alert('Room is not open. It may have already started.');startRoomsBrowser();return;}
   maxPlayers=d.maxPlayers||2;
-  // Inherit the host's chosen board width when joining
   if(d.cols)selectedCols=d.cols;
   let slot=null;
   for(let i=2;i<=maxPlayers;i++){if(!d[`p${i}`]){slot=`p${i}`;break;}}
@@ -1234,7 +1423,6 @@ function listenRoom(){
     }
     if(d.status==='playing'){
       stopRoomExpiry();
-      // Sync cols from room data for non-hosts
       if(d.cols)selectedCols=d.cols;
       roomRef.off('value',roomListener);roomListener=null;
       currentPlayers=slots.map(s=>({slot:s,name:playerData[s].name,dead:false}));
@@ -1252,12 +1440,8 @@ function listenRoom(){
   });
 }
 
-function showAutostartBanner(){
-  document.getElementById('autostart-banner').classList.add('show');
-}
-function hideAutostartBanner(){
-  document.getElementById('autostart-banner').classList.remove('show');
-}
+function showAutostartBanner(){document.getElementById('autostart-banner').classList.add('show');}
+function hideAutostartBanner(){document.getElementById('autostart-banner').classList.remove('show');}
 
 function renderWaitingRoom(slots,data){
   const list=document.getElementById('wait-player-list');list.innerHTML='';
@@ -1297,7 +1481,7 @@ function copyCode(){
 
 // ─────────────────── BEGIN BATTLE ───────────────────────
 function beginBattle(slots,data){
-  applyBoardWidth(); // resize board canvas to chosen column count
+  applyBoardWidth();
   myRef=roomRef.child(mySlot);
   garbRef=roomRef.child(`garbage/${mySlot}`);
   eliminatedRanks=[];
@@ -1305,8 +1489,14 @@ function beginBattle(slots,data){
   document.getElementById('solo-badge').style.display='none';
   document.getElementById('room-chip').textContent=`ROOM: ${roomId}`;
   document.getElementById('alive-pill').textContent=`${slots.length} / ${slots.length} ALIVE`;
+
+  // Show and reset power button for multiplayer
+  const pb=document.getElementById('power-btn');
+  if(pb){pb.classList.remove('solo-hidden','used');updatePowerUI();}
+
   setupOpponentPanels(slots);
   for(const s of slots){if(s===mySlot)continue;const el=document.getElementById(`opp-name-${s}`);if(el&&data[s])el.textContent=data[s].name;}
+
   for(const slot of slots){
     if(slot===mySlot)continue;
     oppListeners[slot]=roomRef.child(slot).on('value',snap=>{
@@ -1317,9 +1507,14 @@ function beginBattle(slots,data){
       if(d.dead&&!playerBoards[slot]?.eliminated)eliminatePlayer(slot,d.name||'?');
     });
   }
+
   garbListener=garbRef.on('value',snap=>{
     const v=snap.val()||0;if(v>0){G.pendingGarbage+=v;garbRef.set(0);updateGarbage();}
   });
+
+  // ⚡ Start listening for flash events from opponents
+  listenFlash(slots);
+
   showScreen('s-game');doCountdown(()=>initGame());
 }
 
@@ -1377,8 +1572,7 @@ function checkWinner(){
         roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;
         roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
           document.getElementById('wait-code').textContent=roomId;
-          showScreen('s-waiting');
-          listenRoom();
+          showScreen('s-waiting');listenRoom();
         });
       }
       if(d.status==='abandoned'){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
@@ -1391,6 +1585,7 @@ function checkWinner(){
 function cleanupListeners(){
   for(const slot of Object.keys(oppListeners)){roomRef?.child(slot).off('value',oppListeners[slot]);}
   if(garbRef&&garbListener){garbRef.off('value',garbListener);}
+  stopFlashListener(); // ⚡ clean up flash listener
   oppListeners={};garbListener=null;
 }
 
@@ -1433,20 +1628,16 @@ function showGameOver(won,winnerName,isSolo=false){
   showScreen('s-gameover');
 }
 
-// ─────────────────── PLAY AGAIN / REMATCH (HOST ONLY) ───
+// ─────────────────── PLAY AGAIN / REMATCH ───────────────
 async function playAgain(){
   if(isSoloMode){applyBoardWidth();showScreen('s-game');doCountdown(()=>initGame());return;}
-  if(!roomRef||!myIsCreator){return;}
-
+  if(!roomRef||!myIsCreator)return;
   if(gameoverRoomListener&&roomRef){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
-
   await roomRef.update({status:'rematch'});
-
-  const updates={garbage:null};
+  const updates={garbage:null,flash:null}; // clear flash data on rematch
   for(let i=2;i<=maxPlayers;i++)updates[`p${i}`]=null;
   updates.p1={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false};
   await roomRef.update(updates);
-
   currentPlayers=[];eliminatedRanks=[];
   document.getElementById('wait-code').textContent=roomId;
   showScreen('s-waiting');
