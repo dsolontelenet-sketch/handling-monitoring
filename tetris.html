@@ -50,19 +50,15 @@ body{
 @keyframes autoStartPop{from{transform:scale(.8);opacity:0;}to{transform:scale(1);opacity:1;}}
 @keyframes colPulse{0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,0);}50%{box-shadow:0 0 0 4px rgba(99,102,241,.25);}}
 
-/* ── FLASH POWER ANIMATIONS ── */
-@keyframes flashBlast{
-  0%{opacity:0;}
-  5%{opacity:1;}
-  30%{opacity:.85;}
-  100%{opacity:0;}
-}
-@keyframes powerPulse{
-  0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,0),0 0 8px rgba(251,191,36,.2);}
-  50%{box-shadow:0 0 0 5px rgba(251,191,36,.25),0 0 16px rgba(251,191,36,.45);}
-}
-@keyframes powerUsedFade{
-  from{opacity:1;}to{opacity:.35;}
+/* ── POWER ANIMATIONS ── */
+@keyframes flashBlast{0%{opacity:0;}5%{opacity:1;}30%{opacity:.85;}100%{opacity:0;}}
+@keyframes pauseBlast{0%{opacity:0;}5%{opacity:1;}30%{opacity:.9;}100%{opacity:0;}}
+@keyframes speedBlast{0%{opacity:0;}5%{opacity:.7;}30%{opacity:.5;}100%{opacity:0;}}
+@keyframes powerHitPop{
+  0%{transform:translate(-50%,-50%) scale(.6);opacity:0;}
+  20%{transform:translate(-50%,-50%) scale(1.15);opacity:1;}
+  70%{transform:translate(-50%,-50%) scale(1);opacity:1;}
+  100%{transform:translate(-50%,-50%) scale(.9);opacity:0;}
 }
 @keyframes screenShake{
   0%,100%{transform:translateX(0) translateY(0);}
@@ -73,15 +69,25 @@ body{
   75%{transform:translateX(-3px) translateY(4px);}
   90%{transform:translateX(4px) translateY(-3px);}
 }
-@keyframes flashPopup{
-  0%{transform:translate(-50%,-50%) scale(.6);opacity:0;}
-  20%{transform:translate(-50%,-50%) scale(1.15);opacity:1;}
-  70%{transform:translate(-50%,-50%) scale(1);opacity:1;}
-  100%{transform:translate(-50%,-50%) scale(.9);opacity:0;}
+@keyframes pwrPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,0),0 0 8px rgba(251,191,36,.18);}
+  50%{box-shadow:0 0 0 5px rgba(251,191,36,.22),0 0 16px rgba(251,191,36,.4);}
 }
-@keyframes chargeGlow{
-  0%,100%{text-shadow:0 0 8px #fbbf24,0 0 20px rgba(251,191,36,.4);}
-  50%{text-shadow:0 0 16px #fbbf24,0 0 40px rgba(251,191,36,.8),0 0 60px rgba(251,191,36,.3);}
+@keyframes pausePulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,0),0 0 8px rgba(99,102,241,.18);}
+  50%{box-shadow:0 0 0 5px rgba(99,102,241,.22),0 0 16px rgba(99,102,241,.4);}
+}
+@keyframes speedPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0),0 0 8px rgba(239,68,68,.18);}
+  50%{box-shadow:0 0 0 5px rgba(239,68,68,.22),0 0 16px rgba(239,68,68,.4);}
+}
+@keyframes speedFlicker{
+  0%,100%{background:rgba(239,68,68,.07);}
+  50%{background:rgba(239,68,68,.18);}
+}
+@keyframes powerModeGlow{
+  0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,0);}
+  50%{box-shadow:0 0 12px rgba(251,191,36,.35);}
 }
 
 .float-anim{animation:floatY 3.2s ease-in-out infinite;}
@@ -92,21 +98,18 @@ body{
 #clear-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:300;text-align:center;opacity:0;}
 #clear-popup.show{animation:clearPop 1.5s ease forwards;}
 
-/* ── FLASH OVERLAY (covers whole screen when hit) ── */
-#flash-overlay{
-  position:fixed;inset:0;z-index:9000;pointer-events:none;opacity:0;
-  background:radial-gradient(ellipse at center,#ffffff 0%,#ffe87a 40%,#fff 100%);
-}
-#flash-overlay.blasting{animation:flashBlast 2.5s ease forwards;}
+/* ── OVERLAY EFFECTS ── */
+#flash-overlay{position:fixed;inset:0;z-index:9000;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,#ffffff 0%,#ffe87a 40%,#fff 100%);}
+#flash-overlay.blasting{animation:flashBlast 2s ease forwards;}
+#pause-overlay{position:fixed;inset:0;z-index:9000;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,#6366f1 0%,#4f46e5 40%,#3730a3 100%);}
+#pause-overlay.blasting{animation:pauseBlast 2.2s ease forwards;}
+#speed-overlay{position:fixed;inset:0;z-index:9000;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,rgba(239,68,68,.6) 0%,rgba(239,68,68,.3) 50%,transparent 100%);}
+#speed-overlay.blasting{animation:speedBlast 3.2s ease forwards;}
 
-/* ── FLASH HIT POPUP ── */
-#flash-hit-popup{
-  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
-  z-index:9001;pointer-events:none;opacity:0;text-align:center;
-}
-#flash-hit-popup.show{animation:flashPopup 2.5s ease forwards;}
+/* ── POWER HIT POPUP ── */
+#power-hit-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9001;pointer-events:none;opacity:0;text-align:center;}
+#power-hit-popup.show{animation:powerHitPop 2.5s ease forwards;}
 
-/* ── SCREEN SHAKE on hit ── */
 body.shaking{animation:screenShake .55s ease;}
 
 #countdown{position:fixed;inset:0;z-index:400;background:rgba(2,6,18,.88);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
@@ -122,6 +125,7 @@ body.shaking{animation:screenShake .55s ease;}
 .spinner-sm{width:18px;height:18px;border:2px solid rgba(99,102,241,.15);border-top-color:#6366f1;border-radius:50%;animation:spin .65s linear infinite;flex-shrink:0;}
 
 #my-canvas{border:2px solid rgba(99,102,241,.6);border-radius:6px;box-shadow:0 0 0 1px rgba(99,102,241,.15),0 0 40px rgba(99,102,241,.3),0 0 100px rgba(99,102,241,.12);display:block;image-rendering:pixelated;}
+#my-canvas.speed-active{animation:speedFlicker .4s ease infinite;border-color:rgba(239,68,68,.8)!important;box-shadow:0 0 0 1px rgba(239,68,68,.2),0 0 40px rgba(239,68,68,.4)!important;}
 .opp-canvas{border:1.5px solid rgba(255,255,255,.1);border-radius:4px;display:block;transition:filter .5s ease,border-color .3s ease;image-rendering:pixelated;}
 .opp-canvas.eliminated{filter:grayscale(1) brightness(.28);border-color:rgba(239,68,68,.35);}
 
@@ -130,27 +134,48 @@ body.shaking{animation:screenShake .55s ease;}
 .ctrl-btn.crot{background:rgba(99,102,241,.16);border-color:rgba(99,102,241,.4);}
 
 /* ── POWER BUTTON STYLES ── */
-#power-btn{
-  width:100%;padding:8px 4px;border-radius:10px;font-size:10px;font-weight:800;
-  cursor:pointer;border:1.5px solid rgba(251,191,36,.45);
-  background:rgba(251,191,36,.13);color:#fbbf24;
-  font-family:'Sora',sans-serif;letter-spacing:.04em;
-  transition:all .25s;animation:powerPulse 2.2s ease infinite;
-  text-align:center;line-height:1.4;
+.pwr-ability-btn{
+  width:100%;padding:7px 3px;border-radius:9px;font-size:9.5px;font-weight:800;
+  cursor:pointer;font-family:'Sora',sans-serif;letter-spacing:.04em;
+  transition:all .22s;text-align:center;line-height:1.4;
+  display:flex;flex-direction:column;align-items:center;gap:1px;
 }
-#power-btn:hover:not(.used){
-  background:rgba(251,191,36,.24);
-  transform:scale(1.03);
+.pwr-ability-btn:active:not(.used){transform:scale(.92);}
+.pwr-ability-btn.used{
+  animation:none!important;
+  background:rgba(255,255,255,.04)!important;
+  border-color:rgba(255,255,255,.08)!important;
+  color:#334155!important;cursor:default;
+  opacity:.42;
 }
-#power-btn:active:not(.used){transform:scale(.94);}
-#power-btn.used{
-  animation:none;
-  background:rgba(255,255,255,.04);
-  border-color:rgba(255,255,255,.08);
-  color:#334155;cursor:default;
-  opacity:.45;
+.pwr-pause{border:1.5px solid rgba(99,102,241,.45);background:rgba(99,102,241,.13);color:#a5b4fc;animation:pausePulse 2.2s ease infinite;}
+.pwr-pause:hover:not(.used){background:rgba(99,102,241,.24);transform:scale(1.04);}
+.pwr-speed{border:1.5px solid rgba(239,68,68,.45);background:rgba(239,68,68,.13);color:#fca5a5;animation:speedPulse 2.2s ease infinite;}
+.pwr-speed:hover:not(.used){background:rgba(239,68,68,.24);transform:scale(1.04);}
+.pwr-flash{border:1.5px solid rgba(251,191,36,.45);background:rgba(251,191,36,.13);color:#fbbf24;animation:pwrPulse 2.2s ease infinite;}
+.pwr-flash:hover:not(.used){background:rgba(251,191,36,.24);transform:scale(1.04);}
+
+/* ── POWER MODE TOGGLE ── */
+.pm-toggle{
+  display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:12px;cursor:pointer;
+  border:1.5px solid rgba(251,191,36,.3);background:rgba(251,191,36,.09);
+  font-size:12px;font-weight:700;color:#fbbf24;font-family:'Sora',sans-serif;
+  transition:all .2s;user-select:none;
 }
-#power-btn.solo-hidden{display:none;}
+.pm-toggle.off{border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:#475569;}
+.pm-toggle.on{animation:powerModeGlow 2s ease infinite;}
+.pm-dot{width:10px;height:10px;border-radius:50%;transition:background .2s;}
+.pm-dot.on{background:#fbbf24;box-shadow:0 0 8px #fbbf24;}
+.pm-dot.off{background:#334155;}
+
+/* ── POWER PANEL IN GAME ── */
+#power-panel{display:flex;flex-direction:column;gap:4px;}
+#power-panel-header{font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#f59e0b;font-weight:700;text-align:center;padding:2px 0;border-bottom:1px solid rgba(251,191,36,.15);margin-bottom:2px;}
+
+/* ── ACTIVE SPEED INDICATOR ── */
+#speed-active-bar{display:none;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);border-radius:8px;padding:4px 6px;text-align:center;}
+#speed-active-bar.show{display:block;}
+#speed-bar-fill{height:3px;background:linear-gradient(90deg,#ef4444,#f97316);border-radius:2px;transition:width .1s linear;margin-top:3px;}
 
 .logo-grad{background:linear-gradient(135deg,#a5b4fc 0%,#e879f9 40%,#f472b6 70%,#fb923c 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .glass{background:rgba(8,12,28,.94);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(99,102,241,.2);}
@@ -161,17 +186,9 @@ body.shaking{animation:screenShake .55s ease;}
 .garbage-warning{animation:garbageFlash 0.55s ease infinite;}
 
 /* ─── COLUMN WIDTH PICKER ─── */
-.col-option{
-  flex:1;padding:10px 6px;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;
-  border:1.5px solid rgba(255,255,255,.09);background:rgba(255,255,255,.05);
-  color:#64748b;font-family:'Sora',sans-serif;transition:all .2s;text-align:center;
-  display:flex;flex-direction:column;align-items:center;gap:4px;
-}
+.col-option{flex:1;padding:10px 6px;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,255,255,.09);background:rgba(255,255,255,.05);color:#64748b;font-family:'Sora',sans-serif;transition:all .2s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;}
 .col-option:hover{border-color:rgba(99,102,241,.45);color:#a5b4fc;background:rgba(99,102,241,.1);}
-.col-option.active{
-  border-color:#6366f1;background:rgba(99,102,241,.18);color:white;
-  box-shadow:0 0 0 2px rgba(99,102,241,.25),0 4px 14px rgba(99,102,241,.2);
-}
+.col-option.active{border-color:#6366f1;background:rgba(99,102,241,.18);color:white;box-shadow:0 0 0 2px rgba(99,102,241,.25),0 4px 14px rgba(99,102,241,.2);}
 .col-preview{display:flex;gap:1.5px;align-items:flex-end;height:18px;}
 .col-preview-bar{width:3px;border-radius:1px;background:currentColor;opacity:.5;}
 .col-preview-bar.a{opacity:1;}
@@ -230,14 +247,13 @@ body.shaking{animation:screenShake .55s ease;}
 </head>
 <body>
 
-<!-- ── FLASH OVERLAY (shown on hit) ── -->
+<!-- ── POWER OVERLAYS ── -->
 <div id="flash-overlay"></div>
+<div id="pause-overlay"></div>
+<div id="speed-overlay"></div>
 
-<!-- ── FLASH HIT POPUP ── -->
-<div id="flash-hit-popup">
-  <div style="font-size:60px;line-height:1;">⚡</div>
-  <div style="font-size:28px;font-weight:800;color:#fff;font-family:'JetBrains Mono',monospace;text-shadow:0 0 30px #fbbf24,0 0 60px #f59e0b;letter-spacing:.04em;">FLASHED!</div>
-</div>
+<!-- ── UNIFIED POWER HIT POPUP ── -->
+<div id="power-hit-popup"></div>
 
 <!-- ── AUTO-START BANNER ── -->
 <div id="autostart-banner">
@@ -273,6 +289,38 @@ body.shaking{animation:screenShake .55s ease;}
   <div style="display:flex;gap:8px;background:rgba(255,255,255,.04);border-radius:14px;padding:5px;border:1px solid rgba(255,255,255,.07);">
     <button class="mode-tab active" id="tab-multi" onclick="setMode('multi')">⚔️ Multiplayer</button>
     <button class="mode-tab" id="tab-solo" onclick="setMode('solo')">🎯 Solo</button>
+  </div>
+
+  <!-- ── POWER MODE TOGGLE ── -->
+  <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border-radius:14px;padding:10px 18px;border:1px solid rgba(255,255,255,.07);">
+    <div>
+      <p style="font-size:13px;font-weight:700;color:white;">⚡ Power Mode</p>
+      <p style="font-size:10px;color:#64748b;margin-top:1px;">Pause • Speed • Flash attacks</p>
+    </div>
+    <div style="flex:1;"></div>
+    <div id="pm-toggle-btn" class="pm-toggle on" onclick="togglePowerMode()" style="gap:8px;">
+      <div class="pm-dot on" id="pm-dot"></div>
+      <span id="pm-label">ON</span>
+    </div>
+  </div>
+
+  <!-- Powers legend -->
+  <div id="pm-legend" style="display:flex;gap:6px;max-width:460px;width:100%;">
+    <div style="flex:1;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:10px;padding:7px 8px;text-align:center;">
+      <div style="font-size:16px;">⏸</div>
+      <div style="font-size:10px;font-weight:700;color:#a5b4fc;margin-top:2px;">PAUSE</div>
+      <div style="font-size:9px;color:#475569;">2 sec · [Q]</div>
+    </div>
+    <div style="flex:1;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:7px 8px;text-align:center;">
+      <div style="font-size:16px;">🔥</div>
+      <div style="font-size:10px;font-weight:700;color:#fca5a5;margin-top:2px;">SPEED</div>
+      <div style="font-size:9px;color:#475569;">3 sec · [E]</div>
+    </div>
+    <div style="flex:1;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:7px 8px;text-align:center;">
+      <div style="font-size:16px;">⚡</div>
+      <div style="font-size:10px;font-weight:700;color:#fbbf24;margin-top:2px;">FLASH</div>
+      <div style="font-size:9px;color:#475569;">2 sec · [Enter]</div>
+    </div>
   </div>
 
   <div class="glass rounded-2xl p-7 w-full" style="max-width:460px;">
@@ -366,7 +414,8 @@ body.shaking{animation:screenShake .55s ease;}
 
   <p style="font-size:11px;color:#2d3748;text-align:center;max-width:380px;line-height:1.8;">
     ← → move &nbsp;·&nbsp; ↓ soft drop &nbsp;·&nbsp; ↑/X rotate ↻ &nbsp;·&nbsp; Z rotate ↺<br>
-    Space hard drop &nbsp;·&nbsp; C/Shift hold &nbsp;·&nbsp; P pause &nbsp;·&nbsp; <span style="color:#fbbf24;">Enter ⚡ FLASH</span>
+    Space hard drop &nbsp;·&nbsp; C/Shift hold &nbsp;·&nbsp; P pause<br>
+    <span style="color:#a5b4fc;">Q ⏸ Pause enemy</span> &nbsp;·&nbsp; <span style="color:#fca5a5;">E 🔥 Speed enemy</span> &nbsp;·&nbsp; <span style="color:#fbbf24;">Enter ⚡ Flash enemy</span>
   </p>
 </div>
 
@@ -388,6 +437,9 @@ body.shaking{animation:screenShake .55s ease;}
         onmouseover="this.style.color='#a5b4fc'" onmouseout="this.style.color='#475569'">
         📋 Copy code
       </button>
+    </div>
+    <div id="wait-power-badge" style="margin-top:8px;display:none;">
+      <span style="font-size:10px;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);border-radius:20px;padding:3px 10px;font-family:'JetBrains Mono',monospace;">⚡ POWER MODE ON</span>
     </div>
 
     <div id="expiry-container" style="display:none;margin-top:10px;max-width:260px;margin-left:auto;margin-right:auto;">
@@ -455,11 +507,31 @@ body.shaking{animation:screenShake .55s ease;}
       </div>
     </div>
 
-    <!-- ⚡ FLASH POWER BUTTON -->
-    <button id="power-btn" onclick="useFlashPower()" onpointerdown="useFlashPower()">
-      ⚡ FLASH<br>
-      <span style="font-size:8px;letter-spacing:.06em;opacity:.75;">[Enter]</span>
-    </button>
+    <!-- ⚡ POWER PANEL (shown in multiplayer power mode) -->
+    <div id="power-panel" style="display:none;">
+      <div id="power-panel-header">⚡ POWERS</div>
+      <button id="pw-pause" class="pwr-ability-btn pwr-pause" onclick="usePower('pause')" title="Pause enemy 2s [Q]">
+        <span style="font-size:15px;">⏸</span>
+        <span>PAUSE</span>
+        <span style="font-size:7.5px;opacity:.7;">2s · [Q]</span>
+      </button>
+      <button id="pw-speed" class="pwr-ability-btn pwr-speed" onclick="usePower('speed')" title="Speed up enemy 3s [E]">
+        <span style="font-size:15px;">🔥</span>
+        <span>SPEED</span>
+        <span style="font-size:7.5px;opacity:.7;">3s · [E]</span>
+      </button>
+      <button id="pw-flash" class="pwr-ability-btn pwr-flash" onclick="usePower('flash')" title="Flash enemy 2s [Enter]">
+        <span style="font-size:15px;">⚡</span>
+        <span>FLASH</span>
+        <span style="font-size:7.5px;opacity:.7;">2s · [Enter]</span>
+      </button>
+    </div>
+
+    <!-- Speed active bar (shown when speed power is incoming) -->
+    <div id="speed-active-bar">
+      <p style="font-size:7.5px;font-weight:700;color:#ef4444;letter-spacing:.07em;text-transform:uppercase;">🔥 SPEED ATTACK!</p>
+      <div id="speed-bar-fill" style="width:100%;"></div>
+    </div>
 
     <button id="pause-btn" onclick="togglePause()"
       style="padding:8px 4px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.06);color:#94a3b8;border:1px solid rgba(255,255,255,.1);font-family:'Sora',sans-serif;transition:all .2s;"
@@ -490,6 +562,7 @@ body.shaking{animation:screenShake .55s ease;}
       <span id="my-name-lbl" style="font-size:13px;font-weight:700;color:white;"></span>
       <span style="font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(99,102,241,.22);color:#a5b4fc;border:1px solid rgba(99,102,241,.35);border-radius:20px;padding:2px 8px;">YOU</span>
       <span id="solo-badge" style="display:none;font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);border-radius:20px;padding:2px 8px;">SOLO</span>
+      <span id="pm-game-badge" style="display:none;font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);border-radius:20px;padding:2px 8px;">⚡ POWER</span>
       <span id="width-badge" style="font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);border-radius:20px;padding:2px 8px;"></span>
     </div>
     <canvas id="my-canvas" width="300" height="600"></canvas>
@@ -603,6 +676,26 @@ const SCORE_TABLE=[0,100,300,500,800];
 const GARBAGE_TABLE=[0,0,1,2,4];
 const ROOM_EXPIRE_SECONDS=30;
 function levelSpeed(l){return Math.max(50,1000-(l-1)*88);}
+
+// ─────────────────── POWER MODE ─────────────────────────
+let powerModeEnabled=true; // lobby setting
+
+function togglePowerMode(){
+  powerModeEnabled=!powerModeEnabled;
+  const btn=document.getElementById('pm-toggle-btn');
+  const dot=document.getElementById('pm-dot');
+  const lbl=document.getElementById('pm-label');
+  const legend=document.getElementById('pm-legend');
+  if(powerModeEnabled){
+    btn.classList.remove('off');btn.classList.add('on');
+    dot.classList.remove('off');dot.classList.add('on');
+    lbl.textContent='ON';legend.style.opacity='1';legend.style.pointerEvents='auto';
+  } else {
+    btn.classList.remove('on');btn.classList.add('off');
+    dot.classList.remove('on');dot.classList.add('off');
+    lbl.textContent='OFF';legend.style.opacity='.3';legend.style.pointerEvents='none';
+  }
+}
 
 // ─────────────────── BOARD WIDTH PICKER ─────────────────
 const COL_OPTIONS=[10,14,16];
@@ -759,7 +852,17 @@ function drawCell(ctx,col,row,ci,size,alpha=1,opts={}){
 }
 
 // ─────────────────── GAME STATE ─────────────────────────
-let G={board:null,piece:null,bag:[],hold:null,holdUsed:false,score:0,lines:0,level:1,combo:-1,pendingGarbage:0,running:false,paused:false,dead:false,dropTimer:null,lockTimeout:null,powerUsed:false};
+let G={
+  board:null,piece:null,bag:[],hold:null,holdUsed:false,
+  score:0,lines:0,level:1,combo:-1,pendingGarbage:0,
+  running:false,paused:false,dead:false,
+  dropTimer:null,lockTimeout:null,
+  // Power system: tracks which powers have been used
+  powers:{pause:false,speed:false,flash:false},
+  // Incoming power state
+  speedAttackTimer:null,forceFastDrop:false,
+  pauseAttackTimer:null,
+};
 
 // ─────────────────── ROOM / NETWORK ─────────────────────
 let roomId='',mySlot='',myName='',myIsCreator=false,maxPlayers=2;
@@ -771,124 +874,237 @@ let eliminatedRanks=[];
 let selectedMax=2;
 let isSoloMode=false;
 let gameMode='multi';
+let roomPowerMode=false; // actual power mode for current room/game
 
 // Room expiry
 let expiryTimer=null;
 let expirySecondsLeft=ROOM_EXPIRE_SECONDS;
 
-// ─────────────────── FLASH POWER STATE ──────────────────
-let flashRef=null;
-let flashListener=null;
-let lastFlashTs={};  // tracks last seen timestamp per slot to avoid re-firing
+// ─────────────────── POWER SYSTEM ───────────────────────
+let powersRef=null,powersListener=null;
+let lastPowerTs={}; // { slot: { pause:ts, speed:ts, flash:ts } }
+let speedBarInterval=null;
 
-// ─────────────────── FLASH POWER FUNCTIONS ──────────────
-
-/** Called by the player to use their one-time flash power */
-function useFlashPower(){
-  // Block: must be in live multiplayer game, power not yet used
-  if(G.powerUsed)return;
+/**
+ * Use a power against all living opponents.
+ * type = 'pause' | 'speed' | 'flash'
+ */
+function usePower(type){
+  if(!roomPowerMode)return;
+  if(G.powers[type])return; // already used
   if(isSoloMode)return;
   if(!G.running||G.dead||G.paused)return;
   if(!roomRef||!mySlot)return;
 
-  G.powerUsed=true;
+  G.powers[type]=true;
   updatePowerUI();
 
-  // Write a flash event to Firebase — all opponents will see this
-  DB.ref(`tetris2/rooms/${roomId}/flash/${mySlot}`).set({
+  // Write power event so all opponents pick it up
+  DB.ref(`tetris2/rooms/${roomId}/powers/${mySlot}/${type}`).set({
     ts:Date.now(),
     by:myName
   });
 }
 
-/** Applied to THIS player's screen when an opponent fires flash at them */
-function applyFlash(attackerName){
-  const overlay=document.getElementById('flash-overlay');
-  const popup=document.getElementById('flash-hit-popup');
+/** Called when THIS player receives a pause attack */
+function applyPausePower(attackerName){
+  showPowerHitPopup('pause', attackerName);
+  // Shake screen
+  shakeScreen();
 
-  // Show full-screen white blast
-  overlay.classList.remove('blasting');
-  void overlay.offsetWidth; // force reflow to restart animation
+  // Add indigo overlay briefly
+  const overlay=document.getElementById('pause-overlay');
+  overlay.classList.remove('blasting');void overlay.offsetWidth;
   overlay.classList.add('blasting');
+  setTimeout(()=>overlay.classList.remove('blasting'),2500);
 
-  // Show "FLASHED!" popup in center
-  popup.innerHTML=`
-    <div style="font-size:54px;line-height:1;margin-bottom:6px;">⚡</div>
-    <div style="font-size:26px;font-weight:800;color:#fff;font-family:'JetBrains Mono',monospace;
-      text-shadow:0 0 30px #fbbf24,0 0 60px #f59e0b;letter-spacing:.04em;">FLASHED!</div>
-    ${attackerName?`<div style="font-size:12px;color:#fde68a;margin-top:6px;font-family:'Sora',sans-serif;font-weight:600;">by ${attackerName}</div>`:''}
-  `;
-  popup.classList.remove('show');
-  void popup.offsetWidth;
-  popup.classList.add('show');
+  if(!G.running||G.dead)return;
+  // Clear any existing pause attack timer
+  if(G.pauseAttackTimer){clearTimeout(G.pauseAttackTimer);G.pauseAttackTimer=null;}
 
-  // Shake the body briefly
-  document.body.classList.remove('shaking');
-  void document.body.offsetWidth;
-  document.body.classList.add('shaking');
-
-  // Pause the game briefly to maximize disruption (0.8 seconds)
-  if(G.running&&!G.dead&&!G.paused){
+  // Pause the game for 2 seconds
+  const wasAlreadyPaused=G.paused;
+  if(!wasAlreadyPaused){
     G.paused=true;
     stopDrop();clearLock();
+    renderBoard();
+  }
+  G.pauseAttackTimer=setTimeout(()=>{
+    G.pauseAttackTimer=null;
+    if(G.running&&!G.dead&&!wasAlreadyPaused){
+      G.paused=false;
+      startDrop();
+      renderBoard();
+    }
+  },2000);
+}
+
+/** Called when THIS player receives a speed attack */
+function applySpeedPower(attackerName){
+  showPowerHitPopup('speed', attackerName);
+  shakeScreen();
+
+  const overlay=document.getElementById('speed-overlay');
+  overlay.classList.remove('blasting');void overlay.offsetWidth;
+  overlay.classList.add('blasting');
+  setTimeout(()=>overlay.classList.remove('blasting'),3500);
+
+  if(!G.running||G.dead)return;
+
+  // Clear any existing speed attack
+  if(G.speedAttackTimer){clearTimeout(G.speedAttackTimer);G.speedAttackTimer=null;}
+  G.forceFastDrop=true;
+  document.getElementById('my-canvas').classList.add('speed-active');
+
+  // Show speed bar
+  const bar=document.getElementById('speed-active-bar');
+  bar.classList.add('show');
+  let elapsed=0;
+  const fill=document.getElementById('speed-bar-fill');
+  fill.style.width='100%';
+  if(speedBarInterval)clearInterval(speedBarInterval);
+  speedBarInterval=setInterval(()=>{
+    elapsed+=100;
+    const pct=Math.max(0,100-(elapsed/3000)*100);
+    fill.style.width=pct+'%';
+    if(elapsed>=3000){clearInterval(speedBarInterval);speedBarInterval=null;bar.classList.remove('show');}
+  },100);
+
+  // Force fast drop (50ms per row) for 3 seconds
+  stopDrop();
+  if(!G.paused){
+    G.dropTimer=setInterval(()=>{
+      if(G.running&&!G.paused&&!G.dead&&G.forceFastDrop)autoDown();
+    },50);
+  }
+
+  G.speedAttackTimer=setTimeout(()=>{
+    G.speedAttackTimer=null;
+    G.forceFastDrop=false;
+    document.getElementById('my-canvas').classList.remove('speed-active');
+    bar.classList.remove('show');
+    if(speedBarInterval){clearInterval(speedBarInterval);speedBarInterval=null;}
+    // Restore normal drop speed
+    if(G.running&&!G.dead&&!G.paused)startDrop();
+  },3000);
+}
+
+/** Called when THIS player receives a flash attack */
+function applyFlashPower(attackerName){
+  showPowerHitPopup('flash', attackerName);
+  shakeScreen();
+
+  const overlay=document.getElementById('flash-overlay');
+  overlay.classList.remove('blasting');void overlay.offsetWidth;
+  overlay.classList.add('blasting');
+  setTimeout(()=>overlay.classList.remove('blasting'),2500);
+
+  if(!G.running||G.dead)return;
+  // Pause briefly during flash (2 seconds)
+  const wasAlreadyPaused=G.paused;
+  if(!wasAlreadyPaused){
+    G.paused=true;
+    stopDrop();clearLock();
+    renderBoard();
     setTimeout(()=>{
       if(G.running&&!G.dead){
         G.paused=false;
         startDrop();
         renderBoard();
       }
-    },800);
+    },2000);
   }
+}
 
-  // Clean up body shake class after animation
+/** Show the power hit popup */
+function showPowerHitPopup(type, attackerName){
+  const popup=document.getElementById('power-hit-popup');
+  const configs={
+    pause:{icon:'⏸',label:'FROZEN!',color:'#a5b4fc',glow:'#6366f1'},
+    speed:{icon:'🔥',label:'SPEED!',color:'#fca5a5',glow:'#ef4444'},
+    flash:{icon:'⚡',label:'FLASHED!',color:'#fef08a',glow:'#f59e0b'},
+  };
+  const cfg=configs[type]||configs.flash;
+  popup.innerHTML=`
+    <div style="font-size:52px;line-height:1;margin-bottom:6px;">${cfg.icon}</div>
+    <div style="font-size:26px;font-weight:800;color:#fff;font-family:'JetBrains Mono',monospace;
+      text-shadow:0 0 30px ${cfg.glow},0 0 60px ${cfg.glow};letter-spacing:.04em;">${cfg.label}</div>
+    ${attackerName?`<div style="font-size:12px;color:${cfg.color};margin-top:6px;font-family:'Sora',sans-serif;font-weight:600;">by ${attackerName}</div>`:''}
+  `;
+  popup.classList.remove('show');
+  void popup.offsetWidth;
+  popup.classList.add('show');
+  setTimeout(()=>popup.classList.remove('show'),2600);
+}
+
+function shakeScreen(){
+  document.body.classList.remove('shaking');
+  void document.body.offsetWidth;
+  document.body.classList.add('shaking');
   setTimeout(()=>document.body.classList.remove('shaking'),600);
-  // Clean up overlay class after animation
-  setTimeout(()=>{overlay.classList.remove('blasting');popup.classList.remove('show');},1200);
 }
 
-/** Update the power button visual state */
-function updatePowerUI(){
-  const btn=document.getElementById('power-btn');if(!btn)return;
-  if(isSoloMode){
-    btn.classList.add('solo-hidden');return;
-  }
-  btn.classList.remove('solo-hidden');
-  if(G.powerUsed){
-    btn.classList.add('used');
-    btn.innerHTML='⚡ USED<br><span style="font-size:8px;letter-spacing:.06em;opacity:.5;">once per game</span>';
-  } else {
-    btn.classList.remove('used');
-    btn.innerHTML='⚡ FLASH<br><span style="font-size:8px;letter-spacing:.06em;opacity:.75;">[Enter]</span>';
-  }
-}
+/** Listen for power events from opponents */
+function listenPowers(slots){
+  if(powersRef&&powersListener){powersRef.off('value',powersListener);powersListener=null;}
+  if(!roomPowerMode)return; // no-op if power mode is off
+  powersRef=DB.ref(`tetris2/rooms/${roomId}/powers`);
+  lastPowerTs={};
 
-/** Start listening to flash events from all opponents */
-function listenFlash(slots){
-  if(flashRef&&flashListener){flashRef.off('value',flashListener);flashListener=null;}
-  flashRef=DB.ref(`tetris2/rooms/${roomId}/flash`);
-  lastFlashTs={};
-
-  flashListener=flashRef.on('value',snap=>{
+  powersListener=powersRef.on('value',snap=>{
     const d=snap.val();if(!d)return;
     for(const slot of Object.keys(d)){
-      if(slot===mySlot)continue; // ignore my own flash events
-      const entry=d[slot];
-      if(!entry)continue;
-      const ts=entry.ts||0;
-      if(!lastFlashTs[slot])lastFlashTs[slot]=0;
-      if(ts>lastFlashTs[slot]){
-        lastFlashTs[slot]=ts;
-        // A new flash from an opponent — apply to my screen!
-        applyFlash(entry.by||'Someone');
+      if(slot===mySlot)continue; // ignore own powers
+      if(!lastPowerTs[slot])lastPowerTs[slot]={pause:0,speed:0,flash:0};
+      const sd=d[slot];if(!sd)continue;
+
+      if(sd.pause&&(sd.pause.ts||0)>lastPowerTs[slot].pause){
+        lastPowerTs[slot].pause=sd.pause.ts;
+        applyPausePower(sd.pause.by||'Someone');
+      }
+      if(sd.speed&&(sd.speed.ts||0)>lastPowerTs[slot].speed){
+        lastPowerTs[slot].speed=sd.speed.ts;
+        applySpeedPower(sd.speed.by||'Someone');
+      }
+      if(sd.flash&&(sd.flash.ts||0)>lastPowerTs[slot].flash){
+        lastPowerTs[slot].flash=sd.flash.ts;
+        applyFlashPower(sd.flash.by||'Someone');
       }
     }
   });
 }
 
-/** Stop listening and clean up flash state */
-function stopFlashListener(){
-  if(flashRef&&flashListener){flashRef.off('value',flashListener);flashListener=null;}
-  flashRef=null;lastFlashTs={};
+function stopPowerListener(){
+  if(powersRef&&powersListener){powersRef.off('value',powersListener);powersListener=null;}
+  powersRef=null;lastPowerTs={};
+  // Clear any active power timers
+  if(G.speedAttackTimer){clearTimeout(G.speedAttackTimer);G.speedAttackTimer=null;}
+  if(G.pauseAttackTimer){clearTimeout(G.pauseAttackTimer);G.pauseAttackTimer=null;}
+  if(speedBarInterval){clearInterval(speedBarInterval);speedBarInterval=null;}
+  G.forceFastDrop=false;
+  document.getElementById('my-canvas').classList.remove('speed-active');
+  document.getElementById('speed-active-bar').classList.remove('show');
+}
+
+/** Update the 3 power button visual states */
+function updatePowerUI(){
+  if(!roomPowerMode||isSoloMode){
+    document.getElementById('power-panel').style.display='none';
+    return;
+  }
+  document.getElementById('power-panel').style.display='flex';
+  ['pause','speed','flash'].forEach(type=>{
+    const btn=document.getElementById(`pw-${type}`);
+    if(!btn)return;
+    if(G.powers[type]){
+      btn.classList.add('used');
+      btn.querySelector('span:nth-child(2)').textContent='USED';
+    } else {
+      btn.classList.remove('used');
+      const labels={pause:'PAUSE',speed:'SPEED',flash:'FLASH'};
+      btn.querySelector('span:nth-child(2)').textContent=labels[type];
+    }
+  });
 }
 
 // ─────────────────── ROOM EXPIRY ────────────────────────
@@ -937,7 +1153,7 @@ function startRoomsBrowser(){
       let count=0,maxP=d.maxPlayers||2;
       for(let i=1;i<=maxP;i++){if(d[`p${i}`])count++;}
       if(count>=maxP)return;
-      rooms.push({code:child.key,host:d.p1?d.p1.name:'?',count,max:maxP,cols:d.cols||10});
+      rooms.push({code:child.key,host:d.p1?d.p1.name:'?',count,max:maxP,cols:d.cols||10,powerMode:d.powerMode||false});
     });
     list.innerHTML='';
     if(!rooms.length){
@@ -949,12 +1165,13 @@ function startRoomsBrowser(){
       const card=document.createElement('div');
       card.className='room-card';card.style.animationDelay=(i*40)+'ms';
       const colLabel=r.cols!==10?`<span style="font-size:9px;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:8px;padding:1px 6px;font-family:'JetBrains Mono',monospace;">${r.cols}col</span>`:'';
+      const pmLabel=r.powerMode?`<span style="font-size:9px;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:8px;padding:1px 6px;font-family:'JetBrains Mono',monospace;">⚡PWR</span>`:'';
       card.innerHTML=`
         <span class="room-code-badge">${r.code}</span>
         <div style="flex:1;overflow:hidden;">
-          <div style="display:flex;align-items:center;gap:5px;">
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;">
             <p style="font-size:12px;font-weight:700;color:white;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.host}</p>
-            ${colLabel}
+            ${colLabel}${pmLabel}
           </div>
           <p style="font-size:10px;color:#64748b;">${r.count}/${r.max} players</p>
         </div>
@@ -1072,18 +1289,18 @@ function valid(board,p,dx=0,dy=0,rot_override=null){
 function startSolo(){
   const name=document.getElementById('inp-name').value.trim();
   if(!name){shakeEl('inp-name');return;}
-  myName=name;isSoloMode=true;stopRoomsBrowser();
+  myName=name;isSoloMode=true;roomPowerMode=false;stopRoomsBrowser();
   applyBoardWidth();
   currentPlayers=[{slot:'p1',name:myName,dead:false}];eliminatedRanks=[];
   myRef=null;garbRef=null;roomRef=null;
   document.getElementById('my-name-lbl').textContent=myName;
   document.getElementById('solo-badge').style.display='inline';
+  document.getElementById('pm-game-badge').style.display='none';
   document.getElementById('room-chip').textContent='SOLO MODE';
   document.getElementById('alive-pill').textContent='SOLO';
   document.getElementById('garbage-box').style.display='none';
   document.getElementById('opponents-panel').innerHTML='';
-  // Hide power button in solo
-  const pb=document.getElementById('power-btn');if(pb)pb.classList.add('solo-hidden');
+  document.getElementById('power-panel').style.display='none';
   showScreen('s-game');doCountdown(()=>initGame());
 }
 
@@ -1093,9 +1310,16 @@ function initGame(){
   G.bag=[...newBag(),...newBag(),...newBag()];
   G.hold=null;G.holdUsed=false;G.score=0;G.lines=0;G.level=1;G.combo=-1;G.pendingGarbage=0;
   G.running=true;G.paused=false;G.dead=false;
-  G.powerUsed=false;  // reset flash power each game
+  // Reset all powers each game
+  G.powers={pause:false,speed:false,flash:false};
+  G.forceFastDrop=false;
+  if(G.speedAttackTimer){clearTimeout(G.speedAttackTimer);G.speedAttackTimer=null;}
+  if(G.pauseAttackTimer){clearTimeout(G.pauseAttackTimer);G.pauseAttackTimer=null;}
+  document.getElementById('my-canvas').classList.remove('speed-active');
+  document.getElementById('speed-active-bar').classList.remove('show');
+  if(speedBarInterval){clearInterval(speedBarInterval);speedBarInterval=null;}
   updateStats();updateGarbage();updateCombo();
-  updatePowerUI();  // refresh power button state
+  updatePowerUI();
   if(!spawn())return;startDrop();renderAll();
 }
 function spawn(){
@@ -1107,7 +1331,9 @@ function spawn(){
 function startDrop(){
   clearInterval(G.dropTimer);
   if(!G.running||G.dead||G.paused)return;
-  G.dropTimer=setInterval(()=>{if(G.running&&!G.paused&&!G.dead)autoDown();},levelSpeed(G.level));
+  // If speed attack is active, keep the fast interval
+  const interval=G.forceFastDrop?50:levelSpeed(G.level);
+  G.dropTimer=setInterval(()=>{if(G.running&&!G.paused&&!G.dead)autoDown();},interval);
 }
 function stopDrop(){clearInterval(G.dropTimer);G.dropTimer=null;}
 function autoDown(){if(valid(G.board,G.piece,0,1)){G.piece.py++;renderBoard();}else startLock();}
@@ -1205,8 +1431,9 @@ function renderBoard(){
   }
   if(G.paused){
     MC.fillStyle='rgba(2,8,23,.82)';MC.fillRect(0,0,W,H);
-    MC.fillStyle='white';MC.font='bold 22px Sora';MC.textAlign='center';MC.fillText('PAUSED',W/2,H/2-10);
-    MC.fillStyle='#475569';MC.font='12px Sora';MC.fillText('Press P to resume',W/2,H/2+18);
+    MC.fillStyle='white';MC.font='bold 22px Sora';MC.textAlign='center';MC.fillText(G.pauseAttackTimer?'FROZEN!':'PAUSED',W/2,H/2-10);
+    MC.fillStyle='#475569';MC.font='12px Sora';
+    MC.fillText(G.pauseAttackTimer?'An opponent paused you!':'Press P to resume',W/2,H/2+18);
   }
   if(G.dead){
     MC.fillStyle='rgba(2,8,23,.7)';MC.fillRect(0,0,W,H);
@@ -1341,8 +1568,10 @@ document.addEventListener('keydown',e=>{
     case'Space':e.preventDefault();hardDrop();break;
     case'KeyC':case'ShiftLeft':case'ShiftRight':e.preventDefault();holdPiece();break;
     case'KeyP':e.preventDefault();togglePause();break;
-    // ⚡ FLASH POWER — press Enter
-    case'Enter':e.preventDefault();useFlashPower();break;
+    // ── POWER KEYS ──
+    case'KeyQ':e.preventDefault();usePower('pause');break;   // Pause enemy 2s
+    case'KeyE':e.preventDefault();usePower('speed');break;   // Speed enemy 3s
+    case'Enter':e.preventDefault();usePower('flash');break;  // Flash enemy 2s
   }
 });
 document.addEventListener('keyup',e=>{
@@ -1356,7 +1585,8 @@ const MCR={};
 function startMc(a){stopMc(a);const fn=a==='left'?()=>moveH(-1):a==='right'?()=>moveH(1):softDrop;fn();MCR[a]={t:setTimeout(()=>{MCR[a].i=setInterval(fn,58);},175)};}
 function stopMc(a){if(!MCR[a])return;clearTimeout(MCR[a].t);clearInterval(MCR[a].i);delete MCR[a];}
 function togglePause(){
-  if(!G.running||G.dead)return;G.paused=!G.paused;
+  if(!G.running||G.dead||G.pauseAttackTimer)return; // can't manual pause during attack pause
+  G.paused=!G.paused;
   document.getElementById('pause-btn').textContent=G.paused?'▶ Resume':'⏸ Pause';
   G.paused?(stopDrop(),clearLock()):startDrop();renderBoard();
 }
@@ -1368,13 +1598,16 @@ async function createRoom(){
   const name=document.getElementById('inp-name').value.trim();
   if(!name){shakeEl('inp-name');return;}
   myName=name;roomId=genCode();mySlot='p1';myIsCreator=true;maxPlayers=selectedMax;isSoloMode=false;
+  roomPowerMode=powerModeEnabled;
   stopRoomsBrowser();
   roomRef=DB.ref(`tetris2/rooms/${roomId}`);
-  const roomData={status:'waiting',createdAt:Date.now(),maxPlayers,hostName:myName,cols:selectedCols};
+  const roomData={status:'waiting',createdAt:Date.now(),maxPlayers,hostName:myName,cols:selectedCols,powerMode:roomPowerMode};
   roomData.p1={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false};
   await roomRef.set(roomData).catch(console.error);
   roomRef.onDisconnect().remove();
   document.getElementById('wait-code').textContent=roomId;
+  const badge=document.getElementById('wait-power-badge');
+  if(badge)badge.style.display=roomPowerMode?'block':'none';
   showScreen('s-waiting');
   startRoomExpiry();
   listenRoom();
@@ -1394,12 +1627,15 @@ async function joinRoom(){
   if(d.status!=='waiting'){alert('Room is not open. It may have already started.');startRoomsBrowser();return;}
   maxPlayers=d.maxPlayers||2;
   if(d.cols)selectedCols=d.cols;
+  roomPowerMode=d.powerMode||false;
   let slot=null;
   for(let i=2;i<=maxPlayers;i++){if(!d[`p${i}`]){slot=`p${i}`;break;}}
   if(!slot){alert('Room is full!');startRoomsBrowser();return;}
   mySlot=slot;
   await roomRef.child(mySlot).set({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).catch(console.error);
   document.getElementById('wait-code').textContent=roomId;
+  const badge=document.getElementById('wait-power-badge');
+  if(badge)badge.style.display=roomPowerMode?'block':'none';
   showScreen('s-waiting');listenRoom();
 }
 
@@ -1408,6 +1644,7 @@ function listenRoom(){
   roomListener=roomRef.on('value',snap=>{
     const d=snap.val();if(!d)return;
     maxPlayers=d.maxPlayers||maxPlayers;
+    if(typeof d.powerMode!=='undefined')roomPowerMode=d.powerMode;
     const slots=[],playerData={};
     for(let i=1;i<=maxPlayers;i++){if(d[`p${i}`]){slots.push(`p${i}`);playerData[`p${i}`]=d[`p${i}`];}}
     if(d.status==='waiting'){
@@ -1424,6 +1661,7 @@ function listenRoom(){
     if(d.status==='playing'){
       stopRoomExpiry();
       if(d.cols)selectedCols=d.cols;
+      if(typeof d.powerMode!=='undefined')roomPowerMode=d.powerMode;
       roomRef.off('value',roomListener);roomListener=null;
       currentPlayers=slots.map(s=>({slot:s,name:playerData[s].name,dead:false}));
       beginBattle(slots,playerData);
@@ -1490,9 +1728,10 @@ function beginBattle(slots,data){
   document.getElementById('room-chip').textContent=`ROOM: ${roomId}`;
   document.getElementById('alive-pill').textContent=`${slots.length} / ${slots.length} ALIVE`;
 
-  // Show and reset power button for multiplayer
-  const pb=document.getElementById('power-btn');
-  if(pb){pb.classList.remove('solo-hidden','used');updatePowerUI();}
+  // Power mode badge + panel
+  const pmBadge=document.getElementById('pm-game-badge');
+  if(pmBadge)pmBadge.style.display=roomPowerMode?'inline':'none';
+  updatePowerUI(); // will show/hide power panel based on roomPowerMode
 
   setupOpponentPanels(slots);
   for(const s of slots){if(s===mySlot)continue;const el=document.getElementById(`opp-name-${s}`);if(el&&data[s])el.textContent=data[s].name;}
@@ -1512,8 +1751,8 @@ function beginBattle(slots,data){
     const v=snap.val()||0;if(v>0){G.pendingGarbage+=v;garbRef.set(0);updateGarbage();}
   });
 
-  // ⚡ Start listening for flash events from opponents
-  listenFlash(slots);
+  // Start listening for power events (no-op if powerMode is off)
+  listenPowers(slots);
 
   showScreen('s-game');doCountdown(()=>initGame());
 }
@@ -1585,7 +1824,7 @@ function checkWinner(){
 function cleanupListeners(){
   for(const slot of Object.keys(oppListeners)){roomRef?.child(slot).off('value',oppListeners[slot]);}
   if(garbRef&&garbListener){garbRef.off('value',garbListener);}
-  stopFlashListener(); // ⚡ clean up flash listener
+  stopPowerListener(); // stop all power listeners and timers
   oppListeners={};garbListener=null;
 }
 
@@ -1634,7 +1873,8 @@ async function playAgain(){
   if(!roomRef||!myIsCreator)return;
   if(gameoverRoomListener&&roomRef){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
   await roomRef.update({status:'rematch'});
-  const updates={garbage:null,flash:null}; // clear flash data on rematch
+  // Clear garbage and powers on rematch
+  const updates={garbage:null,powers:null};
   for(let i=2;i<=maxPlayers;i++)updates[`p${i}`]=null;
   updates.p1={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false};
   await roomRef.update(updates);
@@ -1652,8 +1892,10 @@ function goLobby(){
   if(myRef&&!isSoloMode)myRef.update({status:'left'}).catch(()=>{});
   if(myIsCreator&&roomRef)roomRef.remove().catch(()=>{});
   roomRef=null;myRef=null;currentPlayers=[];eliminatedRanks=[];
-  playerBoards={};oppListeners={};isSoloMode=false;myIsCreator=false;
+  playerBoards={};oppListeners={};isSoloMode=false;myIsCreator=false;roomPowerMode=false;
   document.getElementById('solo-badge').style.display='none';
+  document.getElementById('pm-game-badge').style.display='none';
+  document.getElementById('power-panel').style.display='none';
   if(lbVisible){lbVisible=false;document.getElementById('leaderboard-panel').classList.remove('show');lbRef.off('value');}
   showScreen('s-lobby');startRoomsBrowser();
 }
