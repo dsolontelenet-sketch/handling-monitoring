@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -98,6 +97,63 @@ body{
   50%{box-shadow:0 0 16px rgba(251,191,36,.5);}
 }
 
+/* ── SERIES WINNER ANIMATION ── */
+@keyframes seriesWinBgFade{
+  0%{opacity:0;}
+  10%{opacity:1;}
+  80%{opacity:1;}
+  100%{opacity:0;}
+}
+@keyframes seriesWinTrophyBounce{
+  0%{transform:scale(0) rotate(-20deg);opacity:0;}
+  35%{transform:scale(1.3) rotate(5deg);opacity:1;}
+  55%{transform:scale(0.9) rotate(-3deg);}
+  70%{transform:scale(1.08) rotate(2deg);}
+  85%{transform:scale(1) rotate(0deg);}
+  100%{transform:scale(1) rotate(0deg);opacity:1;}
+}
+@keyframes seriesWinNameSlide{
+  0%{transform:translateY(40px);opacity:0;}
+  40%{transform:translateY(-6px);opacity:1;}
+  60%{transform:translateY(0);}
+  100%{transform:translateY(0);opacity:1;}
+}
+@keyframes seriesWinSubFade{
+  0%,30%{opacity:0;transform:scale(.8);}
+  60%{opacity:1;transform:scale(1.05);}
+  100%{opacity:1;transform:scale(1);}
+}
+@keyframes confettiDrop{
+  0%{transform:translateY(-120px) rotate(0deg);opacity:1;}
+  100%{transform:translateY(110vh) rotate(720deg);opacity:0;}
+}
+@keyframes crownFloat{
+  0%,100%{transform:translateY(0) rotate(-4deg);}
+  50%{transform:translateY(-14px) rotate(4deg);}
+}
+@keyframes glowRing{
+  0%,100%{box-shadow:0 0 0 0 rgba(251,191,36,0),0 0 60px rgba(251,191,36,.2);}
+  50%{box-shadow:0 0 0 20px rgba(251,191,36,.1),0 0 120px rgba(251,191,36,.5);}
+}
+@keyframes starburstSpin{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(360deg);}
+}
+@keyframes winnerTextGlow{
+  0%,100%{text-shadow:0 0 20px rgba(251,191,36,.4),0 0 60px rgba(251,191,36,.2);}
+  50%{text-shadow:0 0 40px rgba(251,191,36,.9),0 0 120px rgba(251,191,36,.5),0 0 200px rgba(251,191,36,.2);}
+}
+@keyframes streakLeft{
+  0%{width:0;opacity:1;}
+  70%{opacity:.7;}
+  100%{width:35%;opacity:0;}
+}
+@keyframes streakRight{
+  0%{width:0;opacity:1;}
+  70%{opacity:.7;}
+  100%{width:35%;opacity:0;}
+}
+
 .float-anim{animation:floatY 3.2s ease-in-out infinite;}
 .pop-in{animation:popIn .6s cubic-bezier(.34,1.56,.64,1) both;}
 .slide-up{animation:slideUp .38s ease both;}
@@ -108,6 +164,44 @@ body{
 
 #round-win-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:9500;text-align:center;opacity:0;}
 #round-win-popup.show{animation:roundWinPop 2.8s ease forwards;}
+
+/* ── SERIES WINNER OVERLAY ── */
+#series-winner-overlay{
+  position:fixed;inset:0;z-index:99000;pointer-events:none;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(2,6,18,.92);backdrop-filter:blur(8px);
+  flex-direction:column;overflow:hidden;
+}
+#series-winner-overlay.show{
+  display:flex;
+  animation:seriesWinBgFade 5s ease forwards;
+}
+#swo-starburst{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;
+}
+#swo-starburst svg{animation:starburstSpin 12s linear infinite;opacity:.07;}
+#swo-crown{font-size:90px;line-height:1;animation:seriesWinTrophyBounce .9s cubic-bezier(.34,1.56,.64,1) forwards, crownFloat 2.5s ease-in-out 1.2s infinite;display:block;filter:drop-shadow(0 0 40px rgba(251,191,36,.8));}
+#swo-label{font-size:13px;font-weight:700;letter-spacing:6px;text-transform:uppercase;color:#fbbf24;font-family:'JetBrains Mono',monospace;margin-top:18px;animation:seriesWinSubFade 1.2s ease .3s both;}
+#swo-name{
+  font-size:clamp(36px,8vw,72px);font-weight:800;letter-spacing:-1px;
+  font-family:'Sora',sans-serif;
+  background:linear-gradient(135deg,#fbbf24 0%,#fff 40%,#fbbf24 65%,#f59e0b 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:seriesWinNameSlide .8s cubic-bezier(.34,1.56,.64,1) .25s both, winnerTextGlow 2s ease 1.2s infinite;
+  text-align:center;padding:0 20px;
+  filter:drop-shadow(0 0 30px rgba(251,191,36,.4));
+}
+#swo-sub{font-size:14px;color:#94a3b8;font-family:'Sora',sans-serif;margin-top:8px;font-weight:600;animation:seriesWinSubFade 1s ease .6s both;}
+#swo-glow-ring{
+  position:absolute;width:300px;height:300px;border-radius:50%;
+  border:2px solid rgba(251,191,36,.3);
+  animation:glowRing 2s ease .8s infinite;pointer-events:none;
+}
+#swo-streaks{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100%;display:flex;align-items:center;justify-content:center;gap:0;pointer-events:none;}
+.swo-streak-l,.swo-streak-r{height:2px;background:linear-gradient(90deg,rgba(251,191,36,0),#fbbf24);}
+.swo-streak-l{width:0;animation:streakLeft .7s ease .5s forwards;transform:scaleX(-1);}
+.swo-streak-r{width:0;animation:streakRight .7s ease .5s forwards;}
+.confetti-piece{position:absolute;width:8px;height:8px;border-radius:2px;animation:confettiDrop linear forwards;}
 
 #flash-overlay{position:fixed;inset:0;z-index:9000;pointer-events:none;opacity:0;background:radial-gradient(ellipse at center,#ffffff 0%,#ffe87a 40%,#fff 100%);}
 #flash-overlay.blasting{animation:flashBlast 2s ease forwards;}
@@ -256,6 +350,34 @@ body.shaking{animation:screenShake .55s ease;}
 
 <!-- ROUND WIN POPUP -->
 <div id="round-win-popup"></div>
+
+<!-- ══ SERIES WINNER OVERLAY ══ -->
+<div id="series-winner-overlay">
+  <div id="swo-starburst">
+    <svg width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g>
+        <line x1="300" y1="0" x2="300" y2="600" stroke="#fbbf24" stroke-width="1"/>
+        <line x1="0" y1="300" x2="600" y2="300" stroke="#fbbf24" stroke-width="1"/>
+        <line x1="88" y1="88" x2="512" y2="512" stroke="#fbbf24" stroke-width="1"/>
+        <line x1="512" y1="88" x2="88" y2="512" stroke="#fbbf24" stroke-width="1"/>
+        <line x1="0" y1="150" x2="600" y2="450" stroke="#fbbf24" stroke-width=".5"/>
+        <line x1="0" y1="450" x2="600" y2="150" stroke="#fbbf24" stroke-width=".5"/>
+        <line x1="150" y1="0" x2="450" y2="600" stroke="#fbbf24" stroke-width=".5"/>
+        <line x1="450" y1="0" x2="150" y2="600" stroke="#fbbf24" stroke-width=".5"/>
+        <line x1="0" y1="50" x2="600" y2="550" stroke="#fbbf24" stroke-width=".3"/>
+        <line x1="0" y1="550" x2="600" y2="50" stroke="#fbbf24" stroke-width=".3"/>
+        <line x1="50" y1="0" x2="550" y2="600" stroke="#fbbf24" stroke-width=".3"/>
+        <line x1="550" y1="0" x2="50" y2="600" stroke="#fbbf24" stroke-width=".3"/>
+      </g>
+    </svg>
+  </div>
+  <div id="swo-glow-ring"></div>
+  <div id="swo-streaks"><div class="swo-streak-l"></div><div class="swo-streak-r"></div></div>
+  <div id="swo-crown">🏆</div>
+  <div id="swo-label">SERIES WINNER</div>
+  <div id="swo-name">Player Name</div>
+  <div id="swo-sub">Champion of the match!</div>
+</div>
 
 <div id="autostart-banner">
   <span style="font-size:13px;font-weight:700;color:#6ee7b7;">⚡ Room full — game starting automatically!</span>
@@ -803,6 +925,53 @@ function renderSeriesRows(container, mode='full'){
   });
 }
 
+// ── SERIES WINNER OVERLAY ──
+function showSeriesWinnerOverlay(winnerName, iWon){
+  const overlay=document.getElementById('series-winner-overlay');
+  document.getElementById('swo-name').textContent=iWon?'YOU WIN!':winnerName;
+  document.getElementById('swo-label').textContent='🏆 SERIES WINNER';
+  document.getElementById('swo-sub').textContent=iWon?'Congratulations, Champion!':'Better luck next time!';
+  document.getElementById('swo-crown').textContent=iWon?'🏆':'👑';
+
+  // Spawn confetti
+  spawnConfetti(overlay, iWon);
+
+  overlay.classList.remove('show');
+  void overlay.offsetWidth;
+  overlay.classList.add('show');
+
+  // Auto-hide after 5 seconds
+  setTimeout(()=>{overlay.classList.remove('show');}, 5000);
+}
+
+function spawnConfetti(container, colorful=true){
+  // Remove old confetti
+  container.querySelectorAll('.confetti-piece').forEach(el=>el.remove());
+  const colors=colorful
+    ?['#fbbf24','#10b981','#6366f1','#ef4444','#e879f9','#00E5FF','#FF6D00']
+    :['#fbbf24','#f59e0b','#fef08a'];
+  const count=60;
+  for(let i=0;i<count;i++){
+    const piece=document.createElement('div');
+    piece.className='confetti-piece';
+    const color=colors[Math.floor(Math.random()*colors.length)];
+    const size=Math.random()*8+4;
+    const x=Math.random()*100;
+    const delay=Math.random()*2;
+    const dur=Math.random()*2+2;
+    const rot=Math.random()*360;
+    piece.style.cssText=`
+      left:${x}%;top:-10px;
+      width:${size}px;height:${size}px;
+      background:${color};
+      border-radius:${Math.random()>.5?'50%':'2px'};
+      animation:confettiDrop ${dur}s linear ${delay}s forwards;
+      transform:rotate(${rot}deg);
+    `;
+    container.appendChild(piece);
+  }
+}
+
 // ── POWER SYSTEM ──
 function usePower(type){
   if(!roomPowerMode||G.powers[type]||isSoloMode||!G.running||G.dead||G.paused||!roomRef||!mySlot)return;
@@ -1226,6 +1395,16 @@ function listenRoom(){
         });
       }
     }
+    if(d.status==='new_series'){
+      roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;
+      if(typeof d.totalRounds!=='undefined')totalRounds=d.totalRounds;
+      currentRound=1;seriesWins={};
+      roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
+        document.getElementById('wait-code').textContent=roomId;
+        updateWaitBadges();
+        showScreen('s-waiting');listenRoom();
+      });
+    }
     if(d.status==='abandoned'){alert('Room abandoned.');cancelWait();}
   });
 }
@@ -1299,6 +1478,7 @@ function beginBattle(slots,data){
   garbListener=garbRef.on('value',snap=>{const v=snap.val()||0;if(v>0){G.pendingGarbage+=v;garbRef.set(0);updateGarbage();}});
   listenPowers(slots);
   showScreen('s-game');
+  // ── FIX: Show correct round number in countdown label ──
   const roundLbl=totalRounds>1?`Round ${currentRound} of ${totalRounds}`:'Get Ready';
   doCountdown(()=>initGame(), roundLbl);
 }
@@ -1334,6 +1514,9 @@ function checkRoundWinner(){
   const winnerName=alive.length===1?alive[0].name:'Nobody';
   const iWon=winnerSlot===mySlot;
 
+  // ── Save the round number before any increment for display ──
+  const thisRoundNum = currentRound;
+
   // Award series win
   if(winnerSlot){
     if(!seriesWins[winnerSlot])seriesWins[winnerSlot]=0;
@@ -1348,22 +1531,26 @@ function checkRoundWinner(){
   cleanupListeners();
 
   if(seriesOver||totalRounds===1){
-    // Series/match winner
+    // Series/match winner — show winner overlay first, then game over screen
     if(iWon)recordWin(myName);
-    setTimeout(()=>showGameOver(iWon,winnerName,false,true),900);
+    // Show series winner animation for 2.5s before transitioning to game over
+    showSeriesWinnerOverlay(winnerName, iWon);
+    setTimeout(()=>showGameOver(iWon,winnerName,false,true,thisRoundNum), 2600);
   } else {
-    // Round over, series continues
-    // Show round result overlay
-    showRoundWinPopup(winnerName,iWon,currentRound);
-    setTimeout(()=>showGameOver(iWon,winnerName,false,false),900);
+    // Round over, series continues — show round result popup
+    showRoundWinPopup(winnerName,iWon,thisRoundNum);
+    setTimeout(()=>showGameOver(iWon,winnerName,false,false,thisRoundNum),900);
+  }
+
+  // ── Increment currentRound for next round AFTER saving thisRoundNum ──
+  if(!seriesOver && totalRounds>1){
+    currentRound++;
   }
 
   // Host sets up next round state in Firebase
   if(myIsCreator){
     if(!seriesOver&&totalRounds>1){
-      // Prep next round state (guests will be notified via gameoverRoomListener)
-      const nextRound=currentRound+1;
-      const updates={currentRound:nextRound,seriesWins,status:'gameover',roundWinner:winnerSlot||'none',roundWinnerName:winnerName};
+      const updates={currentRound,seriesWins,status:'gameover',roundWinner:winnerSlot||'none',roundWinnerName:winnerName};
       roomRef.update(updates);
     } else {
       roomRef.update({status:'gameover',seriesOver:true,seriesWinner:winnerSlot||'none',seriesWinnerName:winnerName,seriesWins});
@@ -1376,7 +1563,6 @@ function checkRoundWinner(){
       const d=snap.val();if(!d)return;
       if(d.status==='next_round'){
         roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;
-        // will be handled by listenRoom upon re-entering waiting screen
         if(typeof d.totalRounds!=='undefined')totalRounds=d.totalRounds;
         if(typeof d.currentRound!=='undefined')currentRound=d.currentRound;
         if(d.seriesWins)Object.assign(seriesWins,d.seriesWins);
@@ -1422,7 +1608,9 @@ function cleanupListeners(){
   stopPowerListener();oppListeners={};garbListener=null;
 }
 
-function showGameOver(won,winnerName,isSolo=false,seriesOver=true){
+// ── FIX: Added roundNum parameter so title shows the correct played round ──
+function showGameOver(won,winnerName,isSolo=false,seriesOver=true,roundNum=null){
+  const displayRound = roundNum !== null ? roundNum : currentRound;
   const allElims=[...eliminatedRanks].reverse();
   const winner=!isSolo?currentPlayers.find(p=>!p.dead)||eliminatedRanks[eliminatedRanks.length-1]:null;
   const needed=Math.ceil(totalRounds/2);
@@ -1431,7 +1619,8 @@ function showGameOver(won,winnerName,isSolo=false,seriesOver=true){
   document.getElementById('go-icon').textContent=won?'🏆':'💀';
   if(isSolo)document.getElementById('go-title').textContent='Game Over';
   else if(isSeriesEnd)document.getElementById('go-title').textContent=won?'You Win! 🎉':`${winnerName} Wins!`;
-  else document.getElementById('go-title').textContent=won?`Round ${currentRound-1} ✓`:`Round ${currentRound-1} Over`;
+  // ── FIX: Use displayRound (not currentRound-1) for correct round number ──
+  else document.getElementById('go-title').textContent=won?`Round ${displayRound} ✓`:`Round ${displayRound} Over`;
   document.getElementById('go-sub').textContent=isSolo?`Solo run complete! Score: ${G.score.toLocaleString()}`:isSeriesEnd?(won?'Last one standing — flawless!':'Better luck next time!'):(won?'You won this round!':winnerName+' won the round!');
   document.getElementById('go-score').textContent=G.score.toLocaleString();
   document.getElementById('go-lines').textContent=G.lines;
@@ -1444,7 +1633,7 @@ function showGameOver(won,winnerName,isSolo=false,seriesOver=true){
     renderSeriesRows(document.getElementById('go-series-rows'),'full');
     const myWins=seriesWins[mySlot]||0;
     const maxWins=Math.max(...currentPlayers.map(p=>seriesWins[p.slot]||0));
-    const roundsLeft=totalRounds-((currentRound||1)-1)-1;
+    const roundsLeft=totalRounds-displayRound;
     if(isSeriesEnd)document.getElementById('go-series-progress').textContent=won?`You won the series ${myWins}–${maxWins-myWins>0?maxWins:0}!`:`Series complete — ${winnerName} wins!`;
     else document.getElementById('go-series-progress').textContent=`${roundsLeft} more round${roundsLeft!==1?'s':''} to play • First to ${needed} wins`;
   } else seriesSection.style.display='none';
@@ -1480,7 +1669,9 @@ function showGameOver(won,winnerName,isSolo=false,seriesOver=true){
       nextBtn.style.display='none';
       newBtn.style.display='block';newBtn.textContent='🔄 New Series (same room)';
     } else {
-      nextBtn.style.display='block';nextBtn.textContent=`▶ Start Round ${currentRound}`;
+      nextBtn.style.display='block';
+      // ── FIX: currentRound is already incremented at this point, so use it directly ──
+      nextBtn.textContent=`▶ Start Round ${currentRound}`;
       newBtn.style.display='block';newBtn.textContent='⏭ Skip to new series';
     }
   } else {
@@ -1544,6 +1735,8 @@ function goLobby(){
   document.getElementById('power-panel').style.display='none';
   document.getElementById('series-scoreboard').style.display='none';
   document.getElementById('round-badge').style.display='none';
+  // Hide series winner overlay if showing
+  document.getElementById('series-winner-overlay').classList.remove('show');
   if(lbVisible){lbVisible=false;document.getElementById('leaderboard-panel').classList.remove('show');lbRef.off('value');}
   showScreen('s-lobby');startRoomsBrowser();
 }
