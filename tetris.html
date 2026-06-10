@@ -1497,7 +1497,7 @@ function beginBattle(slots,data){
     const v=snap.val()||0;
     if(v>0){
       // Queue it with 1.0–1.5s random delay
-      const delayMs=1000+Math.random()*500;
+      const delayMs=2500+Math.random()*1000;
       G.garbageQueue.push({amount:v,deliverAt:Date.now()+delayMs});
       garbRef.set(0);
       updateGarbage();
