@@ -621,10 +621,10 @@ const ROOM_EXPIRE_SECONDS=30;
 const GRAVITY_STAGES=[
   {minSec:0,   cps:1,  label:'1×',  pct:5},
   {minSec:20, cps:2,  label:'2×',  pct:18},
-  {minSec:40, cps:4,  label:'3×',  pct:35},
-  {minSec:100, cps:8,  label:'4×',  pct:58},
-  {minSec:380, cps:12, label:'7×', pct:78},
-  {minSec:500, cps:20, label:'10×', pct:100},
+  {minSec:30, cps:4,  label:'3×',  pct:35},
+  {minSec:60, cps:8,  label:'4×',  pct:58},
+  {minSec:140, cps:12, label:'6×', pct:78},
+  {minSec:200, cps:20, label:'8×', pct:100},
 ];
 function getGravityStage(elapsedSec){
   let stage=GRAVITY_STAGES[0];
@@ -1497,7 +1497,7 @@ function beginBattle(slots,data){
     const v=snap.val()||0;
     if(v>0){
       // Queue it with 1.0–1.5s random delay
-      const delayMs=5000+Math.random()*2000;
+      const delayMs=7000+Math.random()*2000;
       G.garbageQueue.push({amount:v,deliverAt:Date.now()+delayMs});
       garbRef.set(0);
       updateGarbage();
