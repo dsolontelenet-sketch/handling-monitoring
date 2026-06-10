@@ -620,10 +620,10 @@ const ROOM_EXPIRE_SECONDS=30;
 // interval = 1000/cellsPerSec capped at drop tick
 const GRAVITY_STAGES=[
   {minSec:0,   cps:1,  label:'1×',  pct:5},
-  {minSec:30, cps:2,  label:'2×',  pct:18},
-  {minSec:100, cps:4,  label:'4×',  pct:35},
-  {minSec:200, cps:8,  label:'6×',  pct:58},
-  {minSec:380, cps:12, label:'8×', pct:78},
+  {minSec:20, cps:2,  label:'2×',  pct:18},
+  {minSec:40, cps:4,  label:'3×',  pct:35},
+  {minSec:100, cps:8,  label:'4×',  pct:58},
+  {minSec:380, cps:12, label:'7×', pct:78},
   {minSec:500, cps:20, label:'10×', pct:100},
 ];
 function getGravityStage(elapsedSec){
