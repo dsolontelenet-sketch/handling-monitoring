@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -74,6 +75,16 @@ body{
 @keyframes winnerTextGlow{0%,100%{text-shadow:0 0 20px rgba(251,191,36,.4),0 0 60px rgba(251,191,36,.2);}50%{text-shadow:0 0 40px rgba(251,191,36,.9),0 0 120px rgba(251,191,36,.5),0 0 200px rgba(251,191,36,.2);}}
 @keyframes streakLeft{0%{width:0;opacity:1;}70%{opacity:.7;}100%{width:35%;opacity:0;}}
 @keyframes streakRight{0%{width:0;opacity:1;}70%{opacity:.7;}100%{width:35%;opacity:0;}}
+
+/* ── LEAVE TOAST ── */
+@keyframes leaveToastIn{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
+@keyframes leaveToastOut{from{transform:translateX(0);opacity:1;}to{transform:translateX(120%);opacity:0;}}
+#leave-toast-container{position:fixed;top:70px;right:16px;z-index:99999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.leave-toast{background:rgba(10,14,30,.97);border:1px solid rgba(239,68,68,.4);border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:10px;min-width:220px;max-width:320px;box-shadow:0 8px 30px rgba(0,0,0,.5),0 0 0 1px rgba(239,68,68,.15);animation:leaveToastIn .35s cubic-bezier(.34,1.56,.64,1) both;}
+.leave-toast.out{animation:leaveToastOut .3s ease forwards;}
+.leave-toast-icon{font-size:18px;flex-shrink:0;}
+.leave-toast-msg{font-size:12px;font-weight:700;color:white;line-height:1.4;}
+.leave-toast-sub{font-size:10px;color:#94a3b8;margin-top:1px;}
 
 .float-anim{animation:floatY 3.2s ease-in-out infinite;}
 .pop-in{animation:popIn .6s cubic-bezier(.34,1.56,.64,1) both;}
@@ -221,6 +232,9 @@ body{
 </style>
 </head>
 <body>
+
+<!-- LEAVE TOAST CONTAINER -->
+<div id="leave-toast-container"></div>
 
 <!-- ROUND WIN POPUP -->
 <div id="round-win-popup"></div>
@@ -616,8 +630,7 @@ const SHAPES=[null,[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[0,1,1],[1,1,0]]
 const SCORE_TABLE=[0,100,300,500,800];
 const ROOM_EXPIRE_SECONDS=30;
 
-// ── GRAVITY TABLE: { minSec, cellsPerSec, intervalMs } ──
-// interval = 1000/cellsPerSec capped at drop tick
+// ── GRAVITY TABLE ──
 const GRAVITY_STAGES=[
   {minSec:0,   cps:1,  label:'1×',  pct:5},
   {minSec:20, cps:2,  label:'2×',  pct:18},
@@ -721,16 +734,13 @@ function drawCell(ctx,col,row,ci,size,alpha=1,opts={}){
 let G={
   board:null,piece:null,bag:[],hold:null,holdUsed:false,
   score:0,lines:0,level:1,combo:-1,
-  // NEW: queued garbage (delayed delivery)
-  pendingGarbage:0,        // garbage queued by opponent
-  garbageQueue:[],         // [{amount, deliverAt}] — delayed
-  // NEW: countering (outgoing can cancel incoming)
-  outgoingBuffer:0,        // garbage about to be sent, can cancel incoming
+  pendingGarbage:0,
+  garbageQueue:[],
+  outgoingBuffer:0,
   running:false,paused:false,dead:false,
   dropTimer:null,lockTimeout:null,
-  gravityStartMs:0,        // timestamp when game began (for gravity calc)
-  lastGravityCheck:0,      // last elapsed seconds gravity was recalculated
-  // T-spin tracking
+  gravityStartMs:0,
+  lastGravityCheck:0,
   lastMoveWasRotation:false,
   lastKickIndex:-1,
 };
@@ -885,7 +895,6 @@ function setMpBtn(b,sel){if(sel){b.style.background='linear-gradient(135deg,#636
 function rotateCW(s){const R=s.length,C=s[0].length,r=Array.from({length:C},()=>Array(R).fill(0));for(let i=0;i<R;i++)for(let j=0;j<C;j++)r[j][R-1-i]=s[i][j];return r;}
 function getShape(ti,rot){let s=SHAPES[ti].map(r=>[...r]);for(let i=0;i<rot%4;i++)s=rotateCW(s);return s;}
 
-// Wall kick tables
 const WK_JLSTZ=[[[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],[[0,0],[1,0],[1,-1],[0,2],[1,2]],[[0,0],[1,0],[1,1],[0,-2],[1,-2]],[[0,0],[-1,0],[-1,-1],[0,2],[-1,2]]];
 const WK_I=[[[0,0],[-2,0],[1,0],[-2,-1],[1,2]],[[0,0],[-1,0],[2,0],[-1,2],[2,-1]],[[0,0],[2,0],[-1,0],[2,1],[-1,-2]],[[0,0],[1,0],[-2,0],[1,-2],[-2,1]]];
 function getWallKicksForRotation(ti,fromRot,dir){const toRot=(fromRot+dir+4)%4;let tableIdx=dir===1?fromRot:toRot;const table=ti===1?WK_I:WK_JLSTZ;const kicks=table[tableIdx];if(dir===1)return kicks;return kicks.map(([kx,ky])=>[-kx,-ky]);}
@@ -898,66 +907,34 @@ function cells(p,dx=0,dy=0,dr=0){const rot=(p.rot+dr+4)%4,s=getShape(p.ti,rot),r
 function valid(board,p,dx=0,dy=0,rot_override=null){const rot=rot_override!==null?rot_override:p.rot,s=getShape(p.ti,rot);for(let r=0;r<s.length;r++)for(let c=0;c<s[0].length;c++){if(!s[r][c])continue;const x=p.px+c+dx,y=p.py+r+dy;if(x<0||x>=COLS||y>=ROWS)return false;if(y>=0&&board[y][x])return false;}return true;}
 
 // ── T-SPIN DETECTION ──
-// Returns: null | 'mini' | 'full'
 function detectTSpin(){
-  if(!G.piece||G.piece.ti!==3)return null; // only T piece (index 3)
+  if(!G.piece||G.piece.ti!==3)return null;
   if(!G.lastMoveWasRotation)return null;
   const p=G.piece;
-  // 4 corners of the T bounding box
-  const corners=[
-    [p.px,p.py],[p.px+2,p.py],[p.px,p.py+2],[p.px+2,p.py+2]
-  ];
+  const corners=[[p.px,p.py],[p.px+2,p.py],[p.px,p.py+2],[p.px+2,p.py+2]];
   let filled=0;
-  for(const[cx,cy]of corners){
-    if(cx<0||cx>=COLS||cy<0||cy>=ROWS||G.board[cy]?.[cx])filled++;
-  }
+  for(const[cx,cy]of corners){if(cx<0||cx>=COLS||cy<0||cy>=ROWS||G.board[cy]?.[cx])filled++;}
   if(filled<3)return null;
-  // Determine front corners (the 2 in front of the T's "head")
-  // T head direction based on rotation:
-  // rot0=up, rot1=right, rot2=down, rot3=left
-  const frontPairs=[
-    [[p.px,p.py],[p.px+2,p.py]],   // rot0 front = top corners
-    [[p.px+2,p.py],[p.px+2,p.py+2]], // rot1 front = right corners
-    [[p.px,p.py+2],[p.px+2,p.py+2]], // rot2 front = bottom corners
-    [[p.px,p.py],[p.px,p.py+2]],    // rot3 front = left corners
-  ];
+  const frontPairs=[[[p.px,p.py],[p.px+2,p.py]],[[p.px+2,p.py],[p.px+2,p.py+2]],[[p.px,p.py+2],[p.px+2,p.py+2]],[[p.px,p.py],[p.px,p.py+2]]];
   let frontFilled=0;
-  for(const[cx,cy]of frontPairs[p.rot]){
-    if(cx<0||cx>=COLS||cy<0||cy>=ROWS||G.board[cy]?.[cx])frontFilled++;
-  }
+  for(const[cx,cy]of frontPairs[p.rot]){if(cx<0||cx>=COLS||cy<0||cy>=ROWS||G.board[cy]?.[cx])frontFilled++;}
   if(frontFilled===2)return'full';
-  // T-spin mini: last kick was index >=1 (wall kick used)
   if(G.lastKickIndex>=1)return'full';
   return'mini';
 }
 
-// ── PERFECT CLEAR DETECTION ──
-function detectPerfectClear(){
-  return G.board.every(row=>row.every(v=>v===0));
-}
+// ── PERFECT CLEAR ──
+function detectPerfectClear(){return G.board.every(row=>row.every(v=>v===0));}
 
 // ── GARBAGE CALCULATION ──
-// Returns lines of garbage to send based on clear type
 function calcGarbage(linesCleared, tspinType, isPerfectClear){
   let gar=0;
-  if(tspinType==='full'){
-    if(linesCleared===1)gar=2;
-    else if(linesCleared===2)gar=4;
-    else if(linesCleared===3)gar=6;
-    else gar=0;
-  } else if(tspinType==='mini'){
-    if(linesCleared===1)gar=1;
-    else gar=0; // T-spin mini 0 lines = 0
-  } else {
-    // Normal clears
-    const table=[0,0,1,2,4]; // single=0, double=1, triple=2, tetris=4
-    gar=table[Math.min(linesCleared,4)]||0;
-  }
-  // Combo bonus (after first combo)
+  if(tspinType==='full'){if(linesCleared===1)gar=2;else if(linesCleared===2)gar=4;else if(linesCleared===3)gar=6;}
+  else if(tspinType==='mini'){if(linesCleared===1)gar=1;}
+  else{const table=[0,0,1,2,4];gar=table[Math.min(linesCleared,4)]||0;}
   if(G.combo>0)gar+=G.combo;
-  // Perfect clear bonus
   if(isPerfectClear)gar+=10;
-  return Math.min(gar,20); // cap at 20
+  return Math.min(gar,20);
 }
 
 // ── SOLO MODE ──
@@ -999,40 +976,27 @@ function initGame(){
   G.lastMoveWasRotation=false;G.lastKickIndex=-1;
   G.gravityStartMs=Date.now();G.lastGravityCheck=0;
   updateStats();updateGarbage();updateCombo();updateSeriesUI();updateGravityIndicator();
-  // Start gravity check interval
   if(G.gravityCheckTimer)clearInterval(G.gravityCheckTimer);
   G.gravityCheckTimer=setInterval(()=>{
     if(!G.running||G.dead)return;
     const elapsed=Math.floor((Date.now()-G.gravityStartMs)/1000);
     if(elapsed!==G.lastGravityCheck){
       G.lastGravityCheck=elapsed;
-      // Only restart drop if gravity stage changed
       const newStage=getGravityStage(elapsed);
       const oldStage=getGravityStage(Math.max(0,elapsed-1));
-      if(newStage.cps!==oldStage.cps&&!G.paused){
-        stopDrop();startDrop();
-      }
+      if(newStage.cps!==oldStage.cps&&!G.paused){stopDrop();startDrop();}
       updateGravityIndicator();
     }
   },1000);
   if(!spawn())return;startDrop();renderAll();
-  // Start garbage delivery loop
   if(garbageDeliveryTimer)clearInterval(garbageDeliveryTimer);
   garbageDeliveryTimer=setInterval(deliverQueuedGarbage,100);
 }
 function spawn(){G.piece=mkPiece(pullNext());G.holdUsed=false;G.lastMoveWasRotation=false;G.lastKickIndex=-1;if(!valid(G.board,G.piece)){die();return false;}return true;}
 
 // ── DROP / LOCK ──
-function currentDropInterval(){
-  const elapsed=(Date.now()-G.gravityStartMs)/1000;
-  return gravityInterval(elapsed);
-}
-function startDrop(){
-  clearInterval(G.dropTimer);
-  if(!G.running||G.dead||G.paused)return;
-  const interval=currentDropInterval();
-  G.dropTimer=setInterval(()=>{if(G.running&&!G.paused&&!G.dead)autoDown();},interval);
-}
+function currentDropInterval(){const elapsed=(Date.now()-G.gravityStartMs)/1000;return gravityInterval(elapsed);}
+function startDrop(){clearInterval(G.dropTimer);if(!G.running||G.dead||G.paused)return;const interval=currentDropInterval();G.dropTimer=setInterval(()=>{if(G.running&&!G.paused&&!G.dead)autoDown();},interval);}
 function stopDrop(){clearInterval(G.dropTimer);G.dropTimer=null;}
 function autoDown(){if(valid(G.board,G.piece,0,1)){G.piece.py++;G.lastMoveWasRotation=false;renderBoard();}else startLock();}
 function startLock(){if(G.lockTimeout)return;G.lockTimeout=setTimeout(()=>{G.lockTimeout=null;if(!valid(G.board,G.piece,0,1))lock();},480);}
@@ -1040,37 +1004,21 @@ function clearLock(){clearTimeout(G.lockTimeout);G.lockTimeout=null;}
 function resetLock(){if(G.lockTimeout){clearLock();startLock();}}
 
 // ── PIECE ACTIONS ──
-function moveH(dx){
-  if(!live())return;
-  if(valid(G.board,G.piece,dx,0)){G.piece.px+=dx;G.lastMoveWasRotation=false;resetLock();renderBoard();}
-}
-function softDrop(){
-  if(!live())return;
-  if(valid(G.board,G.piece,0,1)){G.piece.py++;G.score++;G.lastMoveWasRotation=false;clearLock();renderBoard();}
-  else startLock();
-}
-function hardDrop(){
-  if(!live())return;
-  let d=0;while(valid(G.board,G.piece,0,d+1))d++;
-  G.piece.py+=d;G.score+=d*2;G.lastMoveWasRotation=false;clearLock();lock();
-}
+function moveH(dx){if(!live())return;if(valid(G.board,G.piece,dx,0)){G.piece.px+=dx;G.lastMoveWasRotation=false;resetLock();renderBoard();}}
+function softDrop(){if(!live())return;if(valid(G.board,G.piece,0,1)){G.piece.py++;G.score++;G.lastMoveWasRotation=false;clearLock();renderBoard();}else startLock();}
+function hardDrop(){if(!live())return;let d=0;while(valid(G.board,G.piece,0,d+1))d++;G.piece.py+=d;G.score+=d*2;G.lastMoveWasRotation=false;clearLock();lock();}
 function rotate(dir){
   if(!live())return;
   const newRot=(G.piece.rot+dir+4)%4;
   const kicks=getWallKicksForRotation(G.piece.ti,G.piece.rot,dir);
   for(let ki=0;ki<kicks.length;ki++){
     const[kx,ky]=kicks[ki];
-    if(valid(G.board,G.piece,kx,-ky,newRot)){
-      G.piece.rot=newRot;G.piece.px+=kx;G.piece.py-=ky;
-      G.lastMoveWasRotation=true;G.lastKickIndex=ki;
-      resetLock();renderBoard();return;
-    }
+    if(valid(G.board,G.piece,kx,-ky,newRot)){G.piece.rot=newRot;G.piece.px+=kx;G.piece.py-=ky;G.lastMoveWasRotation=true;G.lastKickIndex=ki;resetLock();renderBoard();return;}
   }
 }
 function holdPiece(){
   if(!live()||G.holdUsed)return;
-  G.holdUsed=true;
-  const cur=G.piece.ti;
+  G.holdUsed=true;const cur=G.piece.ti;
   if(G.hold===null){G.hold=cur;if(!spawn())return;}
   else{const h=G.hold;G.hold=cur;G.piece=mkPiece(h);if(!valid(G.board,G.piece)){die();return;}}
   clearLock();startDrop();renderAll();
@@ -1082,98 +1030,52 @@ function deliverQueuedGarbage(){
   if(!G.running||G.dead)return;
   const now=Date.now();
   let delivered=0;
-  G.garbageQueue=G.garbageQueue.filter(item=>{
-    if(item.deliverAt<=now){delivered+=item.amount;return false;}
-    return true;
-  });
+  G.garbageQueue=G.garbageQueue.filter(item=>{if(item.deliverAt<=now){delivered+=item.amount;return false;}return true;});
   if(delivered>0){
-    // Cancel with outgoing buffer first
-    const cancel=Math.min(delivered,G.outgoingBuffer);
-    G.outgoingBuffer-=cancel;
-    delivered-=cancel;
-    if(delivered>0){
-      applyGarbage(delivered);
-    }
+    const cancel=Math.min(delivered,G.outgoingBuffer);G.outgoingBuffer-=cancel;delivered-=cancel;
+    if(delivered>0)applyGarbage(delivered);
   }
-  // Update display
   const queuedTotal=G.garbageQueue.reduce((s,i)=>s+i.amount,0)+G.outgoingBuffer;
-  G.pendingGarbage=queuedTotal;
-  updateGarbage();
+  G.pendingGarbage=queuedTotal;updateGarbage();
 }
 
 // ── GARBAGE COUNTERING ──
-// When player sends garbage, first cancel their own incoming queue
 function sendGarbage(lines){
   if(!roomRef||isSoloMode)return;
-  // Cancel incoming first
   let toSend=lines;
-  // Cancel from pending queue (earliest first)
-  for(let i=0;i<G.garbageQueue.length&&toSend>0;i++){
-    const cancel=Math.min(toSend,G.garbageQueue[i].amount);
-    G.garbageQueue[i].amount-=cancel;
-    toSend-=cancel;
-  }
+  for(let i=0;i<G.garbageQueue.length&&toSend>0;i++){const cancel=Math.min(toSend,G.garbageQueue[i].amount);G.garbageQueue[i].amount-=cancel;toSend-=cancel;}
   G.garbageQueue=G.garbageQueue.filter(x=>x.amount>0);
-  // Update display
-  G.pendingGarbage=G.garbageQueue.reduce((s,i)=>s+i.amount,0);
-  updateGarbage();
-  if(toSend<=0)return; // all cancelled, nothing to send
-  // Send remaining to opponents
+  G.pendingGarbage=G.garbageQueue.reduce((s,i)=>s+i.amount,0);updateGarbage();
+  if(toSend<=0)return;
   const living=currentPlayers.filter(p=>p.slot!==mySlot&&!p.dead);
   if(!living.length)return;
-  for(const p of living){
-    DB.ref(`tetris2/rooms/${roomId}/garbage/${p.slot}`).transaction(cur=>(cur||0)+toSend);
-  }
+  for(const p of living){DB.ref(`tetris2/rooms/${roomId}/garbage/${p.slot}`).transaction(cur=>(cur||0)+toSend);}
 }
 
 // ── LOCK + LINE CLEAR ──
 function lock(){
   clearLock();
   for(const[x,y]of cells(G.piece)){if(y<0){die();return;}G.board[y][x]=G.piece.ti;}
-  // Detect T-spin BEFORE clearing lines
   const tspinType=detectTSpin();
   const cleared=clearLines();
-  if(cleared===0){
-    G.combo=-1;updateCombo();
-    // Don't apply garbage here — it arrives via deliverQueuedGarbage
-  } else {
+  if(cleared===0){G.combo=-1;updateCombo();}
+  else{
     G.combo++;
     const pts=Math.round((SCORE_TABLE[Math.min(cleared,4)]||800)*(1+G.combo*.35)*G.level);
-    // T-spin score bonuses
     let bonus=0;
     if(tspinType==='full')bonus={1:800,2:1200,3:1600}[cleared]||0;
     else if(tspinType==='mini')bonus=100;
-    G.score+=pts+bonus;
-    G.lines+=cleared;G.level=Math.floor(G.lines/10)+1;
+    G.score+=pts+bonus;G.lines+=cleared;G.level=Math.floor(G.lines/10)+1;
     const isPerfect=detectPerfectClear();
-    if(!isSoloMode){
-      const gar=calcGarbage(cleared,tspinType,isPerfect);
-      if(gar>0)sendGarbage(gar);
-    }
+    if(!isSoloMode){const gar=calcGarbage(cleared,tspinType,isPerfect);if(gar>0)sendGarbage(gar);}
     updateCombo();showClearFx(cleared,tspinType,isPerfect);updateStats();startDrop();
   }
   G.lastMoveWasRotation=false;G.lastKickIndex=-1;
   if(!isSoloMode)syncState();
   if(!spawn())return;renderAll();
 }
-
-function clearLines(){
-  let c=0;
-  for(let r=ROWS-1;r>=0;r--){
-    if(G.board[r].every(v=>v!==0)){G.board.splice(r,1);G.board.unshift(Array(COLS).fill(0));c++;r++;}
-  }
-  return c;
-}
-
-function applyGarbage(n){
-  for(let i=0;i<n;i++){
-    G.board.shift();
-    const gap=0|Math.random()*COLS;
-    const row=Array(COLS).fill(8);row[gap]=0;
-    G.board.push(row);
-  }
-  renderBoard();
-}
+function clearLines(){let c=0;for(let r=ROWS-1;r>=0;r--){if(G.board[r].every(v=>v!==0)){G.board.splice(r,1);G.board.unshift(Array(COLS).fill(0));c++;r++;}}return c;}
+function applyGarbage(n){for(let i=0;i<n;i++){G.board.shift();const gap=0|Math.random()*COLS;const row=Array(COLS).fill(8);row[gap]=0;G.board.push(row);}renderBoard();}
 
 // ── GHOST ──
 function ghost(){if(!G.piece)return null;let gy=G.piece.py;while(valid(G.board,{...G.piece,py:gy+1},0,0))gy++;return{...G.piece,py:gy};}
@@ -1264,37 +1166,21 @@ function updateGarbage(){
   const box=document.getElementById('garbage-box');
   if(isSoloMode){box.style.display='none';return;}
   const total=G.garbageQueue.reduce((s,i)=>s+i.amount,0);
-  if(total>0){
-    box.style.display='block';
-    box.style.background='rgba(239,68,68,.12)';
-    box.style.border='1px solid rgba(239,68,68,.35)';
-    document.getElementById('garbage-cnt').textContent=total;
-    document.getElementById('garbage-bar').style.width=Math.min(100,total*8)+'%';
-  } else {
-    box.style.display='none';
-  }
+  if(total>0){box.style.display='block';box.style.background='rgba(239,68,68,.12)';box.style.border='1px solid rgba(239,68,68,.35)';document.getElementById('garbage-cnt').textContent=total;document.getElementById('garbage-bar').style.width=Math.min(100,total*8)+'%';}
+  else{box.style.display='none';}
 }
 function updateCombo(){const box=document.getElementById('combo-box');if(G.combo>0){box.style.display='block';document.getElementById('combo-val').textContent=G.combo+'x';}else{box.style.display='none';}}
 function updateAliveCount(){if(isSoloMode){document.getElementById('alive-pill').textContent='SOLO';return;}const alive=currentPlayers.filter(p=>!p.dead).length;document.getElementById('alive-pill').textContent=`${alive} / ${currentPlayers.length} ALIVE`;}
 
 function showClearFx(lines, tspinType, isPerfect){
   let txt='',color='#f1f5f9',sub='';
-  if(tspinType==='full'){
-    const tnames=['','T-SPIN 1L','T-SPIN 2L','T-SPIN 3L'];
-    txt=tnames[lines]||'T-SPIN';color='#CC44FF';
-  } else if(tspinType==='mini'){
-    txt='T-SPIN MINI';color='#e879f9';
-  } else {
-    const texts=['','SINGLE','DOUBLE','TRIPLE','TETRIS!'];
-    const colors=['','#FFE000','#00FF88','#CC44FF','#FF3355'];
-    txt=texts[lines]||`${lines} LINES`;color=colors[Math.min(lines,4)]||'#f1f5f9';
-  }
+  if(tspinType==='full'){const tnames=['','T-SPIN 1L','T-SPIN 2L','T-SPIN 3L'];txt=tnames[lines]||'T-SPIN';color='#CC44FF';}
+  else if(tspinType==='mini'){txt='T-SPIN MINI';color='#e879f9';}
+  else{const texts=['','SINGLE','DOUBLE','TRIPLE','TETRIS!'];const colors=['','#FFE000','#00FF88','#CC44FF','#FF3355'];txt=texts[lines]||`${lines} LINES`;color=colors[Math.min(lines,4)]||'#f1f5f9';}
   if(isPerfect){txt='PERFECT CLEAR!';color='#fbbf24';sub='🌟 +10 bonus garbage!';}
   else if(G.combo>0){sub=`🔥 ${G.combo}× combo!`;}
   const pop=document.getElementById('clear-popup');
-  document.getElementById('cp-text').textContent=txt;
-  document.getElementById('cp-text').style.color=color;
-  document.getElementById('cp-sub').textContent=sub;
+  document.getElementById('cp-text').textContent=txt;document.getElementById('cp-text').style.color=color;document.getElementById('cp-sub').textContent=sub;
   pop.classList.remove('show');void pop.offsetWidth;pop.classList.add('show');
   setTimeout(()=>pop.classList.remove('show'),1500);
 }
@@ -1366,10 +1252,7 @@ async function joinRoom(){
 
 function updateWaitBadges(){
   const rndBadge=document.getElementById('wait-rounds-badge');
-  if(rndBadge){
-    if(totalRounds>1){rndBadge.style.display='inline';rndBadge.textContent=`🏆 ${totalRounds} ROUNDS`;}
-    else rndBadge.style.display='none';
-  }
+  if(rndBadge){if(totalRounds>1){rndBadge.style.display='inline';rndBadge.textContent=`🏆 ${totalRounds} ROUNDS`;}else rndBadge.style.display='none';}
 }
 
 function listenRoom(){
@@ -1384,10 +1267,7 @@ function listenRoom(){
     for(let i=1;i<=maxPlayers;i++){if(d[`p${i}`]){slots.push(`p${i}`);playerData[`p${i}`]=d[`p${i}`];}}
     if(d.status==='waiting'){
       renderWaitingRoom(slots,playerData);
-      if(myIsCreator&&slots.length>=maxPlayers){
-        stopRoomExpiry();showAutostartBanner();
-        setTimeout(()=>{hideAutostartBanner();roomRef.update({status:'playing'});},1200);
-      }
+      if(myIsCreator&&slots.length>=maxPlayers){stopRoomExpiry();showAutostartBanner();setTimeout(()=>{hideAutostartBanner();roomRef.update({status:'playing'});},1200);}
     }
     if(d.status==='playing'){
       stopRoomExpiry();if(d.cols)selectedCols=d.cols;
@@ -1407,9 +1287,7 @@ function listenRoom(){
         if(typeof d.currentRound!=='undefined')currentRound=d.currentRound;
         if(d.seriesWins)Object.assign(seriesWins,d.seriesWins);
         roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
-          document.getElementById('wait-code').textContent=roomId;
-          updateWaitBadges();renderWaitSeriesScore();
-          showScreen('s-waiting');listenRoom();
+          document.getElementById('wait-code').textContent=roomId;updateWaitBadges();renderWaitSeriesScore();showScreen('s-waiting');listenRoom();
         });
       }
     }
@@ -1418,9 +1296,7 @@ function listenRoom(){
       if(typeof d.totalRounds!=='undefined')totalRounds=d.totalRounds;
       currentRound=1;seriesWins={};roundResolved=false;
       roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
-        document.getElementById('wait-code').textContent=roomId;
-        updateWaitBadges();
-        showScreen('s-waiting');listenRoom();
+        document.getElementById('wait-code').textContent=roomId;updateWaitBadges();showScreen('s-waiting');listenRoom();
       });
     }
     if(d.status==='abandoned'){alert('Room abandoned.');cancelWait();}
@@ -1472,9 +1348,50 @@ function cancelWait(){
 }
 function copyCode(){navigator.clipboard.writeText(roomId).then(()=>{const b=document.getElementById('copy-btn');b.textContent='✓ Copied!';setTimeout(()=>b.textContent='📋 Copy code',2000);}).catch(()=>{});}
 
+// ── PLAYER LEAVE DETECTION ──
+function showLeaveToast(name, isHost=false){
+  const container=document.getElementById('leave-toast-container');if(!container)return;
+  const toast=document.createElement('div');toast.className='leave-toast';
+  const sub=isHost?'Host left — you will be sent to lobby shortly…':'They have been removed from the match.';
+  toast.innerHTML=`<div class="leave-toast-icon">🚪</div><div><div class="leave-toast-msg">${name} left the game</div><div class="leave-toast-sub">${sub}</div></div>`;
+  container.appendChild(toast);
+  setTimeout(()=>{toast.classList.add('out');setTimeout(()=>toast.remove(),350);},4500);
+}
+
+function playerLeft(slot, name){
+  const p=currentPlayers.find(x=>x.slot===slot);
+  if(!p||p.dead)return;
+  p.dead=true;
+  if(!eliminatedRanks.find(r=>r.slot===slot))eliminatedRanks.push({slot,name});
+  // Visual: mark as LEFT
+  if(playerBoards[slot]){
+    playerBoards[slot].eliminated=true;
+    const canvas=document.getElementById(`canvas-${slot}`);if(canvas)canvas.classList.add('eliminated');
+    const dot=document.getElementById(`dot-${slot}`);if(dot){dot.classList.remove('sdot-orange');dot.classList.add('sdot-red');}
+    const mask=document.getElementById(`elim-${slot}`);if(mask){mask.classList.add('show');mask.textContent='LEFT';}
+    const nameEl=document.getElementById(`opp-name-${slot}`);if(nameEl)nameEl.style.textDecoration='line-through';
+  }
+  const isHostLeaving=(slot==='p1'&&mySlot!=='p1');
+  showLeaveToast(name, isHostLeaving);
+  updateAliveCount();
+  // If host left, send remaining players to lobby after delay
+  if(isHostLeaving){
+    setTimeout(()=>{
+      if(!roundResolved){
+        goLobby();
+      }
+    },3000);
+    return;
+  }
+  // Otherwise check for round winner
+  setTimeout(checkRoundWinner,400);
+}
+
 // ── BEGIN BATTLE ──
 function beginBattle(slots,data){
   applyBoardWidth();myRef=roomRef.child(mySlot);garbRef=roomRef.child(`garbage/${mySlot}`);
+  // When I disconnect/close the tab, mark myself as left so others know
+  myRef.onDisconnect().update({dead:true,left:true,status:'left'});
   eliminatedRanks=[];
   document.getElementById('my-name-lbl').textContent=myName;
   document.getElementById('solo-badge').style.display='none';
@@ -1485,22 +1402,30 @@ function beginBattle(slots,data){
   for(const slot of slots){
     if(slot===mySlot)continue;
     oppListeners[slot]=roomRef.child(slot).on('value',snap=>{
-      const d=snap.val();if(!d)return;
+      const d=snap.val();
+      if(!d){
+        // Slot was removed entirely — treat as left
+        const pData=currentPlayers.find(x=>x.slot===slot);
+        if(pData&&!pData.dead&&!roundResolved)playerLeft(slot,pData.name||'A player');
+        return;
+      }
+      // Player explicitly set left:true (via onDisconnect or goLobby)
+      if(d.left&&!playerBoards[slot]?.eliminated&&!roundResolved){
+        playerLeft(slot,d.name||'A player');return;
+      }
       const sEl=document.getElementById(`opp-score-${slot}`),lEl=document.getElementById(`opp-level-${slot}`),nEl=document.getElementById(`opp-name-${slot}`);
       if(nEl)nEl.textContent=d.name||'?';if(sEl)sEl.textContent=(d.score||0).toLocaleString();if(lEl)lEl.textContent=d.level||1;
       if(d.board){let b=typeof d.board==='string'?JSON.parse(d.board):d.board;if(d._p)b._p=d._p;renderOppBoard(slot,b);}
       if(d.dead&&!playerBoards[slot]?.eliminated&&!roundResolved){eliminatePlayer(slot,d.name||'?');}
     });
   }
-  // Garbage listener: receive incoming garbage with delay
+  // Garbage listener
   garbListener=garbRef.on('value',snap=>{
     const v=snap.val()||0;
     if(v>0){
-      // Queue it with 1.0–1.5s random delay
       const delayMs=7000+Math.random()*2000;
       G.garbageQueue.push({amount:v,deliverAt:Date.now()+delayMs});
-      garbRef.set(0);
-      updateGarbage();
+      garbRef.set(0);updateGarbage();
     }
   });
   showScreen('s-game');
@@ -1531,10 +1456,7 @@ function die(){
   if(G.gravityCheckTimer){clearInterval(G.gravityCheckTimer);G.gravityCheckTimer=null;}
   if(garbageDeliveryTimer){clearInterval(garbageDeliveryTimer);garbageDeliveryTimer=null;}
   if(!isSoloMode&&myRef)myRef.update({status:'dead',dead:true,score:G.score,lines:G.lines,level:G.level});
-  if(!isSoloMode){
-    const me=currentPlayers.find(p=>p.slot===mySlot);
-    if(me&&!me.dead){me.dead=true;eliminatedRanks.push({slot:mySlot,name:myName});}
-  }
+  if(!isSoloMode){const me=currentPlayers.find(p=>p.slot===mySlot);if(me&&!me.dead){me.dead=true;eliminatedRanks.push({slot:mySlot,name:myName});}}
   renderBoard();updateAliveCount();
   if(isSoloMode){setTimeout(()=>showGameOver(false,'You',true),900);}
   else{setTimeout(checkRoundWinner,700);}
@@ -1641,8 +1563,6 @@ function showGameOver(won,winnerName,isSolo=false,seriesOver=true,roundNum=null)
   if(!isSolo&&totalRounds>1){
     seriesSection.style.display='block';
     renderSeriesRows(document.getElementById('go-series-rows'),'full');
-    const myWins=seriesWins[mySlot]||0;
-    const maxWins=Math.max(...currentPlayers.map(p=>seriesWins[p.slot]||0));
     const roundsLeft=totalRounds-displayRound;
     if(isSeriesEnd)document.getElementById('go-series-progress').textContent=won?`You won the series!`:`Series complete — ${winnerName} wins!`;
     else document.getElementById('go-series-progress').textContent=`${roundsLeft} more round${roundsLeft!==1?'s':''} to play • First to ${needed} wins`;
@@ -1718,7 +1638,9 @@ function goLobby(){
   if(garbageDeliveryTimer){clearInterval(garbageDeliveryTimer);garbageDeliveryTimer=null;}
   if(roomListener&&roomRef){roomRef.off('value',roomListener);roomListener=null;}
   if(gameoverRoomListener&&roomRef){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
-  if(myRef&&!isSoloMode)myRef.update({status:'left'}).catch(()=>{});
+  // Cancel onDisconnect so the cleanup flag doesn't double-fire after we leave cleanly
+  if(myRef&&!isSoloMode)myRef.onDisconnect().cancel();
+  if(myRef&&!isSoloMode)myRef.update({status:'left',left:true,dead:true}).catch(()=>{});
   if(myIsCreator&&roomRef)roomRef.remove().catch(()=>{});
   roomRef=null;myRef=null;currentPlayers=[];eliminatedRanks=[];playerBoards={};oppListeners={};
   isSoloMode=false;myIsCreator=false;currentRound=1;totalRounds=1;seriesWins={};roundResolved=false;
