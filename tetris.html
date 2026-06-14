@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -759,6 +758,21 @@ let expiryTimer=null,expirySecondsLeft=ROOM_EXPIRE_SECONDS;
 let roomsRef=null,roomsListener=null;
 let garbageDeliveryTimer=null;
 
+// ── HALT GAME (freeze all timers/state before a countdown) ──
+// This stops every active interval/timeout tied to the previous round and
+// marks the game as "not running" so autoDown/lock/die/garbage delivery
+// cannot fire while the 3-2-1 countdown for the NEXT round is showing.
+function haltGame(){
+  G.running=false;
+  G.paused=false;
+  stopDrop();
+  clearLock();
+  if(G.gravityCheckTimer){clearInterval(G.gravityCheckTimer);G.gravityCheckTimer=null;}
+  if(garbageDeliveryTimer){clearInterval(garbageDeliveryTimer);garbageDeliveryTimer=null;}
+  G.garbageQueue=[];G.outgoingBuffer=0;G.pendingGarbage=0;
+  updateGarbage();updateCombo();
+}
+
 // ── SERIES SCOREBOARD UI ──
 function updateSeriesUI(){
   if(isSoloMode||totalRounds===1){
@@ -940,6 +954,7 @@ function calcGarbage(linesCleared, tspinType, isPerfectClear){
 // ── SOLO MODE ──
 function startSolo(){
   const name=document.getElementById('inp-name').value.trim();if(!name){shakeEl('inp-name');return;}
+  haltGame();
   myName=name;isSoloMode=true;stopRoomsBrowser();
   applyBoardWidth();totalRounds=1;currentRound=1;seriesWins={};roundResolved=false;
   currentPlayers=[{slot:'p1',name:myName,dead:false}];eliminatedRanks=[];
@@ -999,7 +1014,7 @@ function currentDropInterval(){const elapsed=(Date.now()-G.gravityStartMs)/1000;
 function startDrop(){clearInterval(G.dropTimer);if(!G.running||G.dead||G.paused)return;const interval=currentDropInterval();G.dropTimer=setInterval(()=>{if(G.running&&!G.paused&&!G.dead)autoDown();},interval);}
 function stopDrop(){clearInterval(G.dropTimer);G.dropTimer=null;}
 function autoDown(){if(valid(G.board,G.piece,0,1)){G.piece.py++;G.lastMoveWasRotation=false;renderBoard();}else startLock();}
-function startLock(){if(G.lockTimeout)return;G.lockTimeout=setTimeout(()=>{G.lockTimeout=null;if(!valid(G.board,G.piece,0,1))lock();},480);}
+function startLock(){if(G.lockTimeout)return;G.lockTimeout=setTimeout(()=>{G.lockTimeout=null;if(!G.running||G.dead)return;if(!valid(G.board,G.piece,0,1))lock();},480);}
 function clearLock(){clearTimeout(G.lockTimeout);G.lockTimeout=null;}
 function resetLock(){if(G.lockTimeout){clearLock();startLock();}}
 
@@ -1054,6 +1069,7 @@ function sendGarbage(lines){
 
 // ── LOCK + LINE CLEAR ──
 function lock(){
+  if(!G.running||G.dead)return;
   clearLock();
   for(const[x,y]of cells(G.piece)){if(y<0){die();return;}G.board[y][x]=G.piece.ti;}
   const tspinType=detectTSpin();
@@ -1389,6 +1405,7 @@ function playerLeft(slot, name){
 
 // ── BEGIN BATTLE ──
 function beginBattle(slots,data){
+  haltGame();
   applyBoardWidth();myRef=roomRef.child(mySlot);garbRef=roomRef.child(`garbage/${mySlot}`);
   // When I disconnect/close the tab, mark myself as left so others know
   myRef.onDisconnect().update({dead:true,left:true,status:'left'});
@@ -1452,6 +1469,7 @@ setInterval(()=>{if(G.running&&!G.dead&&!G.paused&&myRef&&G.piece&&!isSoloMode)m
 
 // ── GAME OVER / ROUND WINNER ──
 function die(){
+  if(G.dead)return;
   G.dead=true;G.running=false;stopDrop();clearLock();
   if(G.gravityCheckTimer){clearInterval(G.gravityCheckTimer);G.gravityCheckTimer=null;}
   if(garbageDeliveryTimer){clearInterval(garbageDeliveryTimer);garbageDeliveryTimer=null;}
@@ -1630,12 +1648,11 @@ async function hostNewSeries(){
   setTimeout(()=>{if(roomRef)roomRef.update({status:'waiting'});},600);
 }
 
-function playSoloAgain(){applyBoardWidth();showScreen('s-game');doCountdown(()=>initGame());}
+function playSoloAgain(){haltGame();applyBoardWidth();showScreen('s-game');doCountdown(()=>initGame());}
 
 function goLobby(){
-  stopDrop();clearLock();cleanupListeners();stopRoomExpiry();hideAutostartBanner();
-  if(G.gravityCheckTimer){clearInterval(G.gravityCheckTimer);G.gravityCheckTimer=null;}
-  if(garbageDeliveryTimer){clearInterval(garbageDeliveryTimer);garbageDeliveryTimer=null;}
+  haltGame();
+  cleanupListeners();stopRoomExpiry();hideAutostartBanner();
   if(roomListener&&roomRef){roomRef.off('value',roomListener);roomListener=null;}
   if(gameoverRoomListener&&roomRef){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
   // Cancel onDisconnect so the cleanup flag doesn't double-fire after we leave cleanly
@@ -1655,6 +1672,7 @@ function goLobby(){
 
 // ── COUNTDOWN ──
 function doCountdown(cb,customLabel='Get Ready'){
+  haltGame();
   const el=document.getElementById('countdown'),numEl=document.getElementById('cd-num'),lbl=document.getElementById('cd-round-label');
   el.classList.remove('hidden');lbl.textContent=customLabel;let n=3;
   const cdColors=['#FF3355','#FFE000','#00FF88'];
