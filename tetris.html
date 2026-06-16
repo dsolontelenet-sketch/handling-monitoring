@@ -751,7 +751,7 @@ let G={
   garbageQueue:[],
   outgoingBuffer:0,
   running:false,paused:false,dead:false,
-  locking:false,  // ← re-entrancy guard for lock()
+  locking:false,
   dropTimer:null,lockTimeout:null,
   gravityStartMs:0,
   lastGravityCheck:0,
@@ -1025,13 +1025,15 @@ function spawn(){G.piece=mkPiece(pullNext());G.holdUsed=false;G.lastMoveWasRotat
 // ── DROP / LOCK ──
 function currentDropInterval(){const elapsed=(Date.now()-G.gravityStartMs)/1000;return gravityInterval(elapsed);}
 
+// ── FIX: startDrop no longer skips ticks when lockTimeout is active.
+// The lock timeout and drop timer are now independent — rotation cancels lock
+// and immediately re-enables gravity ticks via startDrop().
 function startDrop(){
   stopDrop();
   if(!G.running||G.dead||G.paused)return;
   const interval=currentDropInterval();
-  // FIX: skip autoDown tick if lock is already pending — prevents piece phasing through blocks
   G.dropTimer=setInterval(()=>{
-    if(G.running&&!G.paused&&!G.dead&&!G.lockTimeout)autoDown();
+    if(G.running&&!G.paused&&!G.dead) autoDown();
   },interval);
 }
 
@@ -1039,8 +1041,20 @@ function stopDrop(){clearInterval(G.dropTimer);G.dropTimer=null;}
 
 function autoDown(){
   if(!G.running||G.dead||G.paused)return;
-  // FIX: if lock is already scheduled, don't move down again
-  if(G.lockTimeout)return;
+  // ── FIX: if a lock is already pending, cancel it and try to move down.
+  // This ensures gravity keeps pulling the piece even after a rotation
+  // that triggered a lock countdown on a previous position.
+  if(G.lockTimeout){
+    // piece might now be able to fall (e.g. after rotate + wall-kick moved it)
+    if(valid(G.board,G.piece,0,1)){
+      clearLock();
+      G.piece.py++;
+      G.lastMoveWasRotation=false;
+      renderBoard();
+    }
+    // if still can't fall, let the existing lock timeout fire naturally
+    return;
+  }
   if(valid(G.board,G.piece,0,1)){
     G.piece.py++;
     G.lastMoveWasRotation=false;
@@ -1052,21 +1066,50 @@ function autoDown(){
 
 function startLock(){if(G.lockTimeout)return;G.lockTimeout=setTimeout(()=>{G.lockTimeout=null;if(!G.running||G.dead)return;if(!valid(G.board,G.piece,0,1))lock();},480);}
 function clearLock(){clearTimeout(G.lockTimeout);G.lockTimeout=null;}
-function resetLock(){if(G.lockTimeout){clearLock();startLock();}}
+
+// ── FIX: resetLock — after clearing the lock timer, restart the drop timer
+// so the piece immediately resumes falling. Without this, rotating at high
+// gravity leaves the piece floating until the next drop tick fires (which
+// could be hundreds of ms away at x1 gravity, but at x4+ the issue is that
+// the lockTimeout was the only "next event" and clearing it leaves nothing).
+function resetLock(){
+  clearLock();
+  // Restart the drop cycle immediately so gravity resumes right away.
+  // This is the core fix: piece won't float after rotation at any gravity.
+  startDrop();
+}
 
 // ── PIECE ACTIONS ──
 function moveH(dx){if(!live())return;if(valid(G.board,G.piece,dx,0)){G.piece.px+=dx;G.lastMoveWasRotation=false;resetLock();renderBoard();}}
 function softDrop(){if(!live())return;if(valid(G.board,G.piece,0,1)){G.piece.py++;G.score++;G.lastMoveWasRotation=false;clearLock();renderBoard();}else startLock();}
 function hardDrop(){if(!live())return;let d=0;while(valid(G.board,G.piece,0,d+1))d++;G.piece.py+=d;G.score+=d*2;G.lastMoveWasRotation=false;clearLock();lock();}
+
+// ── FIX: rotate() — after a successful rotation, always cancel any pending
+// lock and restart the drop timer. If the piece can still fall after rotating
+// (e.g. a wall-kick moved it off the stack), it will begin falling immediately
+// instead of floating. If it still can't fall, the new startDrop() tick will
+// call autoDown() → startLock() on the next interval.
 function rotate(dir){
   if(!live())return;
   const newRot=(G.piece.rot+dir+4)%4;
   const kicks=getWallKicksForRotation(G.piece.ti,G.piece.rot,dir);
   for(let ki=0;ki<kicks.length;ki++){
     const[kx,ky]=kicks[ki];
-    if(valid(G.board,G.piece,kx,-ky,newRot)){G.piece.rot=newRot;G.piece.px+=kx;G.piece.py-=ky;G.lastMoveWasRotation=true;G.lastKickIndex=ki;resetLock();renderBoard();return;}
+    if(valid(G.board,G.piece,kx,-ky,newRot)){
+      G.piece.rot=newRot;
+      G.piece.px+=kx;
+      G.piece.py-=ky;
+      G.lastMoveWasRotation=true;
+      G.lastKickIndex=ki;
+      // ── KEY FIX: cancel lock + restart drop so piece falls immediately ──
+      clearLock();
+      startDrop();
+      renderBoard();
+      return;
+    }
   }
 }
+
 function holdPiece(){
   if(!live()||G.holdUsed)return;
   G.holdUsed=true;const cur=G.piece.ti;
@@ -1094,14 +1137,10 @@ function deliverQueuedGarbage(){
 function sendGarbage(lines){
   if(!roomRef||isSoloMode)return;
   let toSend=lines;
-  // Cancel against incoming garbage queue first
   for(let i=0;i<G.garbageQueue.length&&toSend>0;i++){const cancel=Math.min(toSend,G.garbageQueue[i].amount);G.garbageQueue[i].amount-=cancel;toSend-=cancel;}
   G.garbageQueue=G.garbageQueue.filter(x=>x.amount>0);
   G.pendingGarbage=G.garbageQueue.reduce((s,i)=>s+i.amount,0);updateGarbage();
   if(toSend<=0)return;
-
-  // ── FIX: Target ONE random living opponent instead of all ──
-  // Sending to all at once floods everyone and causes garbage stockpiling.
   const living=currentPlayers.filter(p=>p.slot!==mySlot&&!p.dead);
   if(!living.length)return;
   const target=living[Math.floor(Math.random()*living.length)];
@@ -1122,7 +1161,6 @@ function showGarbageTarget(targetName,amount){
 // ── LOCK + LINE CLEAR ──
 function lock(){
   if(!G.running||G.dead)return;
-  // FIX: re-entrancy guard — prevents double-lock when gravity and manual lock race
   if(G.locking)return;
   G.locking=true;
   clearLock();
