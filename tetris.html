@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -75,6 +76,18 @@ body{
 @keyframes streakLeft{0%{width:0;opacity:1;}70%{opacity:.7;}100%{width:35%;opacity:0;}}
 @keyframes streakRight{0%{width:0;opacity:1;}70%{opacity:.7;}100%{width:35%;opacity:0;}}
 
+/* ── GARBAGE TARGET TOAST ── */
+@keyframes garbToastIn{from{transform:translateX(-50%) translateY(10px);opacity:0;}to{transform:translateX(-50%) translateY(0);opacity:1;}}
+#garb-target-toast{
+  position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
+  z-index:600;background:rgba(10,14,30,.95);
+  border:1px solid rgba(239,68,68,.5);border-radius:10px;
+  padding:6px 16px;font-size:12px;font-weight:700;
+  color:#fca5a5;font-family:'JetBrains Mono',monospace;
+  pointer-events:none;white-space:nowrap;
+  opacity:0;transition:opacity .25s;
+}
+
 /* ── LEAVE TOAST ── */
 @keyframes leaveToastIn{from{transform:translateX(120%);opacity:0;}to{transform:translateX(0);opacity:1;}}
 @keyframes leaveToastOut{from{transform:translateX(0);opacity:1;}to{transform:translateX(120%);opacity:0;}}
@@ -115,10 +128,7 @@ body{
 #autostart-banner{position:fixed;top:0;left:0;right:0;z-index:500;padding:10px 20px;background:rgba(16,185,129,.14);border-bottom:1px solid rgba(16,185,129,.35);display:none;align-items:center;justify-content:center;gap:10px;backdrop-filter:blur(12px);}
 #autostart-banner.show{display:flex;animation:autoStartPop .3s ease;}
 
-#clear-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:300;text-align:center;opacity:0;}
-#clear-popup.show{animation:clearPop 1.5s ease forwards;}
-
-#countdown{position:fixed;inset:0;z-index:400;background:rgba(2,6,18,.88);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
+#countdown{position:fixed;inset:0;z-index:400;background:rgba(2,8,23,.88);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
 #countdown.hidden{display:none;}
 .cd-num{font-size:120px;font-weight:800;font-family:'JetBrains Mono',monospace;text-shadow:0 0 60px currentColor,0 0 120px rgba(99,102,241,.4);animation:cdPop .9s cubic-bezier(.34,1.56,.64,1);line-height:1;}
 
@@ -180,9 +190,6 @@ body{
 #room-expiry-label{font-size:10px;color:#64748b;font-family:'JetBrains Mono',monospace;text-align:center;margin-top:4px;}
 #room-expiry-label.urgent{animation:timerPulse .8s ease infinite;color:#f59e0b;}
 
-#autostart-banner{position:fixed;top:0;left:0;right:0;z-index:500;padding:10px 20px;background:rgba(16,185,129,.14);border-bottom:1px solid rgba(16,185,129,.35);display:none;align-items:center;justify-content:center;gap:10px;backdrop-filter:blur(12px);}
-#autostart-banner.show{display:flex;animation:autoStartPop .3s ease;}
-
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:rgba(99,102,241,.3);border-radius:2px;}
@@ -227,10 +234,17 @@ body{
 #garbage-queue-box{display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:5px 8px;}
 #garbage-queue-box.show{display:block;}
 
+/* ── TARGET INDICATOR (who you're hitting) ── */
+#target-indicator{display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:4px 8px;text-align:center;}
+#target-indicator.show{display:block;}
+
 @media(max-height:680px){#s-game{padding:5px;gap:6px;}}
 </style>
 </head>
 <body>
+
+<!-- GARBAGE TARGET TOAST -->
+<div id="garb-target-toast"></div>
 
 <!-- LEAVE TOAST CONTAINER -->
 <div id="leave-toast-container"></div>
@@ -491,7 +505,7 @@ body{
       <p id="combo-val" style="font-size:22px;font-weight:800;color:#fbbf24;font-family:'JetBrains Mono',monospace;text-shadow:0 0 20px #f59e0b;">0x</p>
     </div>
 
-    <!-- Incoming garbage (queued, delayed) -->
+    <!-- Incoming garbage -->
     <div id="garbage-box" style="display:none;" class="rounded-xl p-2.5 garbage-warning" style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);">
       <p style="font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#f87171;font-weight:600;margin-bottom:2px;">⚠ Incoming</p>
       <p id="garbage-cnt" style="font-size:20px;font-weight:800;color:#ef4444;font-family:'JetBrains Mono',monospace;line-height:1;text-shadow:0 0 16px #ef4444;">0</p>
@@ -632,11 +646,11 @@ const ROOM_EXPIRE_SECONDS=30;
 // ── GRAVITY TABLE ──
 const GRAVITY_STAGES=[
   {minSec:0,   cps:1,  label:'1×',  pct:5},
-  {minSec:20, cps:2,  label:'2×',  pct:18},
-  {minSec:30, cps:4,  label:'3×',  pct:35},
-  {minSec:60, cps:8,  label:'4×',  pct:58},
-  {minSec:140, cps:12, label:'6×', pct:78},
-  {minSec:200, cps:20, label:'8×', pct:100},
+  {minSec:20,  cps:2,  label:'2×',  pct:18},
+  {minSec:30,  cps:4,  label:'3×',  pct:35},
+  {minSec:60,  cps:8,  label:'4×',  pct:58},
+  {minSec:140, cps:12, label:'6×',  pct:78},
+  {minSec:200, cps:20, label:'8×',  pct:100},
 ];
 function getGravityStage(elapsedSec){
   let stage=GRAVITY_STAGES[0];
@@ -737,6 +751,7 @@ let G={
   garbageQueue:[],
   outgoingBuffer:0,
   running:false,paused:false,dead:false,
+  locking:false,  // ← re-entrancy guard for lock()
   dropTimer:null,lockTimeout:null,
   gravityStartMs:0,
   lastGravityCheck:0,
@@ -758,13 +773,11 @@ let expiryTimer=null,expirySecondsLeft=ROOM_EXPIRE_SECONDS;
 let roomsRef=null,roomsListener=null;
 let garbageDeliveryTimer=null;
 
-// ── HALT GAME (freeze all timers/state before a countdown) ──
-// This stops every active interval/timeout tied to the previous round and
-// marks the game as "not running" so autoDown/lock/die/garbage delivery
-// cannot fire while the 3-2-1 countdown for the NEXT round is showing.
+// ── HALT GAME ──
 function haltGame(){
   G.running=false;
   G.paused=false;
+  G.locking=false;
   stopDrop();
   clearLock();
   if(G.gravityCheckTimer){clearInterval(G.gravityCheckTimer);G.gravityCheckTimer=null;}
@@ -987,7 +1000,7 @@ function initGame(){
   G.bag=[...newBag(),...newBag(),...newBag()];G.hold=null;G.holdUsed=false;
   G.score=0;G.lines=0;G.level=1;G.combo=-1;
   G.pendingGarbage=0;G.garbageQueue=[];G.outgoingBuffer=0;
-  G.running=true;G.paused=false;G.dead=false;
+  G.running=true;G.paused=false;G.dead=false;G.locking=false;
   G.lastMoveWasRotation=false;G.lastKickIndex=-1;
   G.gravityStartMs=Date.now();G.lastGravityCheck=0;
   updateStats();updateGarbage();updateCombo();updateSeriesUI();updateGravityIndicator();
@@ -1011,9 +1024,32 @@ function spawn(){G.piece=mkPiece(pullNext());G.holdUsed=false;G.lastMoveWasRotat
 
 // ── DROP / LOCK ──
 function currentDropInterval(){const elapsed=(Date.now()-G.gravityStartMs)/1000;return gravityInterval(elapsed);}
-function startDrop(){clearInterval(G.dropTimer);if(!G.running||G.dead||G.paused)return;const interval=currentDropInterval();G.dropTimer=setInterval(()=>{if(G.running&&!G.paused&&!G.dead)autoDown();},interval);}
+
+function startDrop(){
+  stopDrop();
+  if(!G.running||G.dead||G.paused)return;
+  const interval=currentDropInterval();
+  // FIX: skip autoDown tick if lock is already pending — prevents piece phasing through blocks
+  G.dropTimer=setInterval(()=>{
+    if(G.running&&!G.paused&&!G.dead&&!G.lockTimeout)autoDown();
+  },interval);
+}
+
 function stopDrop(){clearInterval(G.dropTimer);G.dropTimer=null;}
-function autoDown(){if(valid(G.board,G.piece,0,1)){G.piece.py++;G.lastMoveWasRotation=false;renderBoard();}else startLock();}
+
+function autoDown(){
+  if(!G.running||G.dead||G.paused)return;
+  // FIX: if lock is already scheduled, don't move down again
+  if(G.lockTimeout)return;
+  if(valid(G.board,G.piece,0,1)){
+    G.piece.py++;
+    G.lastMoveWasRotation=false;
+    renderBoard();
+  }else{
+    startLock();
+  }
+}
+
 function startLock(){if(G.lockTimeout)return;G.lockTimeout=setTimeout(()=>{G.lockTimeout=null;if(!G.running||G.dead)return;if(!valid(G.board,G.piece,0,1))lock();},480);}
 function clearLock(){clearTimeout(G.lockTimeout);G.lockTimeout=null;}
 function resetLock(){if(G.lockTimeout){clearLock();startLock();}}
@@ -1058,20 +1094,39 @@ function deliverQueuedGarbage(){
 function sendGarbage(lines){
   if(!roomRef||isSoloMode)return;
   let toSend=lines;
+  // Cancel against incoming garbage queue first
   for(let i=0;i<G.garbageQueue.length&&toSend>0;i++){const cancel=Math.min(toSend,G.garbageQueue[i].amount);G.garbageQueue[i].amount-=cancel;toSend-=cancel;}
   G.garbageQueue=G.garbageQueue.filter(x=>x.amount>0);
   G.pendingGarbage=G.garbageQueue.reduce((s,i)=>s+i.amount,0);updateGarbage();
   if(toSend<=0)return;
+
+  // ── FIX: Target ONE random living opponent instead of all ──
+  // Sending to all at once floods everyone and causes garbage stockpiling.
   const living=currentPlayers.filter(p=>p.slot!==mySlot&&!p.dead);
   if(!living.length)return;
-  for(const p of living){DB.ref(`tetris2/rooms/${roomId}/garbage/${p.slot}`).transaction(cur=>(cur||0)+toSend);}
+  const target=living[Math.floor(Math.random()*living.length)];
+  DB.ref(`tetris2/rooms/${roomId}/garbage/${target.slot}`).transaction(cur=>(cur||0)+toSend);
+  showGarbageTarget(target.name,toSend);
+}
+
+// ── GARBAGE TARGET TOAST ──
+function showGarbageTarget(targetName,amount){
+  const el=document.getElementById('garb-target-toast');
+  if(!el)return;
+  el.textContent='🎯 +'+amount+' → '+targetName;
+  el.style.opacity='1';
+  clearTimeout(el._hideTimer);
+  el._hideTimer=setTimeout(()=>{el.style.opacity='0';},1800);
 }
 
 // ── LOCK + LINE CLEAR ──
 function lock(){
   if(!G.running||G.dead)return;
+  // FIX: re-entrancy guard — prevents double-lock when gravity and manual lock race
+  if(G.locking)return;
+  G.locking=true;
   clearLock();
-  for(const[x,y]of cells(G.piece)){if(y<0){die();return;}G.board[y][x]=G.piece.ti;}
+  for(const[x,y]of cells(G.piece)){if(y<0){G.locking=false;die();return;}G.board[y][x]=G.piece.ti;}
   const tspinType=detectTSpin();
   const cleared=clearLines();
   if(cleared===0){G.combo=-1;updateCombo();}
@@ -1088,6 +1143,7 @@ function lock(){
   }
   G.lastMoveWasRotation=false;G.lastKickIndex=-1;
   if(!isSoloMode)syncState();
+  G.locking=false;
   if(!spawn())return;renderAll();
 }
 function clearLines(){let c=0;for(let r=ROWS-1;r>=0;r--){if(G.board[r].every(v=>v!==0)){G.board.splice(r,1);G.board.unshift(Array(COLS).fill(0));c++;r++;}}return c;}
@@ -1379,7 +1435,6 @@ function playerLeft(slot, name){
   if(!p||p.dead)return;
   p.dead=true;
   if(!eliminatedRanks.find(r=>r.slot===slot))eliminatedRanks.push({slot,name});
-  // Visual: mark as LEFT
   if(playerBoards[slot]){
     playerBoards[slot].eliminated=true;
     const canvas=document.getElementById(`canvas-${slot}`);if(canvas)canvas.classList.add('eliminated');
@@ -1390,16 +1445,10 @@ function playerLeft(slot, name){
   const isHostLeaving=(slot==='p1'&&mySlot!=='p1');
   showLeaveToast(name, isHostLeaving);
   updateAliveCount();
-  // If host left, send remaining players to lobby after delay
   if(isHostLeaving){
-    setTimeout(()=>{
-      if(!roundResolved){
-        goLobby();
-      }
-    },3000);
+    setTimeout(()=>{if(!roundResolved){goLobby();}},3000);
     return;
   }
-  // Otherwise check for round winner
   setTimeout(checkRoundWinner,400);
 }
 
@@ -1407,7 +1456,6 @@ function playerLeft(slot, name){
 function beginBattle(slots,data){
   haltGame();
   applyBoardWidth();myRef=roomRef.child(mySlot);garbRef=roomRef.child(`garbage/${mySlot}`);
-  // When I disconnect/close the tab, mark myself as left so others know
   myRef.onDisconnect().update({dead:true,left:true,status:'left'});
   eliminatedRanks=[];
   document.getElementById('my-name-lbl').textContent=myName;
@@ -1421,12 +1469,10 @@ function beginBattle(slots,data){
     oppListeners[slot]=roomRef.child(slot).on('value',snap=>{
       const d=snap.val();
       if(!d){
-        // Slot was removed entirely — treat as left
         const pData=currentPlayers.find(x=>x.slot===slot);
         if(pData&&!pData.dead&&!roundResolved)playerLeft(slot,pData.name||'A player');
         return;
       }
-      // Player explicitly set left:true (via onDisconnect or goLobby)
       if(d.left&&!playerBoards[slot]?.eliminated&&!roundResolved){
         playerLeft(slot,d.name||'A player');return;
       }
@@ -1436,7 +1482,6 @@ function beginBattle(slots,data){
       if(d.dead&&!playerBoards[slot]?.eliminated&&!roundResolved){eliminatePlayer(slot,d.name||'?');}
     });
   }
-  // Garbage listener
   garbListener=garbRef.on('value',snap=>{
     const v=snap.val()||0;
     if(v>0){
@@ -1470,7 +1515,8 @@ setInterval(()=>{if(G.running&&!G.dead&&!G.paused&&myRef&&G.piece&&!isSoloMode)m
 // ── GAME OVER / ROUND WINNER ──
 function die(){
   if(G.dead)return;
-  G.dead=true;G.running=false;stopDrop();clearLock();
+  G.dead=true;G.running=false;G.locking=false;
+  stopDrop();clearLock();
   if(G.gravityCheckTimer){clearInterval(G.gravityCheckTimer);G.gravityCheckTimer=null;}
   if(garbageDeliveryTimer){clearInterval(garbageDeliveryTimer);garbageDeliveryTimer=null;}
   if(!isSoloMode&&myRef)myRef.update({status:'dead',dead:true,score:G.score,lines:G.lines,level:G.level});
@@ -1655,7 +1701,6 @@ function goLobby(){
   cleanupListeners();stopRoomExpiry();hideAutostartBanner();
   if(roomListener&&roomRef){roomRef.off('value',roomListener);roomListener=null;}
   if(gameoverRoomListener&&roomRef){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
-  // Cancel onDisconnect so the cleanup flag doesn't double-fire after we leave cleanly
   if(myRef&&!isSoloMode)myRef.onDisconnect().cancel();
   if(myRef&&!isSoloMode)myRef.update({status:'left',left:true,dead:true}).catch(()=>{});
   if(myIsCreator&&roomRef)roomRef.remove().catch(()=>{});
