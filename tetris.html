@@ -234,9 +234,52 @@ body{
 #garbage-queue-box{display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:5px 8px;}
 #garbage-queue-box.show{display:block;}
 
-/* ── TARGET INDICATOR (who you're hitting) ── */
+/* ── TARGET INDICATOR ── */
 #target-indicator{display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:4px 8px;text-align:center;}
 #target-indicator.show{display:block;}
+
+/* ── ROOM SETTINGS UI ── */
+.settings-section{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;margin-bottom:12px;}
+.settings-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;user-select:none;transition:background .15s;}
+.settings-header:hover{background:rgba(255,255,255,.05);}
+.settings-header-left{display:flex;align-items:center;gap:8px;}
+.settings-header-title{font-size:12px;font-weight:700;color:white;}
+.settings-header-sub{font-size:10px;color:#64748b;}
+.settings-chevron{font-size:10px;color:#64748b;transition:transform .25s;}
+.settings-chevron.open{transform:rotate(180deg);}
+.settings-body{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);display:none;}
+.settings-body.open{display:block;}
+
+/* Garbage spinners */
+.garb-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.garb-row:last-child{border-bottom:none;}
+.garb-label{font-size:11px;font-weight:600;color:#94a3b8;}
+.garb-label span{font-size:9px;color:#475569;display:block;margin-top:1px;font-family:'JetBrains Mono',monospace;}
+.garb-spinner{display:flex;align-items:center;gap:6px;}
+.garb-spinner-btn{width:24px;height:24px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:white;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:'JetBrains Mono',monospace;line-height:1;}
+.garb-spinner-btn:hover{background:rgba(99,102,241,.3);border-color:rgba(99,102,241,.5);}
+.garb-spinner-val{font-size:15px;font-weight:800;color:#fbbf24;font-family:'JetBrains Mono',monospace;min-width:20px;text-align:center;}
+
+/* Gravity stage rows */
+.grav-stage-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.grav-stage-row:last-child{border-bottom:none;}
+.grav-stage-toggle{width:32px;height:18px;border-radius:9px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);cursor:pointer;position:relative;flex-shrink:0;transition:all .2s;}
+.grav-stage-toggle.on{background:rgba(16,185,129,.35);border-color:rgba(16,185,129,.5);}
+.grav-stage-toggle::after{content:'';position:absolute;width:12px;height:12px;border-radius:50%;background:white;top:2px;left:2px;transition:transform .2s;}
+.grav-stage-toggle.on::after{transform:translateX(14px);}
+.grav-stage-label{font-size:12px;font-weight:700;color:#a5b4fc;font-family:'JetBrains Mono',monospace;min-width:32px;}
+.grav-stage-dur-wrap{flex:1;display:flex;align-items:center;gap:6px;}
+.grav-stage-dur-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;background:rgba(255,255,255,.1);border-radius:2px;outline:none;}
+.grav-stage-dur-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#6366f1;cursor:pointer;box-shadow:0 0 6px rgba(99,102,241,.5);}
+.grav-stage-dur-val{font-size:10px;color:#fbbf24;font-family:'JetBrains Mono',monospace;min-width:34px;text-align:right;}
+.grav-stage-disabled{opacity:.35;pointer-events:none;}
+.grav-stage-disabled .grav-stage-dur-wrap{opacity:.35;}
+
+.settings-reset-btn{font-size:10px;color:#475569;background:none;border:none;cursor:pointer;font-family:'Sora',sans-serif;padding:2px 6px;border-radius:6px;transition:color .2s;}
+.settings-reset-btn:hover{color:#a5b4fc;}
+
+/* Settings preview badges */
+.settings-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(99,102,241,.12);color:#a5b4fc;border:1px solid rgba(99,102,241,.2);border-radius:6px;padding:2px 7px;}
 
 @media(max-height:680px){#s-game{padding:5px;gap:6px;}}
 </style>
@@ -308,19 +351,7 @@ body{
     <button class="mode-tab" id="tab-solo" onclick="setMode('solo')">🎯 Solo</button>
   </div>
 
-  <!-- Gravity info -->
-  <div style="display:flex;align-items:flex-start;gap:10px;background:rgba(255,255,255,.04);border-radius:14px;padding:10px 18px;border:1px solid rgba(255,255,255,.07);max-width:460px;width:100%;">
-    <div>
-      <p style="font-size:13px;font-weight:700;color:white;">🌍 Progressive Gravity</p>
-      <p style="font-size:10px;color:#64748b;margin-top:1px;">Pieces fall faster as the match goes on</p>
-    </div>
-    <div style="flex:1;"></div>
-    <div style="font-size:9px;color:#475569;font-family:'JetBrains Mono',monospace;text-align:right;line-height:1.8;">
-      0–2min · slow<br>4–6min · fast<br>8min+ · sudden
-    </div>
-  </div>
-
-  <div class="glass rounded-2xl p-7 w-full" style="max-width:460px;">
+  <div class="glass rounded-2xl p-7 w-full" style="max-width:480px;">
     <h2 class="font-bold text-white mb-0.5">Enter Your Name</h2>
     <p style="font-size:11px;color:#64748b;margin-bottom:14px;">Shown to all players in the match</p>
 
@@ -352,6 +383,98 @@ body{
         <span style="font-size:9px;letter-spacing:.06em;opacity:.7;">ULTRA</span>
       </button>
     </div>
+
+    <!-- ══ ROOM SETTINGS (Garbage + Gravity) ══ -->
+    <div id="room-settings-wrap">
+
+      <!-- Garbage Rules -->
+      <div class="settings-section" id="garb-section">
+        <div class="settings-header" onclick="toggleSettings('garb')">
+          <div class="settings-header-left">
+            <span style="font-size:16px;">⚔️</span>
+            <div>
+              <div class="settings-header-title">Garbage Rules</div>
+              <div class="settings-header-sub" id="garb-summary">Default · Single=0 Double=1 Triple=2 Tetris=4</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="settings-reset-btn" onclick="event.stopPropagation();resetGarbage()">Reset</button>
+            <span class="settings-chevron" id="garb-chevron">▼</span>
+          </div>
+        </div>
+        <div class="settings-body" id="garb-body">
+          <div class="garb-row">
+            <div class="garb-label">Single<span>Lines cleared = 1</span></div>
+            <div class="garb-spinner" id="garb-spin-single"></div>
+          </div>
+          <div class="garb-row">
+            <div class="garb-label">Double<span>Lines cleared = 2</span></div>
+            <div class="garb-spinner" id="garb-spin-double"></div>
+          </div>
+          <div class="garb-row">
+            <div class="garb-label">Triple<span>Lines cleared = 3</span></div>
+            <div class="garb-spinner" id="garb-spin-triple"></div>
+          </div>
+          <div class="garb-row">
+            <div class="garb-label">Tetris<span>Lines cleared = 4</span></div>
+            <div class="garb-spinner" id="garb-spin-tetris"></div>
+          </div>
+          <div class="garb-row">
+            <div class="garb-label">T-Spin Mini<span>T-piece rotation trick</span></div>
+            <div class="garb-spinner" id="garb-spin-tspinMini"></div>
+          </div>
+          <div class="garb-row">
+            <div class="garb-label">T-Spin 1L<span>T-spin single</span></div>
+            <div class="garb-spinner" id="garb-spin-tspin1"></div>
+          </div>
+          <div class="garb-row">
+            <div class="garb-label">T-Spin 2L<span>T-spin double</span></div>
+            <div class="garb-spinner" id="garb-spin-tspin2"></div>
+          </div>
+          <div class="garb-row">
+            <div class="garb-label">T-Spin 3L<span>T-spin triple</span></div>
+            <div class="garb-spinner" id="garb-spin-tspin3"></div>
+          </div>
+          <div class="garb-row">
+            <div class="garb-label">Combo Bonus<span>+N per consecutive clear</span></div>
+            <div class="garb-spinner" id="garb-spin-combo"></div>
+          </div>
+          <div class="garb-row">
+            <div class="garb-label">Perfect Clear<span>Board completely empty</span></div>
+            <div class="garb-spinner" id="garb-spin-pc"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gravity Settings -->
+      <div class="settings-section" id="grav-section">
+        <div class="settings-header" onclick="toggleSettings('grav')">
+          <div class="settings-header-left">
+            <span style="font-size:16px;">🌍</span>
+            <div>
+              <div class="settings-header-title">Gravity Stages</div>
+              <div class="settings-header-sub" id="grav-summary">Progressive · 6 stages active</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button class="settings-reset-btn" onclick="event.stopPropagation();resetGravity()">Reset</button>
+            <span class="settings-chevron" id="grav-chevron">▼</span>
+          </div>
+        </div>
+        <div class="settings-body" id="grav-body">
+          <p style="font-size:10px;color:#64748b;margin-bottom:10px;line-height:1.5;">Set how long (seconds) each gravity stage lasts before escalating. Toggle stages on/off. <span style="color:#a5b4fc;">1× is always active (starting speed).</span></p>
+          <div id="grav-stage-list"></div>
+          <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06);">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" id="grav-no-escalation" onchange="onNoEscalationToggle()" style="accent-color:#6366f1;width:14px;height:14px;"/>
+              <span style="font-size:11px;color:#94a3b8;font-weight:600;">Flat gravity (no escalation)</span>
+            </label>
+            <p style="font-size:9px;color:#475569;margin-top:3px;margin-left:22px;">Game stays at 1× speed the entire match.</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /room-settings-wrap -->
 
     <!-- Multiplayer section -->
     <div id="multi-section">
@@ -436,6 +559,8 @@ body{
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;flex-wrap:wrap;" id="wait-badges">
       <span id="wait-rounds-badge" style="display:none;font-size:10px;background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);border-radius:20px;padding:3px 10px;font-family:'JetBrains Mono',monospace;">🏆 — ROUNDS</span>
     </div>
+    <!-- Room settings preview in waiting room -->
+    <div id="wait-settings-preview" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;"></div>
 
     <div id="expiry-container" style="display:none;margin-top:10px;max-width:260px;margin-left:auto;margin-right:auto;">
       <div id="room-expiry-bar"><div id="room-expiry-fill"></div></div>
@@ -643,23 +768,339 @@ const SHAPES=[null,[[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[0,1,1],[1,1,0]]
 const SCORE_TABLE=[0,100,300,500,800];
 const ROOM_EXPIRE_SECONDS=30;
 
-// ── GRAVITY TABLE ──
-const GRAVITY_STAGES=[
-  {minSec:0,   cps:1,  label:'1×',  pct:5},
-  {minSec:20,  cps:2,  label:'2×',  pct:18},
-  {minSec:30,  cps:4,  label:'3×',  pct:35},
-  {minSec:60,  cps:8,  label:'4×',  pct:58},
-  {minSec:140, cps:12, label:'6×',  pct:78},
-  {minSec:200, cps:20, label:'8×',  pct:100},
+// ══════════════════════════════════════════════
+// ── GARBAGE SETTINGS ──
+// ══════════════════════════════════════════════
+
+const DEFAULT_GARBAGE={
+  single:0,    // lines sent on single clear
+  double:1,    // lines sent on double clear
+  triple:2,    // lines sent on triple clear
+  tetris:4,    // lines sent on tetris
+  tspinMini:1, // t-spin mini
+  tspin1:2,    // t-spin single
+  tspin2:4,    // t-spin double
+  tspin3:6,    // t-spin triple
+  combo:1,     // bonus lines per combo count
+  pc:10        // perfect clear bonus
+};
+
+// GARBAGE_LIMITS: [min, max] for each field
+const GARBAGE_LIMITS={
+  single:[0,6], double:[0,8], triple:[0,10], tetris:[0,12],
+  tspinMini:[0,6], tspin1:[0,8], tspin2:[0,10], tspin3:[0,12],
+  combo:[0,4], pc:[0,20]
+};
+
+// Active garbage settings (modified by UI or synced from host)
+let garbageSettings={...DEFAULT_GARBAGE};
+
+function calcGarbage(linesCleared,tspinType,isPerfectClear){
+  const g=garbageSettings;
+  let gar=0;
+  if(tspinType==='full'){
+    if(linesCleared===1)gar=g.tspin1;
+    else if(linesCleared===2)gar=g.tspin2;
+    else if(linesCleared===3)gar=g.tspin3;
+  } else if(tspinType==='mini'){
+    if(linesCleared===1)gar=g.tspinMini;
+  } else {
+    const table=[0,g.single,g.double,g.triple,g.tetris];
+    gar=table[Math.min(linesCleared,4)]||0;
+  }
+  if(G.combo>0)gar+=G.combo*g.combo;
+  if(isPerfectClear)gar+=g.pc;
+  return Math.min(gar,20);
+}
+
+// ══════════════════════════════════════════════
+// ── GRAVITY SETTINGS ──
+// ══════════════════════════════════════════════
+
+// All possible gravity stages. Host can toggle each on/off and set how many
+// seconds each stage lasts before escalating to the next active stage.
+const ALL_GRAVITY_STAGES=[
+  {cps:1,  label:'1×',  defaultDur:0,    alwaysOn:true},  // 1× is always on; dur=0 means "use next stage duration as transition"
+  {cps:2,  label:'2×',  defaultDur:30,   alwaysOn:false},
+  {cps:4,  label:'3×',  defaultDur:30,   alwaysOn:false},
+  {cps:8,  label:'4×',  defaultDur:60,   alwaysOn:false},
+  {cps:12, label:'6×',  defaultDur:80,   alwaysOn:false},
+  {cps:20, label:'8×',  defaultDur:60,   alwaysOn:false},
+  {cps:30, label:'10×', defaultDur:60,   alwaysOn:false},
+  {cps:45, label:'12×', defaultDur:60,   alwaysOn:false},
+  {cps:60, label:'15×', defaultDur:999,  alwaysOn:false},
 ];
+
+const DEFAULT_GRAVITY_SETTINGS={
+  noEscalation:false,
+  // stages: array parallel to ALL_GRAVITY_STAGES — each has { enabled, durationSec }
+  stages:[
+    {enabled:true,  durationSec:0},   // 1×  — always on, durationSec = seconds before next kicks in
+    {enabled:true,  durationSec:20},  // 2×
+    {enabled:true,  durationSec:30},  // 3×
+    {enabled:true,  durationSec:60},  // 4×
+    {enabled:true,  durationSec:80},  // 6×
+    {enabled:true,  durationSec:60},  // 8×
+    {enabled:false, durationSec:60},  // 10×
+    {enabled:false, durationSec:60},  // 12×
+    {enabled:false, durationSec:999}, // 15×
+  ]
+};
+
+let gravitySettings=JSON.parse(JSON.stringify(DEFAULT_GRAVITY_SETTINGS));
+
+// Build a runtime gravity table from gravitySettings (called when game starts)
+let _builtGravityTable=null; // [{minSec, cps, label, pct}]
+
+function buildGravityTable(){
+  if(gravitySettings.noEscalation){
+    _builtGravityTable=[{minSec:0,cps:1,label:'1×',pct:5}];
+    return;
+  }
+  const table=[];
+  let elapsed=0;
+  for(let i=0;i<ALL_GRAVITY_STAGES.length;i++){
+    const stage=ALL_GRAVITY_STAGES[i];
+    const cfg=gravitySettings.stages[i];
+    if(!cfg.enabled&&!stage.alwaysOn)continue;
+    table.push({minSec:elapsed,cps:stage.cps,label:stage.label});
+    // For the 1× stage (first), its "duration" before next is defined by stages[0].durationSec
+    // For the last active stage, it stays forever (minSec just keeps growing)
+    if(i<ALL_GRAVITY_STAGES.length-1){
+      const dur=cfg.durationSec||20;
+      elapsed+=dur;
+    }
+  }
+  // Assign pct for gravity bar (proportional to cps rank)
+  const maxCps=table[table.length-1].cps;
+  table.forEach(s=>{s.pct=Math.round((s.cps/maxCps)*100);});
+  if(table[0])table[0].pct=5;
+  _builtGravityTable=table;
+}
+
 function getGravityStage(elapsedSec){
-  let stage=GRAVITY_STAGES[0];
-  for(const s of GRAVITY_STAGES){if(elapsedSec>=s.minSec)stage=s;}
+  const t=_builtGravityTable||[{minSec:0,cps:1,label:'1×',pct:5}];
+  let stage=t[0];
+  for(const s of t){if(elapsedSec>=s.minSec)stage=s;}
   return stage;
 }
+
 function gravityInterval(elapsedSec){
   const s=getGravityStage(elapsedSec);
   return Math.max(50,Math.floor(1000/s.cps));
+}
+
+// ══════════════════════════════════════════════
+// ── SETTINGS UI ──
+// ══════════════════════════════════════════════
+
+function toggleSettings(key){
+  const body=document.getElementById(`${key}-body`);
+  const chevron=document.getElementById(`${key}-chevron`);
+  const isOpen=body.classList.contains('open');
+  body.classList.toggle('open',!isOpen);
+  chevron.classList.toggle('open',!isOpen);
+}
+
+// ── GARBAGE UI ──
+const GARB_FIELDS=[
+  {key:'single',   label:'Single'},
+  {key:'double',   label:'Double'},
+  {key:'triple',   label:'Triple'},
+  {key:'tetris',   label:'Tetris'},
+  {key:'tspinMini',label:'T-Spin Mini'},
+  {key:'tspin1',   label:'T-Spin 1L'},
+  {key:'tspin2',   label:'T-Spin 2L'},
+  {key:'tspin3',   label:'T-Spin 3L'},
+  {key:'combo',    label:'Combo Bonus'},
+  {key:'pc',       label:'Perfect Clear'},
+];
+
+function buildGarbageSpinners(){
+  GARB_FIELDS.forEach(({key})=>{
+    const wrap=document.getElementById(`garb-spin-${key}`);
+    if(!wrap)return;
+    wrap.innerHTML='';
+    const [min,max]=GARBAGE_LIMITS[key]||[0,10];
+    const minusBtn=document.createElement('button');
+    minusBtn.className='garb-spinner-btn';minusBtn.textContent='−';
+    minusBtn.onclick=()=>{if(garbageSettings[key]>min){garbageSettings[key]--;updateGarbageSpinner(key);updateGarbSummary();}};
+    const val=document.createElement('span');
+    val.className='garb-spinner-val';val.id=`gsv-${key}`;val.textContent=garbageSettings[key];
+    const plusBtn=document.createElement('button');
+    plusBtn.className='garb-spinner-btn';plusBtn.textContent='+';
+    plusBtn.onclick=()=>{if(garbageSettings[key]<max){garbageSettings[key]++;updateGarbageSpinner(key);updateGarbSummary();}};
+    wrap.appendChild(minusBtn);wrap.appendChild(val);wrap.appendChild(plusBtn);
+  });
+}
+
+function updateGarbageSpinner(key){
+  const el=document.getElementById(`gsv-${key}`);
+  if(el)el.textContent=garbageSettings[key];
+}
+
+function updateAllGarbageSpinners(){
+  GARB_FIELDS.forEach(({key})=>updateGarbageSpinner(key));
+  updateGarbSummary();
+}
+
+function updateGarbSummary(){
+  const g=garbageSettings;
+  const el=document.getElementById('garb-summary');
+  if(!el)return;
+  const isDefault=JSON.stringify(g)===JSON.stringify(DEFAULT_GARBAGE);
+  if(isDefault){el.textContent='Default · Single=0 Double=1 Triple=2 Tetris=4';return;}
+  el.textContent=`S=${g.single} D=${g.double} T=${g.triple} 4L=${g.tetris} TS=${g.tspin1}/${g.tspin2}/${g.tspin3}`;
+}
+
+function resetGarbage(){
+  garbageSettings={...DEFAULT_GARBAGE};
+  updateAllGarbageSpinners();
+}
+
+// ── GRAVITY UI ──
+function buildGravityStageList(){
+  const list=document.getElementById('grav-stage-list');
+  if(!list)return;
+  list.innerHTML='';
+  ALL_GRAVITY_STAGES.forEach((stage,i)=>{
+    const cfg=gravitySettings.stages[i];
+    const row=document.createElement('div');
+    row.className='grav-stage-row';
+    row.id=`grav-row-${i}`;
+
+    const isFirst=i===0; // 1× always on
+
+    // Toggle
+    const toggle=document.createElement('div');
+    toggle.className='grav-stage-toggle'+(cfg.enabled||isFirst?' on':'');
+    toggle.id=`grav-toggle-${i}`;
+    if(!isFirst){
+      toggle.onclick=()=>{
+        cfg.enabled=!cfg.enabled;
+        toggle.classList.toggle('on',cfg.enabled);
+        updateGravRowDisabled(i);
+        updateGravSummary();
+      };
+    } else {
+      toggle.style.opacity='0.5';toggle.style.cursor='default';
+    }
+
+    // Label
+    const lbl=document.createElement('span');
+    lbl.className='grav-stage-label';
+    lbl.textContent=stage.label;
+
+    // Duration wrap
+    const durWrap=document.createElement('div');
+    durWrap.className='grav-stage-dur-wrap';
+    durWrap.id=`grav-dur-wrap-${i}`;
+
+    if(isFirst){
+      // 1× stage: the duration here is "how long at 1× before escalating"
+      const slider=document.createElement('input');
+      slider.type='range';slider.className='grav-stage-dur-slider';
+      slider.min=5;slider.max=120;slider.step=5;
+      slider.value=cfg.durationSec||20;
+      slider.id=`grav-slider-${i}`;
+      const valLbl=document.createElement('span');
+      valLbl.className='grav-stage-dur-val';
+      valLbl.id=`grav-val-${i}`;
+      valLbl.textContent=`${cfg.durationSec||20}s`;
+      slider.oninput=()=>{cfg.durationSec=parseInt(slider.value);valLbl.textContent=`${slider.value}s`;updateGravSummary();};
+      durWrap.appendChild(slider);durWrap.appendChild(valLbl);
+    } else if(i<ALL_GRAVITY_STAGES.length-1){
+      // Middle stages: duration is how long this stage lasts
+      const durLabel=document.createElement('span');
+      durLabel.style.cssText='font-size:9px;color:#475569;white-space:nowrap;';
+      durLabel.textContent='lasts';
+      const slider=document.createElement('input');
+      slider.type='range';slider.className='grav-stage-dur-slider';
+      slider.min=5;slider.max=120;slider.step=5;
+      slider.value=cfg.durationSec||30;
+      slider.id=`grav-slider-${i}`;
+      const valLbl=document.createElement('span');
+      valLbl.className='grav-stage-dur-val';
+      valLbl.id=`grav-val-${i}`;
+      valLbl.textContent=`${cfg.durationSec||30}s`;
+      slider.oninput=()=>{cfg.durationSec=parseInt(slider.value);valLbl.textContent=`${slider.value}s`;updateGravSummary();};
+      durWrap.appendChild(durLabel);durWrap.appendChild(slider);durWrap.appendChild(valLbl);
+    } else {
+      // Last stage — stays forever
+      const forever=document.createElement('span');
+      forever.style.cssText='font-size:9px;color:#475569;font-style:italic;';
+      forever.textContent='stays until end';
+      durWrap.appendChild(forever);
+    }
+
+    row.appendChild(toggle);row.appendChild(lbl);row.appendChild(durWrap);
+    list.appendChild(row);
+    if(!isFirst)updateGravRowDisabled(i);
+  });
+}
+
+function updateGravRowDisabled(i){
+  const cfg=gravitySettings.stages[i];
+  const durWrap=document.getElementById(`grav-dur-wrap-${i}`);
+  if(durWrap)durWrap.classList.toggle('grav-stage-disabled',!cfg.enabled);
+}
+
+function updateGravSummary(){
+  const el=document.getElementById('grav-summary');
+  if(!el)return;
+  if(gravitySettings.noEscalation){el.textContent='Flat gravity — no escalation';return;}
+  const active=gravitySettings.stages.filter((s,i)=>s.enabled||i===0);
+  const maxStage=ALL_GRAVITY_STAGES.filter((_,i)=>gravitySettings.stages[i].enabled||i===0).pop();
+  el.textContent=`Progressive · ${active.length} stages · max ${maxStage?maxStage.label:'1×'}`;
+}
+
+function onNoEscalationToggle(){
+  const cb=document.getElementById('grav-no-escalation');
+  gravitySettings.noEscalation=cb.checked;
+  const list=document.getElementById('grav-stage-list');
+  if(list)list.style.opacity=cb.checked?'0.35':'1';
+  if(list)list.style.pointerEvents=cb.checked?'none':'';
+  updateGravSummary();
+}
+
+function resetGravity(){
+  gravitySettings=JSON.parse(JSON.stringify(DEFAULT_GRAVITY_SETTINGS));
+  const cb=document.getElementById('grav-no-escalation');
+  if(cb)cb.checked=false;
+  buildGravityStageList();
+  updateGravSummary();
+}
+
+function initSettingsUI(){
+  buildGarbageSpinners();
+  updateGarbSummary();
+  buildGravityStageList();
+  updateGravSummary();
+}
+
+// settings preview badges for waiting room
+function renderWaitSettingsPreview(){
+  const wrap=document.getElementById('wait-settings-preview');
+  if(!wrap)return;
+  wrap.innerHTML='';
+  // Garbage summary badge
+  const gIsDefault=JSON.stringify(garbageSettings)===JSON.stringify(DEFAULT_GARBAGE);
+  if(!gIsDefault){
+    const b=document.createElement('span');b.className='settings-badge';
+    b.textContent=`⚔️ S=${garbageSettings.single} D=${garbageSettings.double} T=${garbageSettings.triple} 4L=${garbageSettings.tetris}`;
+    wrap.appendChild(b);
+  }
+  // Gravity summary badge
+  if(gravitySettings.noEscalation){
+    const b=document.createElement('span');b.className='settings-badge';
+    b.textContent='🌍 Flat 1×';wrap.appendChild(b);
+  } else {
+    const activeCount=gravitySettings.stages.filter((s,i)=>s.enabled||i===0).length;
+    if(activeCount!==DEFAULT_GRAVITY_SETTINGS.stages.filter((s,i)=>s.enabled||i===0).length){
+      const b=document.createElement('span');b.className='settings-badge';
+      b.textContent=`🌍 ${activeCount} stages`;wrap.appendChild(b);
+    }
+  }
 }
 
 // ── ROUND SYSTEM ──
@@ -914,7 +1355,7 @@ function setMode(mode){
 (function init(){
   const g=document.getElementById('mp-grid');
   for(let i=2;i<=10;i++){const b=document.createElement('button');b.textContent=i;b.dataset.n=i;b.style.cssText="padding:7px 0;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:'Sora',sans-serif;transition:all .15s;";setMpBtn(b,i===2);b.onclick=()=>{selectedMax=i;g.querySelectorAll('button').forEach(x=>setMpBtn(x,parseInt(x.dataset.n)===i));};g.appendChild(b);}
-  buildSkinGrid();renderColPreviews();buildRoundPicker();startRoomsBrowser();
+  buildSkinGrid();renderColPreviews();buildRoundPicker();initSettingsUI();startRoomsBrowser();
 })();
 function setMpBtn(b,sel){if(sel){b.style.background='linear-gradient(135deg,#6366f1,#8b5cf6)';b.style.color='white';b.style.boxShadow='0 4px 14px rgba(99,102,241,.4)';}else{b.style.background='rgba(255,255,255,.06)';b.style.color='#64748b';b.style.boxShadow='none';}}
 
@@ -953,23 +1394,13 @@ function detectTSpin(){
 // ── PERFECT CLEAR ──
 function detectPerfectClear(){return G.board.every(row=>row.every(v=>v===0));}
 
-// ── GARBAGE CALCULATION ──
-function calcGarbage(linesCleared, tspinType, isPerfectClear){
-  let gar=0;
-  if(tspinType==='full'){if(linesCleared===1)gar=2;else if(linesCleared===2)gar=4;else if(linesCleared===3)gar=6;}
-  else if(tspinType==='mini'){if(linesCleared===1)gar=1;}
-  else{const table=[0,0,1,2,4];gar=table[Math.min(linesCleared,4)]||0;}
-  if(G.combo>0)gar+=G.combo;
-  if(isPerfectClear)gar+=10;
-  return Math.min(gar,20);
-}
-
 // ── SOLO MODE ──
 function startSolo(){
   const name=document.getElementById('inp-name').value.trim();if(!name){shakeEl('inp-name');return;}
   haltGame();
   myName=name;isSoloMode=true;stopRoomsBrowser();
-  applyBoardWidth();totalRounds=1;currentRound=1;seriesWins={};roundResolved=false;
+  applyBoardWidth();buildGravityTable();
+  totalRounds=1;currentRound=1;seriesWins={};roundResolved=false;
   currentPlayers=[{slot:'p1',name:myName,dead:false}];eliminatedRanks=[];
   myRef=null;garbRef=null;roomRef=null;
   document.getElementById('my-name-lbl').textContent=myName;
@@ -991,11 +1422,12 @@ function updateGravityIndicator(){
   if(ind&&stage.cps>1){ind.classList.add('show');ind.style.display='block';}
   else if(ind){ind.classList.remove('show');ind.style.display='none';}
   if(val)val.textContent=stage.label;
-  if(bar)bar.style.width=stage.pct+'%';
+  if(bar)bar.style.width=(stage.pct||5)+'%';
 }
 
 // ── INIT GAME ──
 function initGame(){
+  buildGravityTable(); // rebuild from current gravitySettings
   G.board=Array.from({length:ROWS},()=>Array(COLS).fill(0));
   G.bag=[...newBag(),...newBag(),...newBag()];G.hold=null;G.holdUsed=false;
   G.score=0;G.lines=0;G.level=1;G.combo=-1;
@@ -1025,9 +1457,6 @@ function spawn(){G.piece=mkPiece(pullNext());G.holdUsed=false;G.lastMoveWasRotat
 // ── DROP / LOCK ──
 function currentDropInterval(){const elapsed=(Date.now()-G.gravityStartMs)/1000;return gravityInterval(elapsed);}
 
-// ── FIX: startDrop no longer skips ticks when lockTimeout is active.
-// The lock timeout and drop timer are now independent — rotation cancels lock
-// and immediately re-enables gravity ticks via startDrop().
 function startDrop(){
   stopDrop();
   if(!G.running||G.dead||G.paused)return;
@@ -1041,18 +1470,13 @@ function stopDrop(){clearInterval(G.dropTimer);G.dropTimer=null;}
 
 function autoDown(){
   if(!G.running||G.dead||G.paused)return;
-  // ── FIX: if a lock is already pending, cancel it and try to move down.
-  // This ensures gravity keeps pulling the piece even after a rotation
-  // that triggered a lock countdown on a previous position.
   if(G.lockTimeout){
-    // piece might now be able to fall (e.g. after rotate + wall-kick moved it)
     if(valid(G.board,G.piece,0,1)){
       clearLock();
       G.piece.py++;
       G.lastMoveWasRotation=false;
       renderBoard();
     }
-    // if still can't fall, let the existing lock timeout fire naturally
     return;
   }
   if(valid(G.board,G.piece,0,1)){
@@ -1067,15 +1491,8 @@ function autoDown(){
 function startLock(){if(G.lockTimeout)return;G.lockTimeout=setTimeout(()=>{G.lockTimeout=null;if(!G.running||G.dead)return;if(!valid(G.board,G.piece,0,1))lock();},480);}
 function clearLock(){clearTimeout(G.lockTimeout);G.lockTimeout=null;}
 
-// ── FIX: resetLock — after clearing the lock timer, restart the drop timer
-// so the piece immediately resumes falling. Without this, rotating at high
-// gravity leaves the piece floating until the next drop tick fires (which
-// could be hundreds of ms away at x1 gravity, but at x4+ the issue is that
-// the lockTimeout was the only "next event" and clearing it leaves nothing).
 function resetLock(){
   clearLock();
-  // Restart the drop cycle immediately so gravity resumes right away.
-  // This is the core fix: piece won't float after rotation at any gravity.
   startDrop();
 }
 
@@ -1084,11 +1501,6 @@ function moveH(dx){if(!live())return;if(valid(G.board,G.piece,dx,0)){G.piece.px+
 function softDrop(){if(!live())return;if(valid(G.board,G.piece,0,1)){G.piece.py++;G.score++;G.lastMoveWasRotation=false;clearLock();renderBoard();}else startLock();}
 function hardDrop(){if(!live())return;let d=0;while(valid(G.board,G.piece,0,d+1))d++;G.piece.py+=d;G.score+=d*2;G.lastMoveWasRotation=false;clearLock();lock();}
 
-// ── FIX: rotate() — after a successful rotation, always cancel any pending
-// lock and restart the drop timer. If the piece can still fall after rotating
-// (e.g. a wall-kick moved it off the stack), it will begin falling immediately
-// instead of floating. If it still can't fall, the new startDrop() tick will
-// call autoDown() → startLock() on the next interval.
 function rotate(dir){
   if(!live())return;
   const newRot=(G.piece.rot+dir+4)%4;
@@ -1101,7 +1513,6 @@ function rotate(dir){
       G.piece.py-=ky;
       G.lastMoveWasRotation=true;
       G.lastKickIndex=ki;
-      // ── KEY FIX: cancel lock + restart drop so piece falls immediately ──
       clearLock();
       startDrop();
       renderBoard();
@@ -1282,12 +1693,12 @@ function updateGarbage(){
 function updateCombo(){const box=document.getElementById('combo-box');if(G.combo>0){box.style.display='block';document.getElementById('combo-val').textContent=G.combo+'x';}else{box.style.display='none';}}
 function updateAliveCount(){if(isSoloMode){document.getElementById('alive-pill').textContent='SOLO';return;}const alive=currentPlayers.filter(p=>!p.dead).length;document.getElementById('alive-pill').textContent=`${alive} / ${currentPlayers.length} ALIVE`;}
 
-function showClearFx(lines, tspinType, isPerfect){
+function showClearFx(lines,tspinType,isPerfect){
   let txt='',color='#f1f5f9',sub='';
   if(tspinType==='full'){const tnames=['','T-SPIN 1L','T-SPIN 2L','T-SPIN 3L'];txt=tnames[lines]||'T-SPIN';color='#CC44FF';}
   else if(tspinType==='mini'){txt='T-SPIN MINI';color='#e879f9';}
   else{const texts=['','SINGLE','DOUBLE','TRIPLE','TETRIS!'];const colors=['','#FFE000','#00FF88','#CC44FF','#FF3355'];txt=texts[lines]||`${lines} LINES`;color=colors[Math.min(lines,4)]||'#f1f5f9';}
-  if(isPerfect){txt='PERFECT CLEAR!';color='#fbbf24';sub='🌟 +10 bonus garbage!';}
+  if(isPerfect){txt='PERFECT CLEAR!';color='#fbbf24';sub='🌟 +'+garbageSettings.pc+' bonus garbage!';}
   else if(G.combo>0){sub=`🔥 ${G.combo}× combo!`;}
   const pop=document.getElementById('clear-popup');
   document.getElementById('cp-text').textContent=txt;document.getElementById('cp-text').style.color=color;document.getElementById('cp-sub').textContent=sub;
@@ -1323,18 +1734,35 @@ function togglePause(){if(!G.running||G.dead)return;G.paused=!G.paused;document.
 // ── FIREBASE ROOM LOGIC ──
 function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=c[0|Math.random()*c.length];return s;}
 
+// Serialize settings for Firebase (compact)
+function serializeSettings(){
+  return{
+    garbage:JSON.parse(JSON.stringify(garbageSettings)),
+    gravity:JSON.parse(JSON.stringify(gravitySettings))
+  };
+}
+// Apply settings received from Firebase
+function applySettings(data){
+  if(data&&data.garbage)garbageSettings={...DEFAULT_GARBAGE,...data.garbage};
+  if(data&&data.gravity)gravitySettings=JSON.parse(JSON.stringify({...DEFAULT_GRAVITY_SETTINGS,...data.gravity}));
+}
+
 async function createRoom(){
   const name=document.getElementById('inp-name').value.trim();if(!name){shakeEl('inp-name');return;}
   myName=name;roomId=genCode();mySlot='p1';myIsCreator=true;maxPlayers=selectedMax;isSoloMode=false;
   totalRounds=selectedRounds;currentRound=1;seriesWins={};roundResolved=false;
   stopRoomsBrowser();
   roomRef=DB.ref(`tetris2/rooms/${roomId}`);
-  const roomData={status:'waiting',createdAt:Date.now(),maxPlayers,hostName:myName,cols:selectedCols,totalRounds,currentRound:1,seriesWins:{}};
+  const roomData={
+    status:'waiting',createdAt:Date.now(),maxPlayers,hostName:myName,
+    cols:selectedCols,totalRounds,currentRound:1,seriesWins:{},
+    settings:serializeSettings()
+  };
   roomData.p1={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false};
   await roomRef.set(roomData).catch(console.error);
   roomRef.onDisconnect().remove();
   document.getElementById('wait-code').textContent=roomId;
-  updateWaitBadges();
+  updateWaitBadges();renderWaitSettingsPreview();
   showScreen('s-waiting');startRoomExpiry();listenRoom();
 }
 
@@ -1350,13 +1778,14 @@ async function joinRoom(){
   maxPlayers=d.maxPlayers||2;if(d.cols)selectedCols=d.cols;
   totalRounds=d.totalRounds||1;currentRound=d.currentRound||1;
   seriesWins={};if(d.seriesWins)Object.assign(seriesWins,d.seriesWins);
+  if(d.settings)applySettings(d.settings);
   roundResolved=false;
   let slot=null;for(let i=2;i<=maxPlayers;i++){if(!d[`p${i}`]){slot=`p${i}`;break;}}
   if(!slot){alert('Room is full!');startRoomsBrowser();return;}
   mySlot=slot;
   await roomRef.child(mySlot).set({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).catch(console.error);
   document.getElementById('wait-code').textContent=roomId;
-  updateWaitBadges();
+  updateWaitBadges();renderWaitSettingsPreview();
   showScreen('s-waiting');listenRoom();
 }
 
@@ -1373,6 +1802,7 @@ function listenRoom(){
     if(typeof d.totalRounds!=='undefined')totalRounds=d.totalRounds;
     if(typeof d.currentRound!=='undefined')currentRound=d.currentRound;
     if(d.seriesWins)Object.assign(seriesWins,d.seriesWins);
+    if(d.settings)applySettings(d.settings);
     const slots=[],playerData={};
     for(let i=1;i<=maxPlayers;i++){if(d[`p${i}`]){slots.push(`p${i}`);playerData[`p${i}`]=d[`p${i}`];}}
     if(d.status==='waiting'){
@@ -1384,6 +1814,7 @@ function listenRoom(){
       if(typeof d.totalRounds!=='undefined')totalRounds=d.totalRounds;
       if(typeof d.currentRound!=='undefined')currentRound=d.currentRound;
       if(d.seriesWins)Object.assign(seriesWins,d.seriesWins);
+      if(d.settings)applySettings(d.settings);
       roomRef.off('value',roomListener);roomListener=null;
       currentPlayers=slots.map(s=>({slot:s,name:playerData[s].name,dead:false}));
       roundResolved=false;
@@ -1396,8 +1827,9 @@ function listenRoom(){
         if(typeof d.totalRounds!=='undefined')totalRounds=d.totalRounds;
         if(typeof d.currentRound!=='undefined')currentRound=d.currentRound;
         if(d.seriesWins)Object.assign(seriesWins,d.seriesWins);
+        if(d.settings)applySettings(d.settings);
         roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
-          document.getElementById('wait-code').textContent=roomId;updateWaitBadges();renderWaitSeriesScore();showScreen('s-waiting');listenRoom();
+          document.getElementById('wait-code').textContent=roomId;updateWaitBadges();renderWaitSeriesScore();renderWaitSettingsPreview();showScreen('s-waiting');listenRoom();
         });
       }
     }
@@ -1405,8 +1837,9 @@ function listenRoom(){
       roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;
       if(typeof d.totalRounds!=='undefined')totalRounds=d.totalRounds;
       currentRound=1;seriesWins={};roundResolved=false;
+      if(d.settings)applySettings(d.settings);
       roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
-        document.getElementById('wait-code').textContent=roomId;updateWaitBadges();showScreen('s-waiting');listenRoom();
+        document.getElementById('wait-code').textContent=roomId;updateWaitBadges();renderWaitSettingsPreview();showScreen('s-waiting');listenRoom();
       });
     }
     if(d.status==='abandoned'){alert('Room abandoned.');cancelWait();}
@@ -1459,7 +1892,7 @@ function cancelWait(){
 function copyCode(){navigator.clipboard.writeText(roomId).then(()=>{const b=document.getElementById('copy-btn');b.textContent='✓ Copied!';setTimeout(()=>b.textContent='📋 Copy code',2000);}).catch(()=>{});}
 
 // ── PLAYER LEAVE DETECTION ──
-function showLeaveToast(name, isHost=false){
+function showLeaveToast(name,isHost=false){
   const container=document.getElementById('leave-toast-container');if(!container)return;
   const toast=document.createElement('div');toast.className='leave-toast';
   const sub=isHost?'Host left — you will be sent to lobby shortly…':'They have been removed from the match.';
@@ -1468,7 +1901,7 @@ function showLeaveToast(name, isHost=false){
   setTimeout(()=>{toast.classList.add('out');setTimeout(()=>toast.remove(),350);},4500);
 }
 
-function playerLeft(slot, name){
+function playerLeft(slot,name){
   const p=currentPlayers.find(x=>x.slot===slot);
   if(!p||p.dead)return;
   p.dead=true;
@@ -1481,7 +1914,7 @@ function playerLeft(slot, name){
     const nameEl=document.getElementById(`opp-name-${slot}`);if(nameEl)nameEl.style.textDecoration='line-through';
   }
   const isHostLeaving=(slot==='p1'&&mySlot!=='p1');
-  showLeaveToast(name, isHostLeaving);
+  showLeaveToast(name,isHostLeaving);
   updateAliveCount();
   if(isHostLeaving){
     setTimeout(()=>{if(!roundResolved){goLobby();}},3000);
@@ -1610,6 +2043,7 @@ function checkRoundWinner(){
         if(typeof d.totalRounds!=='undefined')totalRounds=d.totalRounds;
         if(typeof d.currentRound!=='undefined')currentRound=d.currentRound;
         if(d.seriesWins)Object.assign(seriesWins,d.seriesWins);
+        if(d.settings)applySettings(d.settings);
         roundResolved=false;
         roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
           document.getElementById('wait-code').textContent=roomId;updateWaitBadges();showScreen('s-waiting');listenRoom();
@@ -1619,6 +2053,7 @@ function checkRoundWinner(){
         roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;
         if(typeof d.totalRounds!=='undefined')totalRounds=d.totalRounds;
         currentRound=1;seriesWins={};roundResolved=false;
+        if(d.settings)applySettings(d.settings);
         roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
           document.getElementById('wait-code').textContent=roomId;updateWaitBadges();showScreen('s-waiting');listenRoom();
         });
@@ -1706,13 +2141,13 @@ async function hostStartNextRound(){
   if(!myIsCreator||!roomRef)return;
   if(gameoverRoomListener&&roomRef){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
   roundResolved=false;
-  const updates={status:'next_round',currentRound,seriesWins,powers:null,garbage:null};
+  const updates={status:'next_round',currentRound,seriesWins,settings:serializeSettings(),powers:null,garbage:null};
   for(let i=1;i<=maxPlayers;i++){updates[`p${i}`]=null;}
   currentPlayers.forEach(p=>{updates[p.slot]={name:p.name,status:'waiting',score:0,lines:0,level:1,dead:false};});
   updates[mySlot]={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false};
   await roomRef.update(updates);
   currentPlayers=currentPlayers.map(p=>({...p,dead:false}));eliminatedRanks=[];
-  document.getElementById('wait-code').textContent=roomId;updateWaitBadges();renderWaitSeriesScore();
+  document.getElementById('wait-code').textContent=roomId;updateWaitBadges();renderWaitSeriesScore();renderWaitSettingsPreview();
   showScreen('s-waiting');listenRoom();
   setTimeout(()=>{if(roomRef)roomRef.update({status:'waiting'});},600);
 }
@@ -1721,18 +2156,18 @@ async function hostNewSeries(){
   if(!myIsCreator||!roomRef)return;
   if(gameoverRoomListener&&roomRef){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
   currentRound=1;seriesWins={};roundResolved=false;
-  const updates={status:'new_series',currentRound:1,seriesWins:{},powers:null,garbage:null,totalRounds};
+  const updates={status:'new_series',currentRound:1,seriesWins:{},settings:serializeSettings(),powers:null,garbage:null,totalRounds};
   for(let i=1;i<=maxPlayers;i++){updates[`p${i}`]=null;}
   currentPlayers.forEach(p=>{updates[p.slot]={name:p.name,status:'waiting',score:0,lines:0,level:1,dead:false};});
   updates[mySlot]={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false};
   await roomRef.update(updates);
   currentPlayers=currentPlayers.map(p=>({...p,dead:false}));eliminatedRanks=[];
-  document.getElementById('wait-code').textContent=roomId;updateWaitBadges();renderWaitSeriesScore();
+  document.getElementById('wait-code').textContent=roomId;updateWaitBadges();renderWaitSeriesScore();renderWaitSettingsPreview();
   showScreen('s-waiting');listenRoom();
   setTimeout(()=>{if(roomRef)roomRef.update({status:'waiting'});},600);
 }
 
-function playSoloAgain(){haltGame();applyBoardWidth();showScreen('s-game');doCountdown(()=>initGame());}
+function playSoloAgain(){haltGame();applyBoardWidth();buildGravityTable();showScreen('s-game');doCountdown(()=>initGame());}
 
 function goLobby(){
   haltGame();
