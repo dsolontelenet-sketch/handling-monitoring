@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -281,6 +280,15 @@ body{
 /* Settings preview badges */
 .settings-badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(99,102,241,.12);color:#a5b4fc;border:1px solid rgba(99,102,241,.2);border-radius:6px;padding:2px 7px;}
 
+/* ── TEAM MODE ── */
+.matchtype-tab{flex:1;padding:9px 8px;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,255,255,.09);background:rgba(255,255,255,.05);color:#64748b;font-family:'Sora',sans-serif;transition:all .2s;text-align:center;}
+.matchtype-tab:hover{border-color:rgba(99,102,241,.45);color:#a5b4fc;background:rgba(99,102,241,.1);}
+.matchtype-tab.active{border-color:#6366f1;background:rgba(99,102,241,.18);color:white;box-shadow:0 0 0 2px rgba(99,102,241,.25);}
+.team-badge-a{font-size:9px;background:rgba(239,68,68,.18);color:#fca5a5;border:1px solid rgba(239,68,68,.35);border-radius:20px;padding:2px 8px;font-family:'JetBrains Mono',monospace;font-weight:700;}
+.team-badge-b{font-size:9px;background:rgba(59,130,246,.18);color:#93c5fd;border:1px solid rgba(59,130,246,.35);border-radius:20px;padding:2px 8px;font-family:'JetBrains Mono',monospace;font-weight:700;}
+.ally-badge{font-size:8px;background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:1px 6px;font-family:'JetBrains Mono',monospace;font-weight:700;}
+.enemy-badge{font-size:8px;background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:1px 6px;font-family:'JetBrains Mono',monospace;font-weight:700;}
+
 @media(max-height:680px){#s-game{padding:5px;gap:6px;}}
 </style>
 </head>
@@ -294,6 +302,25 @@ body{
 
 <!-- ROUND WIN POPUP -->
 <div id="round-win-popup"></div>
+
+<!-- ══ TEAM PICK MODAL ══ -->
+<div id="team-pick-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(2,6,18,.85);backdrop-filter:blur(6px);align-items:center;justify-content:center;">
+  <div class="glass rounded-2xl p-6" style="max-width:380px;width:90%;">
+    <h3 style="font-size:15px;font-weight:800;color:white;text-align:center;margin-bottom:4px;">Choose Your Team</h3>
+    <p style="font-size:11px;color:#64748b;text-align:center;margin-bottom:16px;">Teams don't need to be even — the host can start anytime.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button onclick="pickTeamAndJoin('A')" style="padding:14px;border-radius:14px;border:1.5px solid rgba(239,68,68,.4);background:rgba(239,68,68,.1);cursor:pointer;text-align:left;">
+        <div style="font-size:14px;font-weight:800;color:#fca5a5;" id="tpm-a-name">Team 1</div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px;" id="tpm-a-count">0 players</div>
+      </button>
+      <button onclick="pickTeamAndJoin('B')" style="padding:14px;border-radius:14px;border:1.5px solid rgba(59,130,246,.4);background:rgba(59,130,246,.1);cursor:pointer;text-align:left;">
+        <div style="font-size:14px;font-weight:800;color:#93c5fd;" id="tpm-b-name">Team 2</div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px;" id="tpm-b-count">0 players</div>
+      </button>
+    </div>
+    <button onclick="cancelTeamPick()" style="width:100%;margin-top:14px;padding:9px;border-radius:10px;background:rgba(255,255,255,.06);color:#64748b;border:1px solid rgba(255,255,255,.1);font-size:12px;font-weight:700;cursor:pointer;">Cancel</button>
+  </div>
+</div>
 
 <!-- ══ SERIES WINNER OVERLAY ══ -->
 <div id="series-winner-overlay">
@@ -478,8 +505,34 @@ body{
 
     <!-- Multiplayer section -->
     <div id="multi-section">
+
+      <!-- ══ MATCH TYPE (FFA vs Team Battle) ══ -->
+      <div style="margin-bottom:14px;">
+        <label style="font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#64748b;font-weight:600;display:block;margin-bottom:8px;">Match Type</label>
+        <div style="display:flex;gap:8px;">
+          <button class="matchtype-tab active" id="matchtype-ffa" onclick="setMatchType('ffa')">🎯 Free-for-All</button>
+          <button class="matchtype-tab" id="matchtype-team" onclick="setMatchType('team')">⚔️ Team Battle</button>
+        </div>
+      </div>
+
+      <div id="team-names-wrap" style="display:none;margin-bottom:14px;">
+        <label style="font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#64748b;font-weight:600;display:block;margin-bottom:8px;">Team Names</label>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <input id="inp-team1-name" type="text" maxlength="16" autocomplete="off" placeholder="Team 1 (e.g. Red)"
+            style="flex:1;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:8px 12px;color:white;font-size:12px;font-family:'Sora',sans-serif;outline:none;"/>
+          <input id="inp-team2-name" type="text" maxlength="16" autocomplete="off" placeholder="Team 2 (e.g. Blue)"
+            style="flex:1;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.3);border-radius:10px;padding:8px 12px;color:white;font-size:12px;font-family:'Sora',sans-serif;outline:none;"/>
+        </div>
+        <label style="font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#64748b;font-weight:600;display:block;margin-bottom:8px;">Your Team</label>
+        <div style="display:flex;gap:8px;">
+          <button type="button" id="host-team-a-btn" class="matchtype-tab active" style="border-color:rgba(239,68,68,.4);" onclick="setHostTeam('A')">🔴 <span id="host-team-a-lbl">Team 1</span></button>
+          <button type="button" id="host-team-b-btn" class="matchtype-tab" style="border-color:rgba(59,130,246,.4);" onclick="setHostTeam('B')">🔵 <span id="host-team-b-lbl">Team 2</span></button>
+        </div>
+        <p style="font-size:9px;color:#475569;margin-top:6px;">Teams don't need to be equal — you can start anytime once both teams have at least one player.</p>
+      </div>
+
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
-        <div>
+        <div id="mp-grid-wrap">
           <label style="font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#64748b;font-weight:600;display:block;margin-bottom:8px;">Max Players</label>
           <div id="mp-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;"></div>
         </div>
@@ -558,6 +611,7 @@ body{
     </div>
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;flex-wrap:wrap;" id="wait-badges">
       <span id="wait-rounds-badge" style="display:none;font-size:10px;background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);border-radius:20px;padding:3px 10px;font-family:'JetBrains Mono',monospace;">🏆 — ROUNDS</span>
+      <span id="wait-team-badge" style="display:none;font-size:10px;background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.3);border-radius:20px;padding:3px 10px;font-family:'JetBrains Mono',monospace;">⚔️ TEAM BATTLE</span>
     </div>
     <!-- Room settings preview in waiting room -->
     <div id="wait-settings-preview" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px;justify-content:center;"></div>
@@ -667,6 +721,7 @@ body{
       <div class="sdot sdot-green"></div>
       <span id="my-name-lbl" style="font-size:13px;font-weight:700;color:white;"></span>
       <span style="font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(99,102,241,.22);color:#a5b4fc;border:1px solid rgba(99,102,241,.35);border-radius:20px;padding:2px 8px;">YOU</span>
+      <span id="my-team-badge" style="display:none;"></span>
       <span id="solo-badge" style="display:none;font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(16,185,129,.2);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);border-radius:20px;padding:2px 8px;">SOLO</span>
       <span id="round-badge" style="font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);border-radius:20px;padding:2px 8px;"></span>
       <span id="width-badge" style="font-size:9px;font-family:'JetBrains Mono',monospace;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.3);border-radius:20px;padding:2px 8px;"></span>
@@ -1214,6 +1269,48 @@ let expiryTimer=null,expirySecondsLeft=ROOM_EXPIRE_SECONDS;
 let roomsRef=null,roomsListener=null;
 let garbageDeliveryTimer=null;
 
+// ══════════════════════════════════════════════
+// ── TEAM BATTLE MODE ──
+// ══════════════════════════════════════════════
+let isTeamModeSelected=false;   // lobby selection (before room creation)
+let hostTeamChoice='A';         // host's own team pick when creating a team battle room
+
+let isTeamMode=false;           // active room state (synced via Firebase)
+let team1Name='Team 1';
+let team2Name='Team 2';
+let teamWins={A:0,B:0};         // series wins per team
+
+function setMatchType(type){
+  isTeamModeSelected=(type==='team');
+  document.getElementById('matchtype-ffa').classList.toggle('active',type==='ffa');
+  document.getElementById('matchtype-team').classList.toggle('active',type==='team');
+  document.getElementById('team-names-wrap').style.display=isTeamModeSelected?'block':'none';
+}
+function setHostTeam(team){
+  hostTeamChoice=team;
+  document.getElementById('host-team-a-btn').classList.toggle('active',team==='A');
+  document.getElementById('host-team-b-btn').classList.toggle('active',team==='B');
+}
+function syncTeamNameLabels(){
+  const n1=document.getElementById('inp-team1-name')?.value.trim()||'Team 1';
+  const n2=document.getElementById('inp-team2-name')?.value.trim()||'Team 2';
+  const a=document.getElementById('host-team-a-lbl');if(a)a.textContent=n1;
+  const b=document.getElementById('host-team-b-lbl');if(b)b.textContent=n2;
+}
+// Determine a player's team ('A' or 'B'). Reads from live room data first (for
+// waiting-room rendering before currentPlayers is populated), else from currentPlayers.
+function getPlayerTeam(slot,dataOverride){
+  if(!isTeamMode)return null;
+  if(dataOverride&&dataOverride[slot])return dataOverride[slot].team||null;
+  const p=currentPlayers.find(x=>x.slot===slot);
+  return p?p.team||null:null;
+}
+function teamLabel(team){return team==='A'?team1Name:team2Name;}
+function teamBadgeHTML(team,extraClass=''){
+  if(!team)return'';
+  return `<span class="team-badge-${team.toLowerCase()} ${extraClass}">${team==='A'?'🔴':'🔵'} ${(team==='A'?team1Name:team2Name).toUpperCase()}</span>`;
+}
+
 // ── HALT GAME ──
 function haltGame(){
   G.running=false;
@@ -1239,7 +1336,8 @@ function updateSeriesUI(){
   document.getElementById('series-scoreboard').classList.add('show');
   const rb=document.getElementById('round-badge');
   if(rb){rb.style.display='inline';rb.textContent=`Round ${currentRound}/${totalRounds}`;}
-  renderSeriesRows(document.getElementById('series-rows'),'compact');
+  if(isTeamMode)renderTeamSeriesRows(document.getElementById('series-rows'),'compact');
+  else renderSeriesRows(document.getElementById('series-rows'),'compact');
   const needed=Math.ceil(totalRounds/2);
   document.getElementById('rounds-remaining-label').textContent=`First to ${needed} wins`;
 }
@@ -1256,6 +1354,26 @@ function renderSeriesRows(container,mode='full'){
     const isMe=p.slot===mySlot;
     row.innerHTML=`
       <span style="font-size:${mode==='compact'?'8':'10'}px;font-weight:700;color:${isMe?'#a5b4fc':'#94a3b8'};min-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${isMe?'YOU':p.name}</span>
+      <div style="display:flex;gap:3px;align-items:center;flex:1;flex-wrap:wrap;">${pips}</div>
+      <span style="font-size:${mode==='compact'?'10':'12'}px;font-weight:800;color:#fbbf24;font-family:'JetBrains Mono',monospace;min-width:16px;text-align:right;">${wins}</span>
+    `;
+    container.appendChild(row);
+  });
+}
+// Team-mode series scoreboard: Team 1 vs Team 2 win pips
+function renderTeamSeriesRows(container,mode='full'){
+  if(!container)return;
+  container.innerHTML='';
+  const needed=Math.ceil(totalRounds/2);
+  ['A','B'].forEach(team=>{
+    const wins=teamWins[team]||0;
+    const members=currentPlayers.filter(p=>getPlayerTeam(p.slot)===team).map(p=>p.slot===mySlot?'YOU':p.name).join(', ');
+    const row=document.createElement('div');row.className='series-row';
+    let pips='';
+    for(let i=0;i<needed;i++){pips+=`<div class="series-wins-pip ${i<wins?'filled':'empty'}"></div>`;}
+    const color=team==='A'?'#fca5a5':'#93c5fd';
+    row.innerHTML=`
+      <span style="font-size:${mode==='compact'?'8':'10'}px;font-weight:700;color:${color};min-width:66px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${members}">${team==='A'?'🔴':'🔵'} ${teamLabel(team)}</span>
       <div style="display:flex;gap:3px;align-items:center;flex:1;flex-wrap:wrap;">${pips}</div>
       <span style="font-size:${mode==='compact'?'10':'12'}px;font-weight:800;color:#fbbf24;font-family:'JetBrains Mono',monospace;min-width:16px;text-align:right;">${wins}</span>
     `;
@@ -1305,7 +1423,7 @@ function startRoomsBrowser(){
     snap.forEach(child=>{
       const d=child.val();if(!d)return;if(d.status!=='waiting')return;
       let count=0,maxP=d.maxPlayers||2;for(let i=1;i<=maxP;i++){if(d[`p${i}`])count++;}if(count>=maxP)return;
-      rooms.push({code:child.key,host:d.p1?d.p1.name:'?',count,max:maxP,cols:d.cols||10,rounds:d.totalRounds||1});
+      rooms.push({code:child.key,host:d.p1?d.p1.name:'?',count,max:maxP,cols:d.cols||10,rounds:d.totalRounds||1,teamMode:!!d.teamMode,team1Name:d.team1Name||'Team 1',team2Name:d.team2Name||'Team 2'});
     });
     list.innerHTML='';
     if(!rooms.length){const em=document.createElement('p');em.id='rooms-empty';em.style.cssText='font-size:12px;color:#334155;text-align:center;padding:12px 0;';em.textContent='No open rooms yet. Create one!';list.appendChild(em);return;}
@@ -1313,7 +1431,8 @@ function startRoomsBrowser(){
       const card=document.createElement('div');card.className='room-card';card.style.animationDelay=(i*40)+'ms';
       const colLabel=r.cols!==10?`<span style="font-size:9px;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:8px;padding:1px 6px;font-family:'JetBrains Mono',monospace;">${r.cols}col</span>`:'';
       const rndLabel=r.rounds>1?`<span style="font-size:9px;background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.25);border-radius:8px;padding:1px 6px;font-family:'JetBrains Mono',monospace;">${r.rounds}R</span>`:'';
-      card.innerHTML=`<span class="room-code-badge">${r.code}</span><div style="flex:1;overflow:hidden;"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;"><p style="font-size:12px;font-weight:700;color:white;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.host}</p>${colLabel}${rndLabel}</div><p style="font-size:10px;color:#64748b;">${r.count}/${r.max} players</p></div><button class="room-join-btn" onclick="quickJoin('${r.code}')">Join</button>`;
+      const teamLbl=r.teamMode?`<span title="${r.team1Name} vs ${r.team2Name}" style="font-size:9px;background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.25);border-radius:8px;padding:1px 6px;font-family:'JetBrains Mono',monospace;">⚔️ TEAM</span>`:'';
+      card.innerHTML=`<span class="room-code-badge">${r.code}</span><div style="flex:1;overflow:hidden;"><div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;"><p style="font-size:12px;font-weight:700;color:white;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.host}</p>${colLabel}${rndLabel}${teamLbl}</div><p style="font-size:10px;color:#64748b;">${r.count}/${r.max} players</p></div><button class="room-join-btn" onclick="quickJoin('${r.code}')">Join</button>`;
       list.appendChild(card);
     });
   });
@@ -1356,6 +1475,9 @@ function setMode(mode){
   const g=document.getElementById('mp-grid');
   for(let i=2;i<=10;i++){const b=document.createElement('button');b.textContent=i;b.dataset.n=i;b.style.cssText="padding:7px 0;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:'Sora',sans-serif;transition:all .15s;";setMpBtn(b,i===2);b.onclick=()=>{selectedMax=i;g.querySelectorAll('button').forEach(x=>setMpBtn(x,parseInt(x.dataset.n)===i));};g.appendChild(b);}
   buildSkinGrid();renderColPreviews();buildRoundPicker();initSettingsUI();startRoomsBrowser();
+  const t1=document.getElementById('inp-team1-name'),t2=document.getElementById('inp-team2-name');
+  if(t1)t1.addEventListener('input',syncTeamNameLabels);
+  if(t2)t2.addEventListener('input',syncTeamNameLabels);
 })();
 function setMpBtn(b,sel){if(sel){b.style.background='linear-gradient(135deg,#6366f1,#8b5cf6)';b.style.color='white';b.style.boxShadow='0 4px 14px rgba(99,102,241,.4)';}else{b.style.background='rgba(255,255,255,.06)';b.style.color='#64748b';b.style.boxShadow='none';}}
 
@@ -1398,13 +1520,14 @@ function detectPerfectClear(){return G.board.every(row=>row.every(v=>v===0));}
 function startSolo(){
   const name=document.getElementById('inp-name').value.trim();if(!name){shakeEl('inp-name');return;}
   haltGame();
-  myName=name;isSoloMode=true;stopRoomsBrowser();
+  myName=name;isSoloMode=true;isTeamMode=false;stopRoomsBrowser();
   applyBoardWidth();buildGravityTable();
-  totalRounds=1;currentRound=1;seriesWins={};roundResolved=false;
+  totalRounds=1;currentRound=1;seriesWins={};teamWins={A:0,B:0};roundResolved=false;
   currentPlayers=[{slot:'p1',name:myName,dead:false}];eliminatedRanks=[];
   myRef=null;garbRef=null;roomRef=null;
   document.getElementById('my-name-lbl').textContent=myName;
   document.getElementById('solo-badge').style.display='inline';
+  document.getElementById('my-team-badge').style.display='none';
   document.getElementById('room-chip').textContent='SOLO MODE';
   document.getElementById('alive-pill').textContent='SOLO';
   document.getElementById('garbage-box').style.display='none';
@@ -1552,7 +1675,13 @@ function sendGarbage(lines){
   G.garbageQueue=G.garbageQueue.filter(x=>x.amount>0);
   G.pendingGarbage=G.garbageQueue.reduce((s,i)=>s+i.amount,0);updateGarbage();
   if(toSend<=0)return;
-  const living=currentPlayers.filter(p=>p.slot!==mySlot&&!p.dead);
+  // In team mode, garbage only goes to a random ALIVE player on the OPPOSING team.
+  // Teammates never attack each other.
+  let living=currentPlayers.filter(p=>p.slot!==mySlot&&!p.dead);
+  if(isTeamMode){
+    const myTeam=getPlayerTeam(mySlot);
+    living=living.filter(p=>getPlayerTeam(p.slot)!==myTeam);
+  }
   if(!living.length)return;
   const target=living[Math.floor(Math.random()*living.length)];
   DB.ref(`tetris2/rooms/${roomId}/garbage/${target.slot}`).transaction(cur=>(cur||0)+toSend);
@@ -1644,14 +1773,20 @@ function getOCS(){const n=Object.keys(playerBoards).length;if(n<=1)return 18;if(
 function setupOpponentPanels(slots){
   const panel=document.getElementById('opponents-panel');panel.innerHTML='';playerBoards={};
   const ocs=getOCS(),bw=COLS*ocs,bh=ROWS*ocs;
+  const myTeam=isTeamMode?getPlayerTeam(mySlot):null;
   for(const slot of slots){
     if(slot===mySlot)continue;
+    const theirTeam=isTeamMode?getPlayerTeam(slot):null;
+    const isAlly=isTeamMode&&theirTeam===myTeam;
     const card=document.createElement('div');card.className='glass rounded-xl p-2';card.id=`opp-card-${slot}`;card.style.minWidth=`${bw+12}px`;
+    if(isTeamMode)card.style.border=`1px solid ${isAlly?'rgba(16,185,129,.4)':'rgba(239,68,68,.4)'}`;
+    const teamTag=isTeamMode?`<span class="${isAlly?'ally-badge':'enemy-badge'}">${isAlly?'🤝 ALLY':'⚔️ ENEMY'}</span>`:'';
     card.innerHTML=`
-      <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;">
+      <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;flex-wrap:wrap;">
         <div class="sdot sdot-orange" id="dot-${slot}"></div>
         <span style="font-size:11px;font-weight:700;color:white;max-width:${bw-20}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="opp-name-${slot}">?</span>
         <span id="opp-wins-${slot}" style="font-size:9px;display:none;font-family:'JetBrains Mono',monospace;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:8px;padding:1px 5px;"></span>
+        ${teamTag}
       </div>
       <div style="display:flex;gap:4px;margin-bottom:4px;">
         <div style="flex:1;background:rgba(255,255,255,.04);border-radius:6px;padding:2px 4px;text-align:center;"><p style="font-size:7px;text-transform:uppercase;color:#475569;font-weight:600;">Sc</p><p id="opp-score-${slot}" style="font-size:11px;font-weight:800;color:white;font-family:'JetBrains Mono',monospace;">0</p></div>
@@ -1691,7 +1826,17 @@ function updateGarbage(){
   else{box.style.display='none';}
 }
 function updateCombo(){const box=document.getElementById('combo-box');if(G.combo>0){box.style.display='block';document.getElementById('combo-val').textContent=G.combo+'x';}else{box.style.display='none';}}
-function updateAliveCount(){if(isSoloMode){document.getElementById('alive-pill').textContent='SOLO';return;}const alive=currentPlayers.filter(p=>!p.dead).length;document.getElementById('alive-pill').textContent=`${alive} / ${currentPlayers.length} ALIVE`;}
+function updateAliveCount(){
+  if(isSoloMode){document.getElementById('alive-pill').textContent='SOLO';return;}
+  if(isTeamMode){
+    const aliveA=currentPlayers.filter(p=>getPlayerTeam(p.slot)==='A'&&!p.dead).length;
+    const aliveB=currentPlayers.filter(p=>getPlayerTeam(p.slot)==='B'&&!p.dead).length;
+    document.getElementById('alive-pill').textContent=`🔴 ${team1Name} ${aliveA}  ·  🔵 ${team2Name} ${aliveB}`;
+    return;
+  }
+  const alive=currentPlayers.filter(p=>!p.dead).length;
+  document.getElementById('alive-pill').textContent=`${alive} / ${currentPlayers.length} ALIVE`;
+}
 
 function showClearFx(lines,tspinType,isPerfect){
   let txt='',color='#f1f5f9',sub='';
@@ -1749,16 +1894,22 @@ function applySettings(data){
 
 async function createRoom(){
   const name=document.getElementById('inp-name').value.trim();if(!name){shakeEl('inp-name');return;}
-  myName=name;roomId=genCode();mySlot='p1';myIsCreator=true;maxPlayers=selectedMax;isSoloMode=false;
-  totalRounds=selectedRounds;currentRound=1;seriesWins={};roundResolved=false;
+  myName=name;roomId=genCode();mySlot='p1';myIsCreator=true;
+  isTeamMode=isTeamModeSelected;
+  team1Name=document.getElementById('inp-team1-name').value.trim()||'Team 1';
+  team2Name=document.getElementById('inp-team2-name').value.trim()||'Team 2';
+  maxPlayers=selectedMax;isSoloMode=false;
+  totalRounds=selectedRounds;currentRound=1;seriesWins={};teamWins={A:0,B:0};roundResolved=false;
   stopRoomsBrowser();
   roomRef=DB.ref(`tetris2/rooms/${roomId}`);
   const roomData={
     status:'waiting',createdAt:Date.now(),maxPlayers,hostName:myName,
     cols:selectedCols,totalRounds,currentRound:1,seriesWins:{},
+    teamMode:isTeamMode,team1Name,team2Name,teamWins:{A:0,B:0},
     settings:serializeSettings()
   };
   roomData.p1={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false};
+  if(isTeamMode)roomData.p1.team=hostTeamChoice;
   await roomRef.set(roomData).catch(console.error);
   roomRef.onDisconnect().remove();
   document.getElementById('wait-code').textContent=roomId;
@@ -1766,24 +1917,60 @@ async function createRoom(){
   showScreen('s-waiting');startRoomExpiry();listenRoom();
 }
 
+let _pendingJoin=null; // {data, slot}
 async function joinRoom(){
   const name=document.getElementById('inp-name').value.trim();const code=document.getElementById('inp-code').value.trim().toUpperCase();
   if(!name){shakeEl('inp-name');return;}if(code.length!==4){shakeEl('inp-code');return;}
-  myName=name;roomId=code;myIsCreator=false;isSoloMode=false;stopRoomsBrowser();
+  myName=name;roomId=code;myIsCreator=false;isSoloMode=false;
   roomRef=DB.ref(`tetris2/rooms/${roomId}`);
   const snap=await roomRef.once('value').catch(()=>null);
-  if(!snap||!snap.val()){alert('Room not found!');startRoomsBrowser();return;}
+  if(!snap||!snap.val()){alert('Room not found!');return;}
   const d=snap.val();
-  if(d.status!=='waiting'){alert('Room is not open. It may have already started.');startRoomsBrowser();return;}
+  if(d.status!=='waiting'){alert('Room is not open. It may have already started.');return;}
   maxPlayers=d.maxPlayers||2;if(d.cols)selectedCols=d.cols;
   totalRounds=d.totalRounds||1;currentRound=d.currentRound||1;
+  isTeamMode=!!d.teamMode;
+  team1Name=d.team1Name||'Team 1';team2Name=d.team2Name||'Team 2';
   seriesWins={};if(d.seriesWins)Object.assign(seriesWins,d.seriesWins);
+  teamWins={A:0,B:0};if(d.teamWins)Object.assign(teamWins,d.teamWins);
   if(d.settings)applySettings(d.settings);
   roundResolved=false;
   let slot=null;for(let i=2;i<=maxPlayers;i++){if(!d[`p${i}`]){slot=`p${i}`;break;}}
-  if(!slot){alert('Room is full!');startRoomsBrowser();return;}
+  if(!slot){alert('Room is full!');return;}
+  if(isTeamMode){
+    stopRoomsBrowser();
+    _pendingJoin={data:d,slot};
+    showTeamPickModal(d);
+  } else {
+    stopRoomsBrowser();
+    await finalizeJoin(slot,null);
+  }
+}
+function showTeamPickModal(d){
+  const modal=document.getElementById('team-pick-modal');
+  let countA=0,countB=0;
+  for(let i=1;i<=(d.maxPlayers||2);i++){const p=d[`p${i}`];if(p){if(p.team==='A')countA++;else if(p.team==='B')countB++;}}
+  document.getElementById('tpm-a-name').textContent=d.team1Name||'Team 1';
+  document.getElementById('tpm-b-name').textContent=d.team2Name||'Team 2';
+  document.getElementById('tpm-a-count').textContent=countA+' player'+(countA!==1?'s':'');
+  document.getElementById('tpm-b-count').textContent=countB+' player'+(countB!==1?'s':'');
+  modal.style.display='flex';
+}
+function cancelTeamPick(){
+  document.getElementById('team-pick-modal').style.display='none';
+  _pendingJoin=null;startRoomsBrowser();
+}
+async function pickTeamAndJoin(team){
+  if(!_pendingJoin)return;
+  document.getElementById('team-pick-modal').style.display='none';
+  await finalizeJoin(_pendingJoin.slot,team);
+  _pendingJoin=null;
+}
+async function finalizeJoin(slot,team){
   mySlot=slot;
-  await roomRef.child(mySlot).set({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).catch(console.error);
+  const payload={name:myName,status:'ready',score:0,lines:0,level:1,dead:false};
+  if(isTeamMode&&team)payload.team=team;
+  await roomRef.child(mySlot).set(payload).catch(console.error);
   document.getElementById('wait-code').textContent=roomId;
   updateWaitBadges();renderWaitSettingsPreview();
   showScreen('s-waiting');listenRoom();
@@ -1792,6 +1979,8 @@ async function joinRoom(){
 function updateWaitBadges(){
   const rndBadge=document.getElementById('wait-rounds-badge');
   if(rndBadge){if(totalRounds>1){rndBadge.style.display='inline';rndBadge.textContent=`🏆 ${totalRounds} ROUNDS`;}else rndBadge.style.display='none';}
+  const teamBadge=document.getElementById('wait-team-badge');
+  if(teamBadge){if(isTeamMode){teamBadge.style.display='inline';teamBadge.textContent=`⚔️ ${team1Name} vs ${team2Name}`;}else teamBadge.style.display='none';}
 }
 
 function listenRoom(){
@@ -1801,7 +1990,10 @@ function listenRoom(){
     maxPlayers=d.maxPlayers||maxPlayers;
     if(typeof d.totalRounds!=='undefined')totalRounds=d.totalRounds;
     if(typeof d.currentRound!=='undefined')currentRound=d.currentRound;
+    if(typeof d.teamMode!=='undefined')isTeamMode=!!d.teamMode;
+    if(d.team1Name)team1Name=d.team1Name;if(d.team2Name)team2Name=d.team2Name;
     if(d.seriesWins)Object.assign(seriesWins,d.seriesWins);
+    if(d.teamWins)Object.assign(teamWins,d.teamWins);
     if(d.settings)applySettings(d.settings);
     const slots=[],playerData={};
     for(let i=1;i<=maxPlayers;i++){if(d[`p${i}`]){slots.push(`p${i}`);playerData[`p${i}`]=d[`p${i}`];}}
@@ -1813,10 +2005,13 @@ function listenRoom(){
       stopRoomExpiry();if(d.cols)selectedCols=d.cols;
       if(typeof d.totalRounds!=='undefined')totalRounds=d.totalRounds;
       if(typeof d.currentRound!=='undefined')currentRound=d.currentRound;
+      if(typeof d.teamMode!=='undefined')isTeamMode=!!d.teamMode;
+      if(d.team1Name)team1Name=d.team1Name;if(d.team2Name)team2Name=d.team2Name;
       if(d.seriesWins)Object.assign(seriesWins,d.seriesWins);
+      if(d.teamWins)Object.assign(teamWins,d.teamWins);
       if(d.settings)applySettings(d.settings);
       roomRef.off('value',roomListener);roomListener=null;
-      currentPlayers=slots.map(s=>({slot:s,name:playerData[s].name,dead:false}));
+      currentPlayers=slots.map(s=>({slot:s,name:playerData[s].name,dead:false,team:playerData[s].team}));
       roundResolved=false;
       beginBattle(slots,playerData);
     }
@@ -1827,6 +2022,7 @@ function listenRoom(){
         if(typeof d.totalRounds!=='undefined')totalRounds=d.totalRounds;
         if(typeof d.currentRound!=='undefined')currentRound=d.currentRound;
         if(d.seriesWins)Object.assign(seriesWins,d.seriesWins);
+        if(d.teamWins)Object.assign(teamWins,d.teamWins);
         if(d.settings)applySettings(d.settings);
         roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
           document.getElementById('wait-code').textContent=roomId;updateWaitBadges();renderWaitSeriesScore();renderWaitSettingsPreview();showScreen('s-waiting');listenRoom();
@@ -1836,7 +2032,7 @@ function listenRoom(){
     if(d.status==='new_series'){
       roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;
       if(typeof d.totalRounds!=='undefined')totalRounds=d.totalRounds;
-      currentRound=1;seriesWins={};roundResolved=false;
+      currentRound=1;seriesWins={};teamWins={A:0,B:0};roundResolved=false;
       if(d.settings)applySettings(d.settings);
       roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
         document.getElementById('wait-code').textContent=roomId;updateWaitBadges();renderWaitSettingsPreview();showScreen('s-waiting');listenRoom();
@@ -1849,7 +2045,8 @@ function listenRoom(){
 function renderWaitSeriesScore(){
   if(totalRounds<=1||!currentPlayers.length){document.getElementById('wait-series-score').style.display='none';return;}
   document.getElementById('wait-series-score').style.display='block';
-  renderSeriesRows(document.getElementById('wait-series-rows'),'full');
+  if(isTeamMode)renderTeamSeriesRows(document.getElementById('wait-series-rows'),'full');
+  else renderSeriesRows(document.getElementById('wait-series-rows'),'full');
 }
 
 function showAutostartBanner(){document.getElementById('autostart-banner').classList.add('show');}
@@ -1859,12 +2056,16 @@ function renderWaitingRoom(slots,data){
   const list=document.getElementById('wait-player-list');list.innerHTML='';
   for(let i=1;i<=maxPlayers;i++){
     const slot=`p${i}`;const item=document.createElement('div');
+    const team=isTeamMode?getPlayerTeam(slot,data):null;
+    const teamTag=team?teamBadgeHTML(team):'';
     if(data[slot]){
       item.className='player-item ready slide-up';item.style.animationDelay=(i-1)*50+'ms';
-      const wins=seriesWins[slot]||0;const winsLabel=totalRounds>1&&wins>0?`<span style="font-size:9px;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:8px;padding:1px 6px;font-family:'JetBrains Mono',monospace;">${wins}W</span>`:'';
+      if(isTeamMode)item.style.borderColor=team==='A'?'rgba(239,68,68,.35)':'rgba(59,130,246,.35)';
+      const wins=seriesWins[slot]||0;const winsLabel=(!isTeamMode&&totalRounds>1&&wins>0)?`<span style="font-size:9px;background:rgba(251,191,36,.15);color:#fbbf24;border:1px solid rgba(251,191,36,.25);border-radius:8px;padding:1px 6px;font-family:'JetBrains Mono',monospace;">${wins}W</span>`:'';
       item.innerHTML=`
         <div style="width:28px;height:28px;border-radius:50%;background:rgba(99,102,241,.2);border:1px solid rgba(99,102,241,.35);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#a5b4fc;flex-shrink:0;">${i}</div>
         <span style="flex:1;font-size:13px;font-weight:600;color:white;">${data[slot].name}</span>
+        ${teamTag}
         ${winsLabel}
         ${slot===mySlot?'<span class="ready-chip">YOU</span>':''}
         ${slot==='p1'?'<span style="font-size:9px;color:#10b981;font-weight:600;">HOST</span>':''}`;
@@ -1876,8 +2077,22 @@ function renderWaitingRoom(slots,data){
   }
   document.getElementById('wait-count').textContent=`${slots.length} / ${maxPlayers}`;
   const roundInfo=totalRounds>1?` · Round ${currentRound}/${totalRounds}`:'';
-  document.getElementById('wait-status').querySelector('p').textContent=currentRound>1?`Waiting for all to ready up…${roundInfo}`:`Waiting for players…${roundInfo}`;
-  document.getElementById('start-btn').style.display=(myIsCreator&&slots.length>=2&&slots.length<maxPlayers)?'block':'none';
+  let teamInfo='';
+  if(isTeamMode){
+    let cA=0,cB=0;for(let i=1;i<=maxPlayers;i++){const p=data[`p${i}`];if(p){if(p.team==='A')cA++;else if(p.team==='B')cB++;}}
+    teamInfo=` · 🔴 ${team1Name} ${cA} vs 🔵 ${team2Name} ${cB}`;
+  }
+  document.getElementById('wait-status').querySelector('p').textContent=currentRound>1?`Waiting for all to ready up…${roundInfo}${teamInfo}`:`Waiting for players…${roundInfo}${teamInfo}`;
+  let canStart=false;
+  if(myIsCreator){
+    if(isTeamMode){
+      let cA=0,cB=0;for(let i=1;i<=maxPlayers;i++){const p=data[`p${i}`];if(p){if(p.team==='A')cA++;else if(p.team==='B')cB++;}}
+      canStart=cA>=1&&cB>=1;
+    } else {
+      canStart=slots.length>=2&&slots.length<maxPlayers;
+    }
+  }
+  document.getElementById('start-btn').style.display=canStart?'block':'none';
   renderWaitSeriesScore();
 }
 
@@ -1931,6 +2146,9 @@ function beginBattle(slots,data){
   eliminatedRanks=[];
   document.getElementById('my-name-lbl').textContent=myName;
   document.getElementById('solo-badge').style.display='none';
+  const myTeamBadgeEl=document.getElementById('my-team-badge');
+  if(isTeamMode){myTeamBadgeEl.style.display='inline';myTeamBadgeEl.innerHTML=teamBadgeHTML(getPlayerTeam(mySlot));}
+  else{myTeamBadgeEl.style.display='none';myTeamBadgeEl.innerHTML='';}
   document.getElementById('room-chip').textContent=`ROOM: ${roomId}`;
   document.getElementById('alive-pill').textContent=`${slots.length} / ${slots.length} ALIVE`;
   setupOpponentPanels(slots);
@@ -2000,6 +2218,7 @@ function die(){
 function checkRoundWinner(){
   if(isSoloMode)return;
   if(roundResolved)return;
+  if(isTeamMode){checkTeamRoundWinner();return;}
   const alive=currentPlayers.filter(p=>!p.dead);
   if(alive.length>1)return;
   roundResolved=true;
@@ -2063,6 +2282,84 @@ function checkRoundWinner(){
   }
 }
 
+// ── TEAM MODE ROUND WINNER ──
+// Match continues until every player on one team is eliminated. The last
+// surviving team wins the round/match. Teammates never attack each other.
+function checkTeamRoundWinner(){
+  const teamAPlayers=currentPlayers.filter(p=>getPlayerTeam(p.slot)==='A');
+  const teamBPlayers=currentPlayers.filter(p=>getPlayerTeam(p.slot)==='B');
+  const aliveA=teamAPlayers.filter(p=>!p.dead);
+  const aliveB=teamBPlayers.filter(p=>!p.dead);
+  if(aliveA.length>0&&aliveB.length>0)return; // both teams still have survivors
+  roundResolved=true;
+
+  let winningTeam=null;
+  if(aliveA.length>0)winningTeam='A';
+  else if(aliveB.length>0)winningTeam='B';
+  else if(eliminatedRanks.length>0){
+    // simultaneous elimination edge case: whichever team's member died first loses
+    const firstElim=eliminatedRanks[0];
+    winningTeam=getPlayerTeam(firstElim.slot)==='A'?'B':'A';
+  }
+
+  const myTeam=getPlayerTeam(mySlot);
+  const iWon=winningTeam===myTeam;
+  const winningMembers=currentPlayers.filter(p=>getPlayerTeam(p.slot)===winningTeam);
+  const resolvedWinnerName=winningMembers.map(p=>p.name).join(' & ')||'Nobody';
+  const thisRoundNum=currentRound;
+
+  if(winningTeam){
+    teamWins[winningTeam]=(teamWins[winningTeam]||0)+1;
+    if(myIsCreator)roomRef.update({teamWins});
+  }
+  const needed=Math.ceil(totalRounds/2);
+  const seriesOver=winningTeam&&(teamWins[winningTeam]||0)>=needed;
+  cleanupListeners();
+
+  if(seriesOver||totalRounds===1){
+    if(iWon)recordWin(myName+' ('+teamLabel(myTeam)+')');
+    showSeriesWinnerOverlay(teamLabel(winningTeam)+' — '+resolvedWinnerName,iWon);
+    setTimeout(()=>showGameOver(iWon,resolvedWinnerName,false,true,thisRoundNum),2600);
+  } else {
+    showRoundWinPopup(teamLabel(winningTeam),iWon,thisRoundNum);
+    setTimeout(()=>showGameOver(iWon,resolvedWinnerName,false,false,thisRoundNum),900);
+  }
+  if(!seriesOver&&totalRounds>1)currentRound++;
+  if(myIsCreator){
+    if(!seriesOver&&totalRounds>1){
+      roomRef.update({currentRound,teamWins,status:'gameover',roundWinnerTeam:winningTeam||'none',roundWinnerName:resolvedWinnerName});
+    } else {
+      roomRef.update({status:'gameover',seriesOver:true,seriesWinnerTeam:winningTeam||'none',seriesWinnerName:resolvedWinnerName,teamWins});
+    }
+  }
+  if(!myIsCreator&&roomRef){
+    gameoverRoomListener=roomRef.on('value',snap=>{
+      const d=snap.val();if(!d)return;
+      if(d.status==='next_round'){
+        roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;
+        if(typeof d.totalRounds!=='undefined')totalRounds=d.totalRounds;
+        if(typeof d.currentRound!=='undefined')currentRound=d.currentRound;
+        if(d.teamWins)Object.assign(teamWins,d.teamWins);
+        if(d.settings)applySettings(d.settings);
+        roundResolved=false;
+        roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
+          document.getElementById('wait-code').textContent=roomId;updateWaitBadges();showScreen('s-waiting');listenRoom();
+        });
+      }
+      if(d.status==='new_series'){
+        roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;
+        if(typeof d.totalRounds!=='undefined')totalRounds=d.totalRounds;
+        currentRound=1;teamWins={A:0,B:0};roundResolved=false;
+        if(d.settings)applySettings(d.settings);
+        roomRef.child(mySlot).update({name:myName,status:'ready',score:0,lines:0,level:1,dead:false}).then(()=>{
+          document.getElementById('wait-code').textContent=roomId;updateWaitBadges();showScreen('s-waiting');listenRoom();
+        });
+      }
+      if(d.status==='abandoned'){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
+    });
+  }
+}
+
 function showRoundWinPopup(winnerName,iWon,roundNum){
   const popup=document.getElementById('round-win-popup');
   popup.innerHTML=`
@@ -2085,27 +2382,46 @@ function cleanupListeners(){
 function showGameOver(won,winnerName,isSolo=false,seriesOver=true,roundNum=null){
   const displayRound=roundNum!==null?roundNum:currentRound;
   const allElims=[...eliminatedRanks].reverse();
-  const winner=!isSolo?currentPlayers.find(p=>!p.dead)||eliminatedRanks[eliminatedRanks.length-1]:null;
+  const winner=!isSolo&&!isTeamMode?(currentPlayers.find(p=>!p.dead)||eliminatedRanks[eliminatedRanks.length-1]):null;
   const needed=Math.ceil(totalRounds/2);
   const isSeriesEnd=isSolo||seriesOver;
   document.getElementById('go-icon').textContent=won?'🏆':'💀';
   if(isSolo)document.getElementById('go-title').textContent='Game Over';
+  else if(isTeamMode)document.getElementById('go-title').textContent=isSeriesEnd?(won?'Your Team Wins! 🎉':`${winnerName} Wins!`):(won?`Round ${displayRound} ✓`:`Round ${displayRound} Over`);
   else if(isSeriesEnd)document.getElementById('go-title').textContent=won?'You Win! 🎉':`${winnerName} Wins!`;
   else document.getElementById('go-title').textContent=won?`Round ${displayRound} ✓`:`Round ${displayRound} Over`;
-  document.getElementById('go-sub').textContent=isSolo?`Solo run complete! Score: ${G.score.toLocaleString()}`:isSeriesEnd?(won?'Last one standing — flawless!':'Better luck next time!'):(won?'You won this round!':winnerName+' won the round!');
+  document.getElementById('go-sub').textContent=isSolo?`Solo run complete! Score: ${G.score.toLocaleString()}`:isSeriesEnd?(won?'Last team standing — flawless!':'Better luck next time!'):(won?'Your team won this round!':winnerName+' won the round!');
   document.getElementById('go-score').textContent=G.score.toLocaleString();
   document.getElementById('go-lines').textContent=G.lines;
   document.getElementById('go-level').textContent=G.level;
   const seriesSection=document.getElementById('go-series-section');
   if(!isSolo&&totalRounds>1){
     seriesSection.style.display='block';
-    renderSeriesRows(document.getElementById('go-series-rows'),'full');
+    if(isTeamMode)renderTeamSeriesRows(document.getElementById('go-series-rows'),'full');
+    else renderSeriesRows(document.getElementById('go-series-rows'),'full');
     const roundsLeft=totalRounds-displayRound;
-    if(isSeriesEnd)document.getElementById('go-series-progress').textContent=won?`You won the series!`:`Series complete — ${winnerName} wins!`;
+    if(isSeriesEnd)document.getElementById('go-series-progress').textContent=won?`Your team won the series!`:`Series complete — ${winnerName} wins!`;
     else document.getElementById('go-series-progress').textContent=`${roundsLeft} more round${roundsLeft!==1?'s':''} to play • First to ${needed} wins`;
   } else seriesSection.style.display='none';
   const rankDiv=document.getElementById('go-rankings');rankDiv.innerHTML='';
-  if(!isSolo){
+  if(!isSolo&&isTeamMode){
+    // Team-mode rankings: group by team, mark ally/enemy relative to me
+    const myTeam=getPlayerTeam(mySlot);
+    ['A','B'].forEach(team=>{
+      const header=document.createElement('div');
+      header.style.cssText='font-size:10px;font-weight:800;letter-spacing:.06em;margin-top:6px;color:'+(team==='A'?'#fca5a5':'#93c5fd')+';';
+      header.textContent=(team==='A'?'🔴 ':'🔵 ')+teamLabel(team).toUpperCase()+(team===myTeam?' (YOUR TEAM)':'');
+      rankDiv.appendChild(header);
+      const members=currentPlayers.filter(p=>getPlayerTeam(p.slot)===team);
+      members.forEach((p,idx)=>{
+        const item=document.createElement('div');item.className='slide-up';item.style.animationDelay=(idx*60)+'ms';
+        item.style.cssText='display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;';
+        const alive=!p.dead;
+        item.innerHTML=`<div style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;background:${alive?'rgba(16,185,129,.2)':'rgba(239,68,68,.15)'};">${alive?'✅':'💀'}</div><span style="flex:1;font-size:13px;font-weight:600;color:white;">${p.name||'?'}</span>${p.slot===mySlot?'<span style="font-size:9px;background:rgba(99,102,241,.2);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);border-radius:20px;padding:2px 8px;">YOU</span>':''}`;
+        rankDiv.appendChild(item);
+      });
+    });
+  } else if(!isSolo){
     const rankColors=['rank-1','rank-2','rank-3','rank-n'];
     const rankings=[];if(winner)rankings.push({...winner,pos:1});
     let pos=2;for(const e of allElims){if(!winner||e.slot!==winner.slot)rankings.push({...e,pos:pos++});}
@@ -2141,10 +2457,10 @@ async function hostStartNextRound(){
   if(!myIsCreator||!roomRef)return;
   if(gameoverRoomListener&&roomRef){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
   roundResolved=false;
-  const updates={status:'next_round',currentRound,seriesWins,settings:serializeSettings(),powers:null,garbage:null};
+  const updates={status:'next_round',currentRound,seriesWins,teamWins,settings:serializeSettings(),powers:null,garbage:null};
   for(let i=1;i<=maxPlayers;i++){updates[`p${i}`]=null;}
-  currentPlayers.forEach(p=>{updates[p.slot]={name:p.name,status:'waiting',score:0,lines:0,level:1,dead:false};});
-  updates[mySlot]={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false};
+  currentPlayers.forEach(p=>{updates[p.slot]={name:p.name,status:'waiting',score:0,lines:0,level:1,dead:false,...(isTeamMode?{team:p.team}:{})};});
+  updates[mySlot]={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false,...(isTeamMode?{team:getPlayerTeam(mySlot)}:{})};
   await roomRef.update(updates);
   currentPlayers=currentPlayers.map(p=>({...p,dead:false}));eliminatedRanks=[];
   document.getElementById('wait-code').textContent=roomId;updateWaitBadges();renderWaitSeriesScore();renderWaitSettingsPreview();
@@ -2155,11 +2471,11 @@ async function hostStartNextRound(){
 async function hostNewSeries(){
   if(!myIsCreator||!roomRef)return;
   if(gameoverRoomListener&&roomRef){roomRef.off('value',gameoverRoomListener);gameoverRoomListener=null;}
-  currentRound=1;seriesWins={};roundResolved=false;
-  const updates={status:'new_series',currentRound:1,seriesWins:{},settings:serializeSettings(),powers:null,garbage:null,totalRounds};
+  currentRound=1;seriesWins={};teamWins={A:0,B:0};roundResolved=false;
+  const updates={status:'new_series',currentRound:1,seriesWins:{},teamWins:{A:0,B:0},settings:serializeSettings(),powers:null,garbage:null,totalRounds};
   for(let i=1;i<=maxPlayers;i++){updates[`p${i}`]=null;}
-  currentPlayers.forEach(p=>{updates[p.slot]={name:p.name,status:'waiting',score:0,lines:0,level:1,dead:false};});
-  updates[mySlot]={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false};
+  currentPlayers.forEach(p=>{updates[p.slot]={name:p.name,status:'waiting',score:0,lines:0,level:1,dead:false,...(isTeamMode?{team:p.team}:{})};});
+  updates[mySlot]={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false,...(isTeamMode?{team:getPlayerTeam(mySlot)}:{})};
   await roomRef.update(updates);
   currentPlayers=currentPlayers.map(p=>({...p,dead:false}));eliminatedRanks=[];
   document.getElementById('wait-code').textContent=roomId;updateWaitBadges();renderWaitSeriesScore();renderWaitSettingsPreview();
@@ -2178,8 +2494,10 @@ function goLobby(){
   if(myRef&&!isSoloMode)myRef.update({status:'left',left:true,dead:true}).catch(()=>{});
   if(myIsCreator&&roomRef)roomRef.remove().catch(()=>{});
   roomRef=null;myRef=null;currentPlayers=[];eliminatedRanks=[];playerBoards={};oppListeners={};
-  isSoloMode=false;myIsCreator=false;currentRound=1;totalRounds=1;seriesWins={};roundResolved=false;
+  isSoloMode=false;myIsCreator=false;currentRound=1;totalRounds=1;seriesWins={};teamWins={A:0,B:0};roundResolved=false;isTeamMode=false;
+  team1Name='Team 1';team2Name='Team 2';
   document.getElementById('solo-badge').style.display='none';
+  document.getElementById('my-team-badge').style.display='none';
   document.getElementById('series-scoreboard').style.display='none';
   document.getElementById('round-badge').style.display='none';
   document.getElementById('gravity-indicator').style.display='none';
