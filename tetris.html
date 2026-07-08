@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -304,21 +303,8 @@ body{
 .team-join-btn.a{background:linear-gradient(135deg,#ef4444,#dc2626);}
 .team-join-btn.b{background:linear-gradient(135deg,#3b82f6,#2563eb);}
 
-/* ── TEAM SUPPORT ── */
-.support-toggle{width:36px;height:20px;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);cursor:pointer;position:relative;flex-shrink:0;transition:all .2s;}
-.support-toggle.on{background:rgba(16,185,129,.35);border-color:rgba(16,185,129,.5);}
-.support-toggle::after{content:'';position:absolute;width:14px;height:14px;border-radius:50%;background:white;top:2px;left:2px;transition:transform .2s;}
-.support-toggle.on::after{transform:translateX(16px);}
-.support-piece-mode-tab{flex:1;padding:6px 4px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid rgba(255,255,255,.09);background:rgba(255,255,255,.05);color:#64748b;font-family:'Sora',sans-serif;transition:all .2s;text-align:center;}
-.support-piece-mode-tab.active{border-color:#10b981;background:rgba(16,185,129,.15);color:#6ee7b7;}
-#spectator-support-panel{display:none;}
-.spec-piece-btn{width:100%;aspect-ratio:1;border-radius:8px;border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:white;font-family:'JetBrains Mono',monospace;transition:all .15s;}
-.spec-piece-btn:hover{border-color:rgba(16,185,129,.5);background:rgba(16,185,129,.12);}
-.spec-piece-btn.selected{border-color:#10b981;background:rgba(16,185,129,.22);box-shadow:0 0 0 2px rgba(16,185,129,.25);}
-.spec-piece-btn:disabled{opacity:.3;cursor:default;}
-#support-toast-container{position:fixed;top:70px;left:16px;z-index:99999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
-.support-toast{background:rgba(10,14,30,.97);border:1px solid rgba(16,185,129,.4);border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:10px;min-width:200px;max-width:300px;box-shadow:0 8px 30px rgba(0,0,0,.5);animation:leaveToastIn .35s cubic-bezier(.34,1.56,.64,1) both;}
-.support-toast.out{animation:leaveToastOut .3s ease forwards;}
+.team-col-chip-empty{opacity:.4;border-style:dashed;}
+.team-col-chip-empty span{font-style:italic;color:#334155;}
 
 @media(max-height:680px){#s-game{padding:5px;gap:6px;}}
 </style>
@@ -330,9 +316,6 @@ body{
 
 <!-- LEAVE TOAST CONTAINER -->
 <div id="leave-toast-container"></div>
-
-<!-- SUPPORT TOAST CONTAINER -->
-<div id="support-toast-container"></div>
 
 <!-- ROUND WIN POPUP -->
 <div id="round-win-popup"></div>
@@ -563,45 +546,6 @@ body{
           <button type="button" id="host-team-b-btn" class="matchtype-tab" style="border-color:rgba(59,130,246,.4);" onclick="setHostTeam('B')">🔵 <span id="host-team-b-lbl">Team 2</span></button>
         </div>
         <p style="font-size:9px;color:#475569;margin-top:6px;">Teams don't need to be equal — you can start anytime once both teams have at least one player.</p>
-
-        <!-- ══ TEAM SUPPORT SETTINGS ══ -->
-        <div class="settings-section" id="support-section" style="margin-top:12px;">
-          <div class="settings-header" onclick="toggleSettings('support')">
-            <div class="settings-header-left">
-              <span style="font-size:16px;">🤝</span>
-              <div>
-                <div class="settings-header-title">Team Support</div>
-                <div class="settings-header-sub" id="support-summary">ON · 25s cooldown · All pieces</div>
-              </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span class="settings-chevron" id="support-chevron">▼</span>
-            </div>
-          </div>
-          <div class="settings-body" id="support-body">
-            <p style="font-size:10px;color:#64748b;margin-bottom:10px;line-height:1.5;">Eliminated players become Spectator Support — they can send Tetromino pieces to a teammate's Hold slot.</p>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;">
-              <span style="font-size:11px;font-weight:600;color:#94a3b8;">Enable Team Support</span>
-              <div class="support-toggle on" id="support-enable-toggle" onclick="toggleSupportEnabled()"></div>
-            </div>
-            <div id="support-config-wrap">
-              <div style="padding:8px 0;">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-                  <span style="font-size:11px;font-weight:600;color:#94a3b8;">Support Cooldown</span>
-                  <span style="font-size:11px;font-weight:800;color:#6ee7b7;font-family:'JetBrains Mono',monospace;" id="support-cooldown-val">25s</span>
-                </div>
-                <input type="range" id="support-cooldown-slider" min="15" max="60" step="5" value="25" class="grav-stage-dur-slider" style="width:100%;" oninput="onSupportCooldownChange(this.value)"/>
-              </div>
-              <div style="padding-top:6px;">
-                <span style="font-size:11px;font-weight:600;color:#94a3b8;display:block;margin-bottom:6px;">Piece Selection</span>
-                <div style="display:flex;gap:6px;">
-                  <button type="button" class="support-piece-mode-tab active" id="support-mode-all" onclick="setSupportPieceMode(true)">All Pieces</button>
-                  <button type="button" class="support-piece-mode-tab" id="support-mode-o" onclick="setSupportPieceMode(false)">O Piece Only</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
@@ -796,16 +740,6 @@ body{
       <div style="font-size:8px;text-transform:uppercase;letter-spacing:.1em;color:#f59e0b;font-weight:700;text-align:center;padding:2px 0;border-bottom:1px solid rgba(251,191,36,.15);margin-bottom:4px;">🏆 SERIES</div>
       <div id="series-rows" style="display:flex;flex-direction:column;gap:3px;"></div>
       <div id="rounds-remaining-label" style="font-size:8px;color:#475569;text-align:center;margin-top:4px;font-family:'JetBrains Mono',monospace;"></div>
-    </div>
-
-    <!-- ══ SPECTATOR SUPPORT PANEL ══ -->
-    <div id="spectator-support-panel" class="glass rounded-xl p-2.5">
-      <p style="font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#6ee7b7;font-weight:700;margin-bottom:6px;">🤝 Support Team</p>
-      <div id="spec-target-info" style="font-size:9px;color:#94a3b8;margin-bottom:6px;"></div>
-      <select id="spec-target-select" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:8px;padding:4px 6px;color:white;font-size:10px;font-family:'Sora',sans-serif;margin-bottom:6px;"></select>
-      <div id="spec-piece-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:6px;"></div>
-      <button id="spec-send-btn" onclick="sendSupportPiece()" style="width:100%;padding:6px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;background:rgba(16,185,129,.15);color:#6ee7b7;border:1px solid rgba(16,185,129,.3);">Send Piece</button>
-      <div id="spec-cooldown-label" style="font-size:9px;color:#64748b;text-align:center;margin-top:4px;"></div>
     </div>
 
     <button id="pause-btn" onclick="togglePause()" style="padding:8px 4px;border-radius:10px;font-size:11px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.06);color:#94a3b8;border:1px solid rgba(255,255,255,.1);font-family:'Sora',sans-serif;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,.12)'" onmouseout="this.style.background='rgba(255,255,255,.06)'">⏸ Pause</button>
@@ -1053,42 +987,6 @@ function gravityInterval(elapsedSec){
 }
 
 // ══════════════════════════════════════════════
-// ── TEAM SUPPORT SETTINGS ──
-// ══════════════════════════════════════════════
-
-const DEFAULT_SUPPORT_SETTINGS={enabled:true,cooldownSec:25,allPieces:true};
-let supportSettings={...DEFAULT_SUPPORT_SETTINGS};
-
-const SUPPORT_PIECE_LIST=[
-  {ti:1,label:'I'},{ti:2,label:'O'},{ti:3,label:'T'},
-  {ti:4,label:'S'},{ti:5,label:'Z'},{ti:6,label:'J'},{ti:7,label:'L'}
-];
-
-function toggleSupportEnabled(){
-  supportSettings.enabled=!supportSettings.enabled;
-  document.getElementById('support-enable-toggle').classList.toggle('on',supportSettings.enabled);
-  document.getElementById('support-config-wrap').style.opacity=supportSettings.enabled?'1':'.35';
-  document.getElementById('support-config-wrap').style.pointerEvents=supportSettings.enabled?'':'none';
-  updateSupportSummary();
-}
-function onSupportCooldownChange(v){
-  supportSettings.cooldownSec=parseInt(v);
-  document.getElementById('support-cooldown-val').textContent=v+'s';
-  updateSupportSummary();
-}
-function setSupportPieceMode(all){
-  supportSettings.allPieces=all;
-  document.getElementById('support-mode-all').classList.toggle('active',all);
-  document.getElementById('support-mode-o').classList.toggle('active',!all);
-  updateSupportSummary();
-}
-function updateSupportSummary(){
-  const el=document.getElementById('support-summary');if(!el)return;
-  if(!supportSettings.enabled){el.textContent='OFF';return;}
-  el.textContent=`ON · ${supportSettings.cooldownSec}s cooldown · ${supportSettings.allPieces?'All pieces':'O piece only'}`;
-}
-
-// ══════════════════════════════════════════════
 // ── SETTINGS UI ──
 // ══════════════════════════════════════════════
 
@@ -1274,7 +1172,6 @@ function initSettingsUI(){
   updateGarbSummary();
   buildGravityStageList();
   updateGravSummary();
-  updateSupportSummary();
 }
 
 // settings preview badges for waiting room
@@ -1299,12 +1196,6 @@ function renderWaitSettingsPreview(){
       const b=document.createElement('span');b.className='settings-badge';
       b.textContent=`🌍 ${activeCount} stages`;wrap.appendChild(b);
     }
-  }
-  // Team support badge
-  if(isTeamMode){
-    const b=document.createElement('span');b.className='settings-badge';
-    b.textContent=supportSettings.enabled?`🤝 Support ${supportSettings.cooldownSec}s · ${supportSettings.allPieces?'All':'O only'}`:'🤝 Support OFF';
-    wrap.appendChild(b);
   }
 }
 
@@ -1396,7 +1287,6 @@ let G={
   pendingGarbage:0,
   garbageQueue:[],
   outgoingBuffer:0,
-  supportQueue:[],
   running:false,paused:false,dead:false,
   locking:false,
   dropTimer:null,lockTimeout:null,
@@ -1471,8 +1361,7 @@ function haltGame(){
   clearLock();
   if(G.gravityCheckTimer){clearInterval(G.gravityCheckTimer);G.gravityCheckTimer=null;}
   if(garbageDeliveryTimer){clearInterval(garbageDeliveryTimer);garbageDeliveryTimer=null;}
-  G.garbageQueue=[];G.outgoingBuffer=0;G.pendingGarbage=0;G.supportQueue=[];
-  stopSpectatorMode();
+  G.garbageQueue=[];G.outgoingBuffer=0;G.pendingGarbage=0;
   updateGarbage();updateCombo();
 }
 
@@ -1706,7 +1595,7 @@ function initGame(){
   G.board=Array.from({length:ROWS},()=>Array(COLS).fill(0));
   G.bag=[...newBag(),...newBag(),...newBag()];G.hold=null;G.holdUsed=false;
   G.score=0;G.lines=0;G.level=1;G.combo=-1;
-  G.pendingGarbage=0;G.garbageQueue=[];G.outgoingBuffer=0;G.supportQueue=[];
+  G.pendingGarbage=0;G.garbageQueue=[];G.outgoingBuffer=0;
   G.running=true;G.paused=false;G.dead=false;G.locking=false;
   G.lastMoveWasRotation=false;G.lastKickIndex=-1;
   G.gravityStartMs=Date.now();G.lastGravityCheck=0;
@@ -1726,8 +1615,6 @@ function initGame(){
   if(!spawn())return;startDrop();renderAll();
   if(garbageDeliveryTimer)clearInterval(garbageDeliveryTimer);
   garbageDeliveryTimer=setInterval(deliverQueuedGarbage,100);
-  if(isTeamMode&&!isSoloMode)listenSupportQueue();
-  stopSpectatorMode();
 }
 function spawn(){G.piece=mkPiece(pullNext());G.holdUsed=false;G.lastMoveWasRotation=false;G.lastKickIndex=-1;if(!valid(G.board,G.piece)){die();return false;}return true;}
 
@@ -1803,12 +1690,6 @@ function holdPiece(){
   G.holdUsed=true;const cur=G.piece.ti;
   if(G.hold===null){G.hold=cur;if(!spawn())return;}
   else{const h=G.hold;G.hold=cur;G.piece=mkPiece(h);if(!valid(G.board,G.piece)){die();return;}}
-  // A support piece waiting in the queue takes priority over the newly-available Hold slot
-  if(G.supportQueue&&G.supportQueue.length>0){
-    const item=G.supportQueue.shift();
-    G.hold=item.ti;
-    notifySupportDelivered(item.from,item.ti);
-  }
   clearLock();startDrop();renderAll();
 }
 function live(){return G.running&&!G.paused&&!G.dead;}
@@ -2043,15 +1924,13 @@ function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i
 function serializeSettings(){
   return{
     garbage:JSON.parse(JSON.stringify(garbageSettings)),
-    gravity:JSON.parse(JSON.stringify(gravitySettings)),
-    support:JSON.parse(JSON.stringify(supportSettings))
+    gravity:JSON.parse(JSON.stringify(gravitySettings))
   };
 }
 // Apply settings received from Firebase
 function applySettings(data){
   if(data&&data.garbage)garbageSettings={...DEFAULT_GARBAGE,...data.garbage};
   if(data&&data.gravity)gravitySettings=JSON.parse(JSON.stringify({...DEFAULT_GRAVITY_SETTINGS,...data.gravity}));
-  if(data&&data.support)supportSettings={...DEFAULT_SUPPORT_SETTINGS,...data.support};
 }
 
 async function createRoom(){
@@ -2079,16 +1958,45 @@ async function createRoom(){
   showScreen('s-waiting');startRoomExpiry();listenRoom();
 }
 
-let _pendingJoin=null; // {data, slot}
+// Team capacity per side, based on maxPlayers (e.g. 6 players -> 3 slots each side)
+function teamCapacity(){return Math.ceil(maxPlayers/2);}
+
+// ── JOIN ROOM (atomic — safe for multiple people joining at the exact same time) ──
 async function joinRoom(){
   const name=document.getElementById('inp-name').value.trim();const code=document.getElementById('inp-code').value.trim().toUpperCase();
   if(!name){shakeEl('inp-name');return;}if(code.length!==4){shakeEl('inp-code');return;}
   myName=name;roomId=code;myIsCreator=false;isSoloMode=false;
   roomRef=DB.ref(`tetris2/rooms/${roomId}`);
-  const snap=await roomRef.once('value').catch(()=>null);
-  if(!snap||!snap.val()){alert('Room not found!');return;}
-  const d=snap.val();
-  if(d.status!=='waiting'){alert('Room is not open. It may have already started.');return;}
+
+  let assignedSlot=null,abortReason=null;
+
+  // Transaction guarantees only one joining client can claim a given slot,
+  // even if several people tap "Join" on the same room at the same instant.
+  let txRes;
+  try{
+    txRes=await roomRef.transaction(current=>{
+      if(current===null){abortReason='notfound';return current;}
+      if(current.status!=='waiting'){abortReason='notwaiting';return;} // abort
+      const max=current.maxPlayers||2;
+      let slot=null;
+      for(let i=2;i<=max;i++){if(!current[`p${i}`]){slot=`p${i}`;break;}}
+      if(!slot){abortReason='full';return;} // abort
+      assignedSlot=slot;
+      current[slot]={name:myName,status:'ready',score:0,lines:0,level:1,dead:false};
+      return current;
+    });
+  }catch(e){abortReason='error';}
+
+  if(!txRes||!txRes.committed||!assignedSlot){
+    if(abortReason==='full')alert('Room is full!');
+    else if(abortReason==='notwaiting')alert('Room is not open. It may have already started.');
+    else alert('Room not found!');
+    roomRef=null;
+    return;
+  }
+
+  const d=txRes.snapshot.val();
+  mySlot=assignedSlot;
   maxPlayers=d.maxPlayers||2;if(d.cols)selectedCols=d.cols;
   totalRounds=d.totalRounds||1;currentRound=d.currentRound||1;
   isTeamMode=!!d.teamMode;
@@ -2097,50 +2005,57 @@ async function joinRoom(){
   teamWins={A:0,B:0};if(d.teamWins)Object.assign(teamWins,d.teamWins);
   if(d.settings)applySettings(d.settings);
   roundResolved=false;
-  let slot=null;for(let i=2;i<=maxPlayers;i++){if(!d[`p${i}`]){slot=`p${i}`;break;}}
-  if(!slot){alert('Room is full!');return;}
+  stopRoomsBrowser();
+
   if(isTeamMode){
-    stopRoomsBrowser();
-    _pendingJoin={data:d,slot};
     showTeamPickModal(d);
   } else {
-    stopRoomsBrowser();
-    await finalizeJoin(slot,null);
+    document.getElementById('wait-code').textContent=roomId;
+    updateWaitBadges();renderWaitSettingsPreview();
+    showScreen('s-waiting');listenRoom();
   }
 }
 function showTeamPickModal(d){
   const modal=document.getElementById('team-pick-modal');
   let countA=0,countB=0;
-  for(let i=1;i<=(d.maxPlayers||2);i++){const p=d[`p${i}`];if(p){if(p.team==='A')countA++;else if(p.team==='B')countB++;}}
+  const max=d.maxPlayers||maxPlayers||2;
+  for(let i=1;i<=max;i++){const p=d[`p${i}`];if(p){if(p.team==='A')countA++;else if(p.team==='B')countB++;}}
+  const cap=Math.ceil(max/2);
   document.getElementById('tpm-a-name').textContent=d.team1Name||'Team 1';
   document.getElementById('tpm-b-name').textContent=d.team2Name||'Team 2';
-  document.getElementById('tpm-a-count').textContent=countA+' player'+(countA!==1?'s':'');
-  document.getElementById('tpm-b-count').textContent=countB+' player'+(countB!==1?'s':'');
+  document.getElementById('tpm-a-count').textContent=`${countA}/${cap} players`+(countA>=cap?' · FULL':'');
+  document.getElementById('tpm-b-count').textContent=`${countB}/${cap} players`+(countB>=cap?' · FULL':'');
   modal.style.display='flex';
 }
 function cancelTeamPick(){
   document.getElementById('team-pick-modal').style.display='none';
-  _pendingJoin=null;startRoomsBrowser();
+  // Release the reserved slot since the player backed out of joining
+  if(roomRef&&mySlot){roomRef.child(mySlot).remove().catch(()=>{});}
+  roomRef=null;mySlot='';
+  startRoomsBrowser();
 }
 async function pickTeamAndJoin(team){
-  if(!_pendingJoin)return;
+  if(!roomRef||!mySlot)return;
   document.getElementById('team-pick-modal').style.display='none';
-  await finalizeJoin(_pendingJoin.slot,team);
-  _pendingJoin=null;
-}
-async function finalizeJoin(slot,team){
-  mySlot=slot;
-  const payload={name:myName,status:'ready',score:0,lines:0,level:1,dead:false};
-  if(isTeamMode&&team)payload.team=team;
-  await roomRef.child(mySlot).set(payload).catch(console.error);
+  await roomRef.child(mySlot).update({team}).catch(()=>{});
   document.getElementById('wait-code').textContent=roomId;
   updateWaitBadges();renderWaitSettingsPreview();
   showScreen('s-waiting');listenRoom();
 }
 
 // ── SWITCH TEAM (waiting room, before match start) ──
+// Uses a transaction on just this player's own slot so concurrent switches
+// by different players never collide; capacity is checked against the
+// latest committed room data at switch time.
 async function switchMyTeam(team){
   if(!roomRef||!mySlot||!isTeamMode)return;
+  const roomSnap=await roomRef.once('value').catch(()=>null);
+  const d=roomSnap?roomSnap.val():null;
+  if(!d)return;
+  const cap=teamCapacity();
+  let count=0;
+  for(let i=1;i<=maxPlayers;i++){const p=d[`p${i}`];if(p&&p.team===team&&`p${i}`!==mySlot)count++;}
+  if(count>=cap){alert((team==='A'?team1Name:team2Name)+' is full!');return;}
   await roomRef.child(mySlot).child('team').set(team).catch(console.error);
 }
 
@@ -2222,25 +2137,55 @@ function hideAutostartBanner(){document.getElementById('autostart-banner').class
 
 // ── TWO-COLUMN TEAM LOBBY RENDERING ──
 function renderTeamColumns(slots,data){
-  let countA=0,countB=0;
   const listA=document.getElementById('wait-team1-list'),listB=document.getElementById('wait-team2-list');
   listA.innerHTML='';listB.innerHTML='';
+  const cap=teamCapacity();
+  const teamAPlayers=[],teamBPlayers=[];
   for(let i=1;i<=maxPlayers;i++){
     const slot=`p${i}`;const p=data[slot];if(!p)continue;
     const team=p.team||null;
-    if(team==='A')countA++;else if(team==='B')countB++;else continue; // no-team edge case: skip
-    const chip=document.createElement('div');
-    chip.className='team-col-chip'+(slot===mySlot?' me':'');
-    chip.innerHTML=`<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</span>${slot===mySlot?'<span class="ready-chip">YOU</span>':''}${slot==='p1'?'<span style="font-size:9px;color:#10b981;font-weight:600;">HOST</span>':''}`;
-    (team==='A'?listA:listB).appendChild(chip);
+    if(team==='A')teamAPlayers.push({slot,...p});
+    else if(team==='B')teamBPlayers.push({slot,...p});
   }
-  document.getElementById('wait-team1-title').textContent=`🔴 ${team1Name} (${countA} Player${countA!==1?'s':''})`;
-  document.getElementById('wait-team2-title').textContent=`🔵 ${team2Name} (${countB} Player${countB!==1?'s':''})`;
+  const countA=teamAPlayers.length,countB=teamBPlayers.length;
+
+  function renderFixedSlots(container,players){
+    // Always render exactly `cap` slots — filled ones show the player,
+    // unfilled ones show a stable "Empty slot" placeholder. This keeps the
+    // layout from jumping around and gives every joining player a fixed
+    // target, so simultaneous joins never visually collide.
+    for(let i=0;i<cap;i++){
+      const p=players[i];
+      const chip=document.createElement('div');
+      if(p){
+        chip.className='team-col-chip'+(p.slot===mySlot?' me':'');
+        chip.innerHTML=`<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</span>${p.slot===mySlot?'<span class="ready-chip">YOU</span>':''}${p.slot==='p1'?'<span style="font-size:9px;color:#10b981;font-weight:600;">HOST</span>':''}`;
+      } else {
+        chip.className='team-col-chip team-col-chip-empty';
+        chip.innerHTML=`<span>Empty slot</span>`;
+      }
+      container.appendChild(chip);
+    }
+    // Any overflow beyond capacity (rare edge case) still gets shown
+    for(let i=cap;i<players.length;i++){
+      const p=players[i];
+      const chip=document.createElement('div');
+      chip.className='team-col-chip'+(p.slot===mySlot?' me':'');
+      chip.innerHTML=`<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</span>${p.slot===mySlot?'<span class="ready-chip">YOU</span>':''}`;
+      container.appendChild(chip);
+    }
+  }
+  renderFixedSlots(listA,teamAPlayers);
+  renderFixedSlots(listB,teamBPlayers);
+
+  document.getElementById('wait-team1-title').textContent=`🔴 ${team1Name} (${countA}/${cap})`;
+  document.getElementById('wait-team2-title').textContent=`🔵 ${team2Name} (${countB}/${cap})`;
   document.getElementById('wait-teams-count').textContent=`${slots.length} / ${maxPlayers}`;
   const myTeam=getPlayerTeam(mySlot,data);
+  const aFull=countA>=cap&&myTeam!=='A',bFull=countB>=cap&&myTeam!=='B';
   const aBtn=document.getElementById('wait-jointeam-a-btn'),bBtn=document.getElementById('wait-jointeam-b-btn');
-  if(aBtn){aBtn.disabled=myTeam==='A';aBtn.textContent=myTeam==='A'?'✓ On '+team1Name:'Join '+team1Name;}
-  if(bBtn){bBtn.disabled=myTeam==='B';bBtn.textContent=myTeam==='B'?'✓ On '+team2Name:'Join '+team2Name;}
+  if(aBtn){aBtn.disabled=myTeam==='A'||aFull;aBtn.textContent=myTeam==='A'?'✓ On '+team1Name:(aFull?team1Name+' Full':'Join '+team1Name);}
+  if(bBtn){bBtn.disabled=myTeam==='B'||bFull;bBtn.textContent=myTeam==='B'?'✓ On '+team2Name:(bFull?team2Name+' Full':'Join '+team2Name);}
   return{countA,countB};
 }
 
@@ -2329,7 +2274,6 @@ function playerLeft(slot,name){
     return;
   }
   setTimeout(checkRoundWinner,400);
-  updateSpectatorPanel();
 }
 
 // ── BEGIN BATTLE ──
@@ -2387,7 +2331,6 @@ function eliminatePlayer(slot,name){
   const mask=document.getElementById(`elim-${slot}`);if(mask)mask.classList.add('show');
   const p=currentPlayers.find(x=>x.slot===slot);if(p&&!p.dead){p.dead=true;eliminatedRanks.push({slot,name});}
   updateAliveCount();checkRoundWinner();
-  updateSpectatorPanel();
 }
 
 function syncState(){
@@ -2408,7 +2351,6 @@ function die(){
   renderBoard();updateAliveCount();
   if(isSoloMode){setTimeout(()=>showGameOver(false,'You',true),900);}
   else{setTimeout(checkRoundWinner,700);}
-  updateSpectatorPanel();
 }
 
 function checkRoundWinner(){
@@ -2488,7 +2430,6 @@ function checkTeamRoundWinner(){
   const aliveB=teamBPlayers.filter(p=>!p.dead);
   if(aliveA.length>0&&aliveB.length>0)return; // both teams still have survivors
   roundResolved=true;
-  stopSpectatorMode();
 
   let winningTeam=null;
   if(aliveA.length>0)winningTeam='A';
@@ -2574,7 +2515,6 @@ function cleanupListeners(){
   oppListeners={};garbListener=null;
   if(G.gravityCheckTimer){clearInterval(G.gravityCheckTimer);G.gravityCheckTimer=null;}
   if(garbageDeliveryTimer){clearInterval(garbageDeliveryTimer);garbageDeliveryTimer=null;}
-  stopSpectatorMode();
 }
 
 function showGameOver(won,winnerName,isSolo=false,seriesOver=true,roundNum=null){
@@ -2700,128 +2640,8 @@ function goLobby(){
   document.getElementById('round-badge').style.display='none';
   document.getElementById('gravity-indicator').style.display='none';
   document.getElementById('series-winner-overlay').classList.remove('show');
-  stopSpectatorMode();
   if(lbVisible){lbVisible=false;document.getElementById('leaderboard-panel').classList.remove('show');lbRef.off('value');}
   showScreen('s-lobby');startRoomsBrowser();
-}
-
-// ══════════════════════════════════════════════
-// ── TEAM SUPPORT SYSTEM (SPECTATOR MODE) ──
-// ══════════════════════════════════════════════
-let supportListener=null;
-let supportCooldownUntil=0;
-let supportCooldownTimer=null;
-let selectedSupportPieceTi=null;
-
-function listenSupportQueue(){
-  if(!roomRef||!mySlot)return;
-  stopSupportListener();
-  const ref=roomRef.child(`support/${mySlot}`);
-  supportListener={ref,cb:ref.on('child_added',snap=>{
-    const item=snap.val();
-    snap.ref.remove().catch(()=>{});
-    if(!item)return;
-    onSupportPieceReceived(item);
-  })};
-}
-function stopSupportListener(){
-  if(supportListener){supportListener.ref.off('child_added',supportListener.cb);supportListener=null;}
-}
-function onSupportPieceReceived(item){
-  if(!G.running||G.dead)return;
-  if(G.hold===null){
-    G.hold=item.ti;
-    renderHold();
-    notifySupportDelivered(item.from,item.ti);
-  } else {
-    G.supportQueue.push(item);
-    notifySupportQueued(item.from,item.ti);
-  }
-}
-function pieceLabel(ti){const f=SUPPORT_PIECE_LIST.find(p=>p.ti===ti);return f?f.label+' Piece':'Piece';}
-function showSupportToast(html){
-  const container=document.getElementById('support-toast-container');if(!container)return;
-  const toast=document.createElement('div');toast.className='support-toast';
-  toast.innerHTML=html;
-  container.appendChild(toast);
-  setTimeout(()=>{toast.classList.add('out');setTimeout(()=>toast.remove(),350);},4000);
-}
-function notifySupportDelivered(from,ti){
-  showSupportToast(`<div style="font-size:18px;">🤝</div><div><div style="font-size:12px;font-weight:700;color:white;">${from} sent you a ${pieceLabel(ti)}!</div><div style="font-size:10px;color:#6ee7b7;margin-top:1px;">Placed in your Hold slot</div></div>`);
-}
-function notifySupportQueued(from,ti){
-  showSupportToast(`<div style="font-size:18px;">🤝</div><div><div style="font-size:12px;font-weight:700;color:white;">${from} sent you a ${pieceLabel(ti)}!</div><div style="font-size:10px;color:#fbbf24;margin-top:1px;">Queued — will fill Hold when free</div></div>`);
-}
-
-// ── SPECTATOR PANEL (shown to dead players on a team-mode match) ──
-function updateSpectatorPanel(){
-  const panel=document.getElementById('spectator-support-panel');
-  if(!panel)return;
-  const iAmDead=currentPlayers.find(p=>p.slot===mySlot)?.dead;
-  const showIt=isTeamMode&&!isSoloMode&&supportSettings.enabled&&iAmDead&&!roundResolved;
-  if(!showIt){stopSpectatorMode();return;}
-  const myTeam=getPlayerTeam(mySlot);
-  const aliveTeammates=currentPlayers.filter(p=>getPlayerTeam(p.slot)===myTeam&&!p.dead&&p.slot!==mySlot);
-  if(!aliveTeammates.length){stopSpectatorMode();return;}
-  panel.style.display='block';
-  const info=document.getElementById('spec-target-info');
-  if(info)info.textContent=`You're eliminated — help your team by sending pieces.`;
-  const select=document.getElementById('spec-target-select');
-  if(select){
-    const prevVal=select.value;
-    select.innerHTML='';
-    aliveTeammates.forEach(p=>{const opt=document.createElement('option');opt.value=p.slot;opt.textContent=p.name;select.appendChild(opt);});
-    if(aliveTeammates.find(p=>p.slot===prevVal))select.value=prevVal;
-  }
-  buildSpecPieceGrid();
-  startSpectatorCooldownTicker();
-}
-function buildSpecPieceGrid(){
-  const grid=document.getElementById('spec-piece-grid');if(!grid)return;
-  grid.innerHTML='';
-  const list=supportSettings.allPieces?SUPPORT_PIECE_LIST:SUPPORT_PIECE_LIST.filter(p=>p.ti===2);
-  list.forEach(p=>{
-    const btn=document.createElement('button');
-    btn.className='spec-piece-btn'+(selectedSupportPieceTi===p.ti?' selected':'');
-    btn.textContent=p.label;
-    btn.onclick=()=>{selectedSupportPieceTi=p.ti;buildSpecPieceGrid();};
-    grid.appendChild(btn);
-  });
-  if(selectedSupportPieceTi===null&&list.length)selectedSupportPieceTi=list[0].ti;
-}
-function startSpectatorCooldownTicker(){
-  if(supportCooldownTimer)return;
-  supportCooldownTimer=setInterval(()=>{
-    const panel=document.getElementById('spectator-support-panel');
-    if(!panel||panel.style.display==='none'){clearInterval(supportCooldownTimer);supportCooldownTimer=null;return;}
-    const remaining=Math.max(0,Math.ceil((supportCooldownUntil-Date.now())/1000));
-    const label=document.getElementById('spec-cooldown-label');
-    const sendBtn=document.getElementById('spec-send-btn');
-    if(remaining>0){
-      if(label)label.textContent=`⏳ Next piece in ${remaining}s`;
-      if(sendBtn)sendBtn.disabled=true,sendBtn.style.opacity='.5';
-    } else {
-      if(label)label.textContent='✓ Ready to send';
-      if(sendBtn)sendBtn.disabled=false,sendBtn.style.opacity='1';
-    }
-  },250);
-}
-function stopSpectatorMode(){
-  const panel=document.getElementById('spectator-support-panel');if(panel)panel.style.display='none';
-  if(supportCooldownTimer){clearInterval(supportCooldownTimer);supportCooldownTimer=null;}
-}
-async function sendSupportPiece(){
-  if(!roomRef||!isTeamMode||!supportSettings.enabled)return;
-  if(Date.now()<supportCooldownUntil)return;
-  const select=document.getElementById('spec-target-select');
-  const targetSlot=select?select.value:null;
-  if(!targetSlot)return;
-  const target=currentPlayers.find(p=>p.slot===targetSlot);
-  if(!target||target.dead)return;
-  if(getPlayerTeam(targetSlot)!==getPlayerTeam(mySlot))return; // safety: own team only
-  const ti=selectedSupportPieceTi||(supportSettings.allPieces?1:2);
-  await roomRef.child(`support/${targetSlot}`).push({ti,from:myName,ts:Date.now()}).catch(()=>{});
-  supportCooldownUntil=Date.now()+supportSettings.cooldownSec*1000;
 }
 
 // ── COUNTDOWN ──
