@@ -951,27 +951,41 @@ async function submitAuth(){
   if(authMode==='register'){
     const confirm=document.getElementById('auth-confirm').value;
     if(password!==confirm){showAuthError('Passwords do not match');btn.disabled=false;btn.textContent=origText;return;}
-    const unameRef=DB.ref('usernames/'+lower);
-    let txResult;
+    let cred;
     try{
-      txResult=await unameRef.transaction(cur=>cur===null?{reserved:true,claimedAt:Date.now()}:undefined);
-    }catch(e){showAuthError('Something went wrong, please try again');btn.disabled=false;btn.textContent=origText;return;}
-    if(!txResult.committed){showAuthError('That username is already taken');btn.disabled=false;btn.textContent=origText;return;}
-    try{
-      const cred=await AUTH.createUserWithEmailAndPassword(usernameToEmail(lower),password);
-      await cred.user.updateProfile({displayName:username});
-      await DB.ref('usernames/'+lower).set({uid:cred.user.uid,username:username});
-      await DB.ref('users/'+cred.user.uid).set({username:username,usernameLower:lower,createdAt:Date.now()});
+      cred=await AUTH.createUserWithEmailAndPassword(usernameToEmail(lower),password);
     }catch(e){
-      await DB.ref('usernames/'+lower).remove().catch(()=>{});
       showAuthError(friendlyAuthError(e));btn.disabled=false;btn.textContent=origText;return;
     }
+    // Now signed in — claim the username (rules require auth for this write).
+    const unameRef=DB.ref('tetris2/usernames/'+lower);
+    let txResult;
+    try{
+      txResult=await unameRef.transaction(cur=>cur===null?{uid:cred.user.uid,username:username,claimedAt:Date.now()}:undefined);
+    }catch(e){
+      await cred.user.delete().catch(()=>{});
+      showAuthError('Something went wrong, please try again');btn.disabled=false;btn.textContent=origText;return;
+    }
+    if(!txResult.committed){
+      await cred.user.delete().catch(()=>{});
+      showAuthError('That username is already taken');btn.disabled=false;btn.textContent=origText;return;
+    }
+    try{
+      await cred.user.updateProfile({displayName:username});
+      await DB.ref('tetris2/users/'+cred.user.uid).set({username:username,usernameLower:lower,createdAt:Date.now()});
+    }catch(e){
+      showAuthError(friendlyAuthError(e));btn.disabled=false;btn.textContent=origText;return;
+    }
+    applyLoggedInUser(username);
   } else {
     try{
       await AUTH.signInWithEmailAndPassword(usernameToEmail(lower),password);
     }catch(e){
       showAuthError(friendlyAuthError(e));btn.disabled=false;btn.textContent=origText;return;
     }
+    let canonicalName=username;
+    try{const snap=await DB.ref('tetris2/usernames/'+lower+'/username').once('value');if(snap.val())canonicalName=snap.val();}catch(e){}
+    applyLoggedInUser(canonicalName);
   }
 }
 
@@ -992,22 +1006,30 @@ function injectAccountBadge(uname){
   wrap.innerHTML=`<span>👤 ${uname}</span><button onclick="logout()" style="background:none;border:none;color:#f87171;font-size:11px;font-weight:700;cursor:pointer;">Logout</button>`;
 }
 
+function applyLoggedInUser(uname){
+  myName=uname;
+  const inp=document.getElementById('inp-name');
+  if(inp){inp.value=uname;inp.setAttribute('readonly','readonly');inp.style.opacity='.7';inp.style.cursor='not-allowed';}
+  injectAccountBadge(uname);
+  showScreen('s-lobby');
+  if(typeof startRoomsBrowser==='function')startRoomsBrowser();
+}
+
 AUTH.onAuthStateChanged(async user=>{
   const btn=document.getElementById('auth-submit-btn');
   if(btn){btn.disabled=false;btn.textContent=authMode==='login'?'🔑 Login':'✨ Create Account';}
   if(user){
+    // If we already applied the name right after register/login (see submitAuth),
+    // don't overwrite it here — this listener can fire before displayName/DB writes finish.
+    if(myName){applyLoggedInUser(myName);return;}
     let uname=user.displayName;
     if(!uname){
-      try{const snap=await DB.ref('users/'+user.uid+'/username').once('value');uname=snap.val();}catch(e){}
+      try{const snap=await DB.ref('tetris2/users/'+user.uid+'/username').once('value');uname=snap.val();}catch(e){}
     }
     if(!uname)uname='Player';
-    myName=uname;
-    const inp=document.getElementById('inp-name');
-    if(inp){inp.value=uname;inp.setAttribute('readonly','readonly');inp.style.opacity='.7';inp.style.cursor='not-allowed';}
-    injectAccountBadge(uname);
-    showScreen('s-lobby');
-    if(typeof startRoomsBrowser==='function')startRoomsBrowser();
+    applyLoggedInUser(uname);
   } else {
+    myName='';
     document.getElementById('logged-in-badge')?.remove();
     showScreen('s-auth');
   }
