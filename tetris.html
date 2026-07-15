@@ -13,6 +13,7 @@
 <script>tailwind.config={theme:{extend:{fontFamily:{sora:['Sora','sans-serif'],mono:['JetBrains Mono','monospace']}}}}</script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -378,7 +379,56 @@ body{
 </div>
 
 <!-- ══ LOBBY SCREEN ══ -->
-<div id="s-lobby" class="screen active flex-col items-center justify-center gap-5 p-6" style="overflow-y:auto;">
+<div id="s-auth" class="screen active flex-col items-center justify-center gap-5 p-6" style="overflow-y:auto;">
+
+  <div class="text-center select-none">
+    <span class="float-anim text-6xl block">🎮</span>
+    <h1 class="logo-grad text-4xl font-black tracking-tight mt-2">Tetris Battle</h1>
+    <p style="font-size:11px;color:#475569;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:4px;margin-top:5px;">Sign in to play</p>
+  </div>
+
+  <div style="display:flex;gap:8px;background:rgba(255,255,255,.04);border-radius:14px;padding:5px;border:1px solid rgba(255,255,255,.07);">
+    <button class="mode-tab active" id="tab-login" onclick="setAuthMode('login')">🔑 Login</button>
+    <button class="mode-tab" id="tab-register" onclick="setAuthMode('register')">✨ Register</button>
+  </div>
+
+  <div id="s-auth-card" class="glass rounded-2xl p-7 w-full" style="max-width:400px;">
+    <h2 id="auth-title" class="font-bold text-white mb-0.5">Welcome Back</h2>
+    <p id="auth-sub" style="font-size:11px;color:#64748b;margin-bottom:14px;">Login with your username</p>
+
+    <label style="font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#64748b;font-weight:600;display:block;margin-bottom:6px;">Username</label>
+    <input id="auth-username" type="text" maxlength="16" autocomplete="off"
+      style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:10px 14px;color:white;font-size:14px;font-family:'Sora',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:14px;"
+      onfocus="this.style.borderColor='rgba(99,102,241,.6)';this.style.boxShadow='0 0 0 3px rgba(99,102,241,.13)'"
+      onblur="this.style.borderColor='rgba(255,255,255,.09)';this.style.boxShadow='none'"
+      placeholder="Username…"/>
+
+    <label style="font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#64748b;font-weight:600;display:block;margin-bottom:6px;">Password</label>
+    <input id="auth-password" type="password" autocomplete="off"
+      style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:10px 14px;color:white;font-size:14px;font-family:'Sora',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:14px;"
+      onfocus="this.style.borderColor='rgba(99,102,241,.6)';this.style.boxShadow='0 0 0 3px rgba(99,102,241,.13)'"
+      onblur="this.style.borderColor='rgba(255,255,255,.09)';this.style.boxShadow='none'"
+      placeholder="Password…" onkeydown="if(event.key==='Enter')submitAuth()"/>
+
+    <div id="auth-confirm-wrap" style="display:none;">
+      <label style="font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#64748b;font-weight:600;display:block;margin-bottom:6px;">Confirm Password</label>
+      <input id="auth-confirm" type="password" autocomplete="off"
+        style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:10px 14px;color:white;font-size:14px;font-family:'Sora',sans-serif;outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:14px;"
+        onfocus="this.style.borderColor='rgba(99,102,241,.6)';this.style.boxShadow='0 0 0 3px rgba(99,102,241,.13)'"
+        onblur="this.style.borderColor='rgba(255,255,255,.09)';this.style.boxShadow='none'"
+        placeholder="Confirm password…" onkeydown="if(event.key==='Enter')submitAuth()"/>
+    </div>
+
+    <p id="auth-error" style="display:none;color:#f87171;font-size:12px;font-weight:600;margin:-4px 0 14px;"></p>
+
+    <button id="auth-submit-btn" onclick="submitAuth()" style="width:100%;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:12px;padding:12px;color:white;font-size:14px;font-weight:800;font-family:'Sora',sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(99,102,241,.4);">🔑 Login</button>
+
+    <p style="font-size:10px;color:#334155;text-align:center;margin-top:14px;">Usernames are unique · 3–16 characters · letters, numbers, _</p>
+  </div>
+
+</div>
+
+<div id="s-lobby" class="screen flex-col items-center justify-center gap-5 p-6" style="overflow-y:auto;">
 
   <div style="position:absolute;top:16px;left:16px;">
     <a href="https://handling-monitoring.vercel.app/" class="back-btn">← Dashboard</a>
@@ -853,6 +903,115 @@ body{
 const fbCfg={apiKey:"AIzaSyCsoYyepyJGIqbdW-QfWUZjJozmxrx2oWk",authDomain:"handlingdisputes.firebaseapp.com",projectId:"handlingdisputes",storageBucket:"handlingdisputes.firebasestorage.app",messagingSenderId:"891854791293",appId:"1:891854791293:web:70bf2ee2c964a144228714",databaseURL:"https://handlingdisputes-default-rtdb.firebaseio.com"};
 firebase.initializeApp(fbCfg);
 const DB=firebase.database();
+const AUTH=firebase.auth();
+
+// ── AUTH (username/password, unique usernames via Realtime DB) ──
+let authMode='login';
+const AUTH_EMAIL_DOMAIN='@players.tetris-battle.app';
+const usernameToEmail=lower=>lower+AUTH_EMAIL_DOMAIN;
+
+function setAuthMode(mode){
+  authMode=mode;
+  document.getElementById('tab-login').classList.toggle('active',mode==='login');
+  document.getElementById('tab-register').classList.toggle('active',mode==='register');
+  document.getElementById('auth-title').textContent=mode==='login'?'Welcome Back':'Create Account';
+  document.getElementById('auth-sub').textContent=mode==='login'?'Login with your username':'Pick a unique username';
+  document.getElementById('auth-confirm-wrap').style.display=mode==='register'?'block':'none';
+  document.getElementById('auth-submit-btn').textContent=mode==='login'?'🔑 Login':'✨ Create Account';
+  hideAuthError();
+}
+
+function hideAuthError(){document.getElementById('auth-error').style.display='none';}
+function showAuthError(msg){
+  const el=document.getElementById('auth-error');el.textContent=msg;el.style.display='block';
+  shakeEl('s-auth-card');
+}
+
+function friendlyAuthError(e){
+  const c=(e&&e.code)||'';
+  if(c.includes('user-not-found'))return 'No account with that username';
+  if(c.includes('wrong-password')||c.includes('invalid-credential')||c.includes('invalid-login-credentials'))return 'Incorrect password';
+  if(c.includes('email-already-in-use'))return 'That username is already taken';
+  if(c.includes('weak-password'))return 'Password is too weak (min 6 characters)';
+  if(c.includes('too-many-requests'))return 'Too many attempts — try again later';
+  if(c.includes('network-request-failed'))return 'Network error, please try again';
+  return 'Something went wrong, please try again';
+}
+
+async function submitAuth(){
+  hideAuthError();
+  const username=document.getElementById('auth-username').value.trim();
+  const password=document.getElementById('auth-password').value;
+  if(!/^[a-zA-Z0-9_]{3,16}$/.test(username)){showAuthError('Username must be 3–16 letters, numbers, or _');return;}
+  if(password.length<6){showAuthError('Password must be at least 6 characters');return;}
+  const lower=username.toLowerCase();
+  const btn=document.getElementById('auth-submit-btn');
+  const origText=btn.textContent;btn.disabled=true;btn.textContent='⏳ Please wait…';
+
+  if(authMode==='register'){
+    const confirm=document.getElementById('auth-confirm').value;
+    if(password!==confirm){showAuthError('Passwords do not match');btn.disabled=false;btn.textContent=origText;return;}
+    const unameRef=DB.ref('usernames/'+lower);
+    let txResult;
+    try{
+      txResult=await unameRef.transaction(cur=>cur===null?{reserved:true,claimedAt:Date.now()}:undefined);
+    }catch(e){showAuthError('Something went wrong, please try again');btn.disabled=false;btn.textContent=origText;return;}
+    if(!txResult.committed){showAuthError('That username is already taken');btn.disabled=false;btn.textContent=origText;return;}
+    try{
+      const cred=await AUTH.createUserWithEmailAndPassword(usernameToEmail(lower),password);
+      await cred.user.updateProfile({displayName:username});
+      await DB.ref('usernames/'+lower).set({uid:cred.user.uid,username:username});
+      await DB.ref('users/'+cred.user.uid).set({username:username,usernameLower:lower,createdAt:Date.now()});
+    }catch(e){
+      await DB.ref('usernames/'+lower).remove().catch(()=>{});
+      showAuthError(friendlyAuthError(e));btn.disabled=false;btn.textContent=origText;return;
+    }
+  } else {
+    try{
+      await AUTH.signInWithEmailAndPassword(usernameToEmail(lower),password);
+    }catch(e){
+      showAuthError(friendlyAuthError(e));btn.disabled=false;btn.textContent=origText;return;
+    }
+  }
+}
+
+function logout(){
+  AUTH.signOut();
+  document.getElementById('auth-username').value='';
+  document.getElementById('auth-password').value='';
+}
+
+function injectAccountBadge(uname){
+  let wrap=document.getElementById('logged-in-badge');
+  if(!wrap){
+    wrap=document.createElement('div');
+    wrap.id='logged-in-badge';
+    wrap.style.cssText='position:absolute;top:16px;right:16px;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:6px 12px;font-size:12px;color:#cbd5e1;z-index:50;';
+    document.getElementById('s-lobby').appendChild(wrap);
+  }
+  wrap.innerHTML=`<span>👤 ${uname}</span><button onclick="logout()" style="background:none;border:none;color:#f87171;font-size:11px;font-weight:700;cursor:pointer;">Logout</button>`;
+}
+
+AUTH.onAuthStateChanged(async user=>{
+  const btn=document.getElementById('auth-submit-btn');
+  if(btn){btn.disabled=false;btn.textContent=authMode==='login'?'🔑 Login':'✨ Create Account';}
+  if(user){
+    let uname=user.displayName;
+    if(!uname){
+      try{const snap=await DB.ref('users/'+user.uid+'/username').once('value');uname=snap.val();}catch(e){}
+    }
+    if(!uname)uname='Player';
+    myName=uname;
+    const inp=document.getElementById('inp-name');
+    if(inp){inp.value=uname;inp.setAttribute('readonly','readonly');inp.style.opacity='.7';inp.style.cursor='not-allowed';}
+    injectAccountBadge(uname);
+    showScreen('s-lobby');
+    if(typeof startRoomsBrowser==='function')startRoomsBrowser();
+  } else {
+    document.getElementById('logged-in-badge')?.remove();
+    showScreen('s-auth');
+  }
+});
 
 // ── CONSTANTS ──
 let COLS=10;
@@ -2658,8 +2817,7 @@ function doCountdown(cb,customLabel='Get Ready'){
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
 function shakeEl(id){const el=document.getElementById(id);el.style.animation='none';void el.offsetWidth;el.style.animation='shakeInput .35s ease';}
 
-const sn=localStorage.getItem('tb_name2');if(sn)document.getElementById('inp-name').value=sn;
-document.getElementById('inp-name').addEventListener('input',e=>localStorage.setItem('tb_name2',e.target.value));
+// Name is now sourced from the logged-in account (see AUTH.onAuthStateChanged above).
 </script>
 </body>
 </html>
