@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,7 +26,7 @@ body{
     radial-gradient(ellipse 40% 40% at 50% 50%,rgba(16,185,129,.06) 0%,transparent 60%);
   color:#f1f5f9;
 }
-.screen{display:none;width:100%;height:100%;}
+.screen{display:none;width:100%;height:100%;justify-content:safe center !important;}
 .screen.active{display:flex;}
 
 @keyframes floatY{0%,100%{transform:translateY(0) rotate(-4deg);}50%{transform:translateY(-16px) rotate(5deg);}}
@@ -2333,10 +2332,6 @@ function renderTeamColumns(slots,data){
   const countA=teamAPlayers.length,countB=teamBPlayers.length;
 
   function renderFixedSlots(container,players){
-    // Always render exactly `cap` slots — filled ones show the player,
-    // unfilled ones show a stable "Empty slot" placeholder. This keeps the
-    // layout from jumping around and gives every joining player a fixed
-    // target, so simultaneous joins never visually collide.
     for(let i=0;i<cap;i++){
       const p=players[i];
       const chip=document.createElement('div');
@@ -2349,7 +2344,6 @@ function renderTeamColumns(slots,data){
       }
       container.appendChild(chip);
     }
-    // Any overflow beyond capacity (rare edge case) still gets shown
     for(let i=cap;i<players.length;i++){
       const p=players[i];
       const chip=document.createElement('div');
@@ -2604,21 +2598,18 @@ function checkRoundWinner(){
 }
 
 // ── TEAM MODE ROUND WINNER ──
-// Match continues until every player on one team is eliminated. The last
-// surviving team wins the round/match. Teammates never attack each other.
 function checkTeamRoundWinner(){
   const teamAPlayers=currentPlayers.filter(p=>getPlayerTeam(p.slot)==='A');
   const teamBPlayers=currentPlayers.filter(p=>getPlayerTeam(p.slot)==='B');
   const aliveA=teamAPlayers.filter(p=>!p.dead);
   const aliveB=teamBPlayers.filter(p=>!p.dead);
-  if(aliveA.length>0&&aliveB.length>0)return; // both teams still have survivors
+  if(aliveA.length>0&&aliveB.length>0)return;
   roundResolved=true;
 
   let winningTeam=null;
   if(aliveA.length>0)winningTeam='A';
   else if(aliveB.length>0)winningTeam='B';
   else if(eliminatedRanks.length>0){
-    // simultaneous elimination edge case: whichever team's member died first loses
     const firstElim=eliminatedRanks[0];
     winningTeam=getPlayerTeam(firstElim.slot)==='A'?'B':'A';
   }
@@ -2726,7 +2717,6 @@ function showGameOver(won,winnerName,isSolo=false,seriesOver=true,roundNum=null)
   } else seriesSection.style.display='none';
   const rankDiv=document.getElementById('go-rankings');rankDiv.innerHTML='';
   if(!isSolo&&isTeamMode){
-    // Team-mode rankings: group by team, mark ally/enemy relative to me
     const myTeam=getPlayerTeam(mySlot);
     ['A','B'].forEach(team=>{
       const header=document.createElement('div');
