@@ -958,7 +958,6 @@ async function submitAuth(){
     }catch(e){
       showAuthError(friendlyAuthError(e));btn.disabled=false;btn.textContent=origText;return;
     }
-    // Now signed in — claim the username (rules require auth for this write).
     const unameRef=DB.ref('tetris2/usernames/'+lower);
     let txResult;
     try{
@@ -1020,8 +1019,6 @@ AUTH.onAuthStateChanged(async user=>{
   const btn=document.getElementById('auth-submit-btn');
   if(btn){btn.disabled=false;btn.textContent=authMode==='login'?'🔑 Login':'✨ Create Account';}
   if(user){
-    // If we already applied the name right after register/login (see submitAuth),
-    // don't overwrite it here — this listener can fire before displayName/DB writes finish.
     if(myName){applyLoggedInUser(myName);return;}
     let uname=user.displayName;
     if(!uname){
@@ -1051,26 +1048,24 @@ const ROOM_EXPIRE_SECONDS=30;
 // ══════════════════════════════════════════════
 
 const DEFAULT_GARBAGE={
-  single:0,    // lines sent on single clear
-  double:1,    // lines sent on double clear
-  triple:2,    // lines sent on triple clear
-  tetris:4,    // lines sent on tetris
-  tspinMini:1, // t-spin mini
-  tspin1:2,    // t-spin single
-  tspin2:4,    // t-spin double
-  tspin3:6,    // t-spin triple
-  combo:1,     // bonus lines per combo count
-  pc:10        // perfect clear bonus
+  single:0,
+  double:1,
+  triple:2,
+  tetris:4,
+  tspinMini:1,
+  tspin1:2,
+  tspin2:4,
+  tspin3:6,
+  combo:1,
+  pc:10
 };
 
-// GARBAGE_LIMITS: [min, max] for each field
 const GARBAGE_LIMITS={
   single:[0,6], double:[0,8], triple:[0,10], tetris:[0,12],
   tspinMini:[0,6], tspin1:[0,8], tspin2:[0,10], tspin3:[0,12],
   combo:[0,4], pc:[0,20]
 };
 
-// Active garbage settings (modified by UI or synced from host)
 let garbageSettings={...DEFAULT_GARBAGE};
 
 function calcGarbage(linesCleared,tspinType,isPerfectClear){
@@ -1095,10 +1090,8 @@ function calcGarbage(linesCleared,tspinType,isPerfectClear){
 // ── GRAVITY SETTINGS ──
 // ══════════════════════════════════════════════
 
-// All possible gravity stages. Host can toggle each on/off and set how many
-// seconds each stage lasts before escalating to the next active stage.
 const ALL_GRAVITY_STAGES=[
-  {cps:1,  label:'1×',  defaultDur:0,    alwaysOn:true},  // 1× is always on; dur=0 means "use next stage duration as transition"
+  {cps:1,  label:'1×',  defaultDur:0,    alwaysOn:true},
   {cps:2,  label:'2×',  defaultDur:30,   alwaysOn:false},
   {cps:4,  label:'3×',  defaultDur:30,   alwaysOn:false},
   {cps:8,  label:'4×',  defaultDur:60,   alwaysOn:false},
@@ -1111,24 +1104,21 @@ const ALL_GRAVITY_STAGES=[
 
 const DEFAULT_GRAVITY_SETTINGS={
   noEscalation:false,
-  // stages: array parallel to ALL_GRAVITY_STAGES — each has { enabled, durationSec }
   stages:[
-    {enabled:true,  durationSec:0},   // 1×  — always on, durationSec = seconds before next kicks in
-    {enabled:true,  durationSec:20},  // 2×
-    {enabled:true,  durationSec:30},  // 3×
-    {enabled:true,  durationSec:60},  // 4×
-    {enabled:true,  durationSec:80},  // 6×
-    {enabled:true,  durationSec:60},  // 8×
-    {enabled:false, durationSec:60},  // 10×
-    {enabled:false, durationSec:60},  // 12×
-    {enabled:false, durationSec:999}, // 15×
+    {enabled:true,  durationSec:0},
+    {enabled:true,  durationSec:20},
+    {enabled:true,  durationSec:30},
+    {enabled:true,  durationSec:60},
+    {enabled:true,  durationSec:80},
+    {enabled:true,  durationSec:60},
+    {enabled:false, durationSec:60},
+    {enabled:false, durationSec:60},
+    {enabled:false, durationSec:999},
   ]
 };
 
 let gravitySettings=JSON.parse(JSON.stringify(DEFAULT_GRAVITY_SETTINGS));
-
-// Build a runtime gravity table from gravitySettings (called when game starts)
-let _builtGravityTable=null; // [{minSec, cps, label, pct}]
+let _builtGravityTable=null;
 
 function buildGravityTable(){
   if(gravitySettings.noEscalation){
@@ -1142,14 +1132,11 @@ function buildGravityTable(){
     const cfg=gravitySettings.stages[i];
     if(!cfg.enabled&&!stage.alwaysOn)continue;
     table.push({minSec:elapsed,cps:stage.cps,label:stage.label});
-    // For the 1× stage (first), its "duration" before next is defined by stages[0].durationSec
-    // For the last active stage, it stays forever (minSec just keeps growing)
     if(i<ALL_GRAVITY_STAGES.length-1){
       const dur=cfg.durationSec||20;
       elapsed+=dur;
     }
   }
-  // Assign pct for gravity bar (proportional to cps rank)
   const maxCps=table[table.length-1].cps;
   table.forEach(s=>{s.pct=Math.round((s.cps/maxCps)*100);});
   if(table[0])table[0].pct=5;
@@ -1180,7 +1167,6 @@ function toggleSettings(key){
   chevron.classList.toggle('open',!isOpen);
 }
 
-// ── GARBAGE UI ──
 const GARB_FIELDS=[
   {key:'single',   label:'Single'},
   {key:'double',   label:'Double'},
@@ -1236,7 +1222,6 @@ function resetGarbage(){
   updateAllGarbageSpinners();
 }
 
-// ── GRAVITY UI ──
 function buildGravityStageList(){
   const list=document.getElementById('grav-stage-list');
   if(!list)return;
@@ -1246,10 +1231,7 @@ function buildGravityStageList(){
     const row=document.createElement('div');
     row.className='grav-stage-row';
     row.id=`grav-row-${i}`;
-
-    const isFirst=i===0; // 1× always on
-
-    // Toggle
+    const isFirst=i===0;
     const toggle=document.createElement('div');
     toggle.className='grav-stage-toggle'+(cfg.enabled||isFirst?' on':'');
     toggle.id=`grav-toggle-${i}`;
@@ -1263,19 +1245,13 @@ function buildGravityStageList(){
     } else {
       toggle.style.opacity='0.5';toggle.style.cursor='default';
     }
-
-    // Label
     const lbl=document.createElement('span');
     lbl.className='grav-stage-label';
     lbl.textContent=stage.label;
-
-    // Duration wrap
     const durWrap=document.createElement('div');
     durWrap.className='grav-stage-dur-wrap';
     durWrap.id=`grav-dur-wrap-${i}`;
-
     if(isFirst){
-      // 1× stage: the duration here is "how long at 1× before escalating"
       const slider=document.createElement('input');
       slider.type='range';slider.className='grav-stage-dur-slider';
       slider.min=5;slider.max=120;slider.step=5;
@@ -1288,7 +1264,6 @@ function buildGravityStageList(){
       slider.oninput=()=>{cfg.durationSec=parseInt(slider.value);valLbl.textContent=`${slider.value}s`;updateGravSummary();};
       durWrap.appendChild(slider);durWrap.appendChild(valLbl);
     } else if(i<ALL_GRAVITY_STAGES.length-1){
-      // Middle stages: duration is how long this stage lasts
       const durLabel=document.createElement('span');
       durLabel.style.cssText='font-size:9px;color:#475569;white-space:nowrap;';
       durLabel.textContent='lasts';
@@ -1304,13 +1279,11 @@ function buildGravityStageList(){
       slider.oninput=()=>{cfg.durationSec=parseInt(slider.value);valLbl.textContent=`${slider.value}s`;updateGravSummary();};
       durWrap.appendChild(durLabel);durWrap.appendChild(slider);durWrap.appendChild(valLbl);
     } else {
-      // Last stage — stays forever
       const forever=document.createElement('span');
       forever.style.cssText='font-size:9px;color:#475569;font-style:italic;';
       forever.textContent='stays until end';
       durWrap.appendChild(forever);
     }
-
     row.appendChild(toggle);row.appendChild(lbl);row.appendChild(durWrap);
     list.appendChild(row);
     if(!isFirst)updateGravRowDisabled(i);
@@ -1356,19 +1329,16 @@ function initSettingsUI(){
   updateGravSummary();
 }
 
-// settings preview badges for waiting room
 function renderWaitSettingsPreview(){
   const wrap=document.getElementById('wait-settings-preview');
   if(!wrap)return;
   wrap.innerHTML='';
-  // Garbage summary badge
   const gIsDefault=JSON.stringify(garbageSettings)===JSON.stringify(DEFAULT_GARBAGE);
   if(!gIsDefault){
     const b=document.createElement('span');b.className='settings-badge';
     b.textContent=`⚔️ S=${garbageSettings.single} D=${garbageSettings.double} T=${garbageSettings.triple} 4L=${garbageSettings.tetris}`;
     wrap.appendChild(b);
   }
-  // Gravity summary badge
   if(gravitySettings.noEscalation){
     const b=document.createElement('span');b.className='settings-badge';
     b.textContent='🌍 Flat 1×';wrap.appendChild(b);
@@ -1495,13 +1465,12 @@ let garbageDeliveryTimer=null;
 // ══════════════════════════════════════════════
 // ── TEAM BATTLE MODE ──
 // ══════════════════════════════════════════════
-let isTeamModeSelected=false;   // lobby selection (before room creation)
-let hostTeamChoice='A';         // host's own team pick when creating a team battle room
-
-let isTeamMode=false;           // active room state (synced via Firebase)
+let isTeamModeSelected=false;
+let hostTeamChoice='A';
+let isTeamMode=false;
 let team1Name='Team 1';
 let team2Name='Team 2';
-let teamWins={A:0,B:0};         // series wins per team
+let teamWins={A:0,B:0};
 
 function setMatchType(type){
   isTeamModeSelected=(type==='team');
@@ -1520,8 +1489,6 @@ function syncTeamNameLabels(){
   const a=document.getElementById('host-team-a-lbl');if(a)a.textContent=n1;
   const b=document.getElementById('host-team-b-lbl');if(b)b.textContent=n2;
 }
-// Determine a player's team ('A' or 'B'). Reads from live room data first (for
-// waiting-room rendering before currentPlayers is populated), else from currentPlayers.
 function getPlayerTeam(slot,dataOverride){
   if(!isTeamMode)return null;
   if(dataOverride&&dataOverride[slot])return dataOverride[slot].team||null;
@@ -1583,7 +1550,6 @@ function renderSeriesRows(container,mode='full'){
     container.appendChild(row);
   });
 }
-// Team-mode series scoreboard: Team 1 vs Team 2 win pips
 function renderTeamSeriesRows(container,mode='full'){
   if(!container)return;
   container.innerHTML='';
@@ -1739,23 +1705,10 @@ function detectTSpin(){
 // ── PERFECT CLEAR ──
 function detectPerfectClear(){return G.board.every(row=>row.every(v=>v===0));}
 
-// ── SOLO MODE ──
+// ── SOLO MODE (redirect to solo.html) ──
 function startSolo(){
-  const name=document.getElementById('inp-name').value.trim();if(!name){shakeEl('inp-name');return;}
-  haltGame();
-  myName=name;isSoloMode=true;isTeamMode=false;stopRoomsBrowser();
-  applyBoardWidth();buildGravityTable();
-  totalRounds=1;currentRound=1;seriesWins={};teamWins={A:0,B:0};roundResolved=false;
-  currentPlayers=[{slot:'p1',name:myName,dead:false}];eliminatedRanks=[];
-  myRef=null;garbRef=null;roomRef=null;
-  document.getElementById('my-name-lbl').textContent=myName;
-  document.getElementById('solo-badge').style.display='inline';
-  document.getElementById('my-team-badge').style.display='none';
-  document.getElementById('room-chip').textContent='SOLO MODE';
-  document.getElementById('alive-pill').textContent='SOLO';
-  document.getElementById('garbage-box').style.display='none';
-  document.getElementById('opponents-panel').innerHTML='';
-  showScreen('s-game');doCountdown(()=>initGame());
+  // Redirect to the standalone solo mode page
+  window.location.href = 'solo.html';
 }
 
 // ── GRAVITY UI ──
@@ -1773,7 +1726,7 @@ function updateGravityIndicator(){
 
 // ── INIT GAME ──
 function initGame(){
-  buildGravityTable(); // rebuild from current gravitySettings
+  buildGravityTable();
   G.board=Array.from({length:ROWS},()=>Array(COLS).fill(0));
   G.bag=[...newBag(),...newBag(),...newBag()];G.hold=null;G.holdUsed=false;
   G.score=0;G.lines=0;G.level=1;G.combo=-1;
@@ -1802,7 +1755,6 @@ function spawn(){G.piece=mkPiece(pullNext());G.holdUsed=false;G.lastMoveWasRotat
 
 // ── DROP / LOCK ──
 function currentDropInterval(){const elapsed=(Date.now()-G.gravityStartMs)/1000;return gravityInterval(elapsed);}
-
 function startDrop(){
   stopDrop();
   if(!G.running||G.dead||G.paused)return;
@@ -1811,9 +1763,7 @@ function startDrop(){
     if(G.running&&!G.paused&&!G.dead) autoDown();
   },interval);
 }
-
 function stopDrop(){clearInterval(G.dropTimer);G.dropTimer=null;}
-
 function autoDown(){
   if(!G.running||G.dead||G.paused)return;
   if(G.lockTimeout){
@@ -1833,20 +1783,14 @@ function autoDown(){
     startLock();
   }
 }
-
 function startLock(){if(G.lockTimeout)return;G.lockTimeout=setTimeout(()=>{G.lockTimeout=null;if(!G.running||G.dead)return;if(!valid(G.board,G.piece,0,1))lock();},480);}
 function clearLock(){clearTimeout(G.lockTimeout);G.lockTimeout=null;}
-
-function resetLock(){
-  clearLock();
-  startDrop();
-}
+function resetLock(){clearLock();startDrop();}
 
 // ── PIECE ACTIONS ──
 function moveH(dx){if(!live())return;if(valid(G.board,G.piece,dx,0)){G.piece.px+=dx;G.lastMoveWasRotation=false;resetLock();renderBoard();}}
 function softDrop(){if(!live())return;if(valid(G.board,G.piece,0,1)){G.piece.py++;G.score++;G.lastMoveWasRotation=false;clearLock();renderBoard();}else startLock();}
 function hardDrop(){if(!live())return;let d=0;while(valid(G.board,G.piece,0,d+1))d++;G.piece.py+=d;G.score+=d*2;G.lastMoveWasRotation=false;clearLock();lock();}
-
 function rotate(dir){
   if(!live())return;
   const newRot=(G.piece.rot+dir+4)%4;
@@ -1866,7 +1810,6 @@ function rotate(dir){
     }
   }
 }
-
 function holdPiece(){
   if(!live()||G.holdUsed)return;
   G.holdUsed=true;const cur=G.piece.ti;
@@ -1898,8 +1841,6 @@ function sendGarbage(lines){
   G.garbageQueue=G.garbageQueue.filter(x=>x.amount>0);
   G.pendingGarbage=G.garbageQueue.reduce((s,i)=>s+i.amount,0);updateGarbage();
   if(toSend<=0)return;
-  // In team mode, garbage only goes to a random ALIVE player on the OPPOSING team.
-  // Teammates never attack each other.
   let living=currentPlayers.filter(p=>p.slot!==mySlot&&!p.dead);
   if(isTeamMode){
     const myTeam=getPlayerTeam(mySlot);
@@ -2102,14 +2043,12 @@ function togglePause(){if(!G.running||G.dead)return;G.paused=!G.paused;document.
 // ── FIREBASE ROOM LOGIC ──
 function genCode(){const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let s='';for(let i=0;i<4;i++)s+=c[0|Math.random()*c.length];return s;}
 
-// Serialize settings for Firebase (compact)
 function serializeSettings(){
   return{
     garbage:JSON.parse(JSON.stringify(garbageSettings)),
     gravity:JSON.parse(JSON.stringify(gravitySettings))
   };
 }
-// Apply settings received from Firebase
 function applySettings(data){
   if(data&&data.garbage)garbageSettings={...DEFAULT_GARBAGE,...data.garbage};
   if(data&&data.gravity)gravitySettings=JSON.parse(JSON.stringify({...DEFAULT_GRAVITY_SETTINGS,...data.gravity}));
@@ -2140,29 +2079,23 @@ async function createRoom(){
   showScreen('s-waiting');startRoomExpiry();listenRoom();
 }
 
-// Team capacity per side, based on maxPlayers (e.g. 6 players -> 3 slots each side)
 function teamCapacity(){return Math.ceil(maxPlayers/2);}
 
-// ── JOIN ROOM (atomic — safe for multiple people joining at the exact same time) ──
 async function joinRoom(){
   const name=document.getElementById('inp-name').value.trim();const code=document.getElementById('inp-code').value.trim().toUpperCase();
   if(!name){shakeEl('inp-name');return;}if(code.length!==4){shakeEl('inp-code');return;}
   myName=name;roomId=code;myIsCreator=false;isSoloMode=false;
   roomRef=DB.ref(`tetris2/rooms/${roomId}`);
-
   let assignedSlot=null,abortReason=null;
-
-  // Transaction guarantees only one joining client can claim a given slot,
-  // even if several people tap "Join" on the same room at the same instant.
   let txRes;
   try{
     txRes=await roomRef.transaction(current=>{
       if(current===null){abortReason='notfound';return current;}
-      if(current.status!=='waiting'){abortReason='notwaiting';return;} // abort
+      if(current.status!=='waiting'){abortReason='notwaiting';return;}
       const max=current.maxPlayers||2;
       let slot=null;
       for(let i=2;i<=max;i++){if(!current[`p${i}`]){slot=`p${i}`;break;}}
-      if(!slot){abortReason='full';return;} // abort
+      if(!slot){abortReason='full';return;}
       assignedSlot=slot;
       current[slot]={name:myName,status:'ready',score:0,lines:0,level:1,dead:false};
       return current;
@@ -2211,7 +2144,6 @@ function showTeamPickModal(d){
 }
 function cancelTeamPick(){
   document.getElementById('team-pick-modal').style.display='none';
-  // Release the reserved slot since the player backed out of joining
   if(roomRef&&mySlot){roomRef.child(mySlot).remove().catch(()=>{});}
   roomRef=null;mySlot='';
   startRoomsBrowser();
@@ -2225,10 +2157,6 @@ async function pickTeamAndJoin(team){
   showScreen('s-waiting');listenRoom();
 }
 
-// ── SWITCH TEAM (waiting room, before match start) ──
-// Uses a transaction on just this player's own slot so concurrent switches
-// by different players never collide; capacity is checked against the
-// latest committed room data at switch time.
 async function switchMyTeam(team){
   if(!roomRef||!mySlot||!isTeamMode)return;
   const roomSnap=await roomRef.once('value').catch(()=>null);
@@ -2317,7 +2245,6 @@ function renderWaitSeriesScore(){
 function showAutostartBanner(){document.getElementById('autostart-banner').classList.add('show');}
 function hideAutostartBanner(){document.getElementById('autostart-banner').classList.remove('show');}
 
-// ── TWO-COLUMN TEAM LOBBY RENDERING ──
 function renderTeamColumns(slots,data){
   const listA=document.getElementById('wait-team1-list'),listB=document.getElementById('wait-team2-list');
   listA.innerHTML='';listB.innerHTML='';
@@ -2605,7 +2532,6 @@ function checkTeamRoundWinner(){
   const aliveB=teamBPlayers.filter(p=>!p.dead);
   if(aliveA.length>0&&aliveB.length>0)return;
   roundResolved=true;
-
   let winningTeam=null;
   if(aliveA.length>0)winningTeam='A';
   else if(aliveB.length>0)winningTeam='B';
@@ -2613,13 +2539,11 @@ function checkTeamRoundWinner(){
     const firstElim=eliminatedRanks[0];
     winningTeam=getPlayerTeam(firstElim.slot)==='A'?'B':'A';
   }
-
   const myTeam=getPlayerTeam(mySlot);
   const iWon=winningTeam===myTeam;
   const winningMembers=currentPlayers.filter(p=>getPlayerTeam(p.slot)===winningTeam);
   const resolvedWinnerName=winningMembers.map(p=>p.name).join(' & ')||'Nobody';
   const thisRoundNum=currentRound;
-
   if(winningTeam){
     teamWins[winningTeam]=(teamWins[winningTeam]||0)+1;
     if(myIsCreator)roomRef.update({teamWins});
@@ -2627,7 +2551,6 @@ function checkTeamRoundWinner(){
   const needed=Math.ceil(totalRounds/2);
   const seriesOver=winningTeam&&(teamWins[winningTeam]||0)>=needed;
   cleanupListeners();
-
   if(seriesOver||totalRounds===1){
     if(iWon)recordWin(myName+' ('+teamLabel(myTeam)+')');
     showSeriesWinnerOverlay(teamLabel(winningTeam)+' — '+resolvedWinnerName,iWon);
@@ -2830,8 +2753,6 @@ function doCountdown(cb,customLabel='Get Ready'){
 // ── UTILS ──
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
 function shakeEl(id){const el=document.getElementById(id);el.style.animation='none';void el.offsetWidth;el.style.animation='shakeInput .35s ease';}
-
-// Name is now sourced from the logged-in account (see AUTH.onAuthStateChanged above).
 </script>
 </body>
 </html>
