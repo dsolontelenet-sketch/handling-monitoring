@@ -33,10 +33,10 @@ body{
 @keyframes spin{to{transform:rotate(360deg);}}
 @keyframes popIn{from{transform:scale(0) rotate(-12deg);opacity:0;}to{transform:scale(1) rotate(0deg);opacity:1;}}
 @keyframes clearPop{
-  0%{opacity:0;transform:translate(-50%,-50%) scale(.25) rotate(-8deg);}
-  18%{opacity:1;transform:translate(-50%,-50%) scale(1.2) rotate(3deg);}
-  70%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(0deg);}
-  100%{opacity:0;transform:translate(-50%,-70%) scale(.85);}
+  0%{opacity:0;transform:translate(-50%,20px) scale(.25) rotate(-8deg);}
+  18%{opacity:1;transform:translate(-50%,0) scale(1.2) rotate(3deg);}
+  70%{opacity:1;transform:translate(-50%,0) scale(1) rotate(0deg);}
+  100%{opacity:0;transform:translate(-50%,-30px) scale(.85);}
 }
 @keyframes cdPop{from{transform:scale(2.2);opacity:0;}to{transform:scale(1);opacity:1;}}
 @keyframes shakeInput{0%,100%{transform:translateX(0);}20%{transform:translateX(-9px);}60%{transform:translateX(9px);}80%{transform:translateX(-5px);}}
@@ -51,7 +51,7 @@ body{
 .slide-up{animation:slideUp .38s ease both;}
 .slide-in{animation:slideIn .32s ease both;}
 
-#clear-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:300;text-align:center;opacity:0;}
+#clear-popup{position:fixed;pointer-events:none;z-index:300;text-align:center;opacity:0;transition:opacity .2s;}
 #clear-popup.show{animation:clearPop 1.5s ease forwards;}
 
 #countdown{position:fixed;inset:0;z-index:400;background:rgba(2,8,23,.88);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;}
@@ -1194,7 +1194,16 @@ function showClearFx(lines,tspinType,isPerfect){
   else{const texts=['','SINGLE','DOUBLE','TRIPLE','TETRIS!'];const colors=['','#FFE000','#00FF88','#CC44FF','#FF3355'];txt=texts[lines]||`${lines} LINES`;color=colors[Math.min(lines,4)]||'#f1f5f9';}
   if(isPerfect){txt='PERFECT CLEAR!';color='#fbbf24';sub='🌟 Flawless!';}
   else if(G.combo>0){sub=`🔥 ${G.combo}× combo!`;}
+  
   const pop=document.getElementById('clear-popup');
+  const boardCanvas=document.getElementById('my-canvas');
+  const boardRect=boardCanvas.getBoundingClientRect();
+  
+  // Position below the board instead of center
+  pop.style.top=(boardRect.bottom+80)+'px';
+  pop.style.left=boardRect.left+(boardRect.width/2)+'px';
+  pop.style.transform='translate(-50%,0)';
+  
   document.getElementById('cp-text').textContent=txt;
   document.getElementById('cp-text').style.color=color;
   document.getElementById('cp-sub').textContent=sub;
