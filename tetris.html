@@ -1462,6 +1462,7 @@ let gameMode='multi';
 let expiryTimer=null,expirySecondsLeft=ROOM_EXPIRE_SECONDS;
 let roomsRef=null,roomsListener=null;
 let garbageDeliveryTimer=null;
+let gameStartSyncTimer=null; // NEW: Timer to ensure all players are synced
 
 // ══════════════════════════════════════════════
 // ── TEAM BATTLE MODE ──
@@ -1511,6 +1512,7 @@ function haltGame(){
   clearLock();
   if(G.gravityCheckTimer){clearInterval(G.gravityCheckTimer);G.gravityCheckTimer=null;}
   if(garbageDeliveryTimer){clearInterval(garbageDeliveryTimer);garbageDeliveryTimer=null;}
+  if(gameStartSyncTimer){clearTimeout(gameStartSyncTimer);gameStartSyncTimer=null;}
   G.garbageQueue=[];G.outgoingBuffer=0;G.pendingGarbage=0;
   updateGarbage();updateCombo();
 }
@@ -2069,7 +2071,7 @@ async function createRoom(){
     status:'waiting',createdAt:Date.now(),maxPlayers,hostName:myName,
     cols:selectedCols,totalRounds,currentRound:1,seriesWins:{},
     teamMode:isTeamMode,team1Name,team2Name,teamWins:{A:0,B:0},
-    settings:serializeSettings()
+    settings:serializeSettings(),gameStartCountdown:null
   };
   roomData.p1={name:myName,status:'waiting',score:0,lines:0,level:1,dead:false};
   if(isTeamMode)roomData.p1.team=hostTeamChoice;
@@ -2193,7 +2195,7 @@ function listenRoom(){
     for(let i=1;i<=maxPlayers;i++){if(d[`p${i}`]){slots.push(`p${i}`);playerData[`p${i}`]=d[`p${i}`];}}
     if(d.status==='waiting'){
       renderWaitingRoom(slots,playerData);
-      if(myIsCreator&&slots.length>=maxPlayers){stopRoomExpiry();showAutostartBanner();setTimeout(()=>{hideAutostartBanner();roomRef.update({status:'playing'});},1200);}
+      if(myIsCreator&&slots.length>=maxPlayers){stopRoomExpiry();showAutostartBanner();setTimeout(()=>{hideAutostartBanner();roomRef.update({status:'playing',gameStartCountdown:3});},1200);}
     }
     if(d.status==='playing'){
       stopRoomExpiry();if(d.cols)selectedCols=d.cols;
@@ -2332,14 +2334,14 @@ function renderWaitingRoom(slots,data){
     if(isTeamMode){
       canStart=teamCounts.countA>=1&&teamCounts.countB>=1;
     } else {
-      canStart=slots.length>=2&&slots.length<maxPlayers;
+      canStart=slots.length>=2;
     }
   }
   document.getElementById('start-btn').style.display=canStart?'block':'none';
   renderWaitSeriesScore();
 }
 
-function hostStart(){if(!myIsCreator||!roomRef)return;stopRoomExpiry();roomRef.update({status:'playing'});}
+function hostStart(){if(!myIsCreator||!roomRef)return;stopRoomExpiry();roomRef.update({status:'playing',gameStartCountdown:3});}
 
 function cancelWait(){
   stopRoomExpiry();
@@ -2423,8 +2425,19 @@ function beginBattle(slots,data){
     }
   });
   showScreen('s-game');
+  
+  // IMPORTANT: Ensure my player data is reset before countdown
+  if(myRef){
+    myRef.update({status:'playing',dead:false,score:0,lines:0,level:1,board:null,_p:null,left:false}).catch(()=>{});
+  }
+  
   const roundLbl=totalRounds>1?`Round ${currentRound} of ${totalRounds}`:'Get Ready';
-  doCountdown(()=>initGame(),roundLbl);
+  doCountdown(()=>{
+    // Add extra sync delay to ensure all players are ready
+    gameStartSyncTimer=setTimeout(()=>{
+      initGame();
+    },500);
+  },roundLbl);
 }
 
 function eliminatePlayer(slot,name){
@@ -2613,6 +2626,7 @@ function cleanupListeners(){
   oppListeners={};garbListener=null;
   if(G.gravityCheckTimer){clearInterval(G.gravityCheckTimer);G.gravityCheckTimer=null;}
   if(garbageDeliveryTimer){clearInterval(garbageDeliveryTimer);garbageDeliveryTimer=null;}
+  if(gameStartSyncTimer){clearTimeout(gameStartSyncTimer);gameStartSyncTimer=null;}
 }
 
 function showGameOver(won,winnerName,isSolo=false,seriesOver=true,roundNum=null){
