@@ -578,7 +578,7 @@
       <div class="grid grid-cols-3 gap-4">
         <div class="glass rounded-2xl p-6 card-glow">
           <h3 class="text-sm font-bold text-white mb-1">New Ticket</h3>
-          <p class="text-xs text-slate-500 mb-5">Auto-assigns · saved to Firestore</p>
+          <p class="text-xs text-slate-500 mb-5">Auto-assigns · saved to RTDB</p>
           <div class="space-y-3">
             <div><label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-1.5">Ticket Type</label><select id="ticket-type" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-3 py-2.5 appearance-none cursor-pointer transition-all"><option value="Dispute">⚡ Dispute</option><option value="Partner Portal">🔗 Partner Portal</option><option value="Inquiry">💬 Inquiry</option></select></div>
             <div>
@@ -631,7 +631,7 @@
 
         <div class="glass rounded-2xl p-6 card-glow flex flex-col">
           <h3 class="text-sm font-bold text-white mb-1">Activity Log</h3>
-          <p class="text-xs text-slate-500 mb-4">Real-time · Firestore</p>
+          <p class="text-xs text-slate-500 mb-4">Real-time · RTDB</p>
           <div id="activity-log" class="flex-1 space-y-2 overflow-y-auto max-h-60"><div class="text-center text-slate-600 text-xs py-8">Loading…</div></div>
         </div>
       </div>
@@ -779,7 +779,7 @@
   <div class="relative glass rounded-2xl p-8 w-full max-w-md shadow-2xl border border-indigo-500/20 slide-in">
     <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
     <h2 class="text-lg font-bold text-white mb-1">Create New Ticket</h2>
-    <p class="text-xs text-slate-500 mb-6">Auto-assigned from today's rotation · Saved to Firebase</p>
+    <p class="text-xs text-slate-500 mb-6">Auto-assigned from today's rotation · Saved to RTDB</p>
     <div class="space-y-4">
       <div><label class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold block mb-2">Ticket Type</label><select id="modal-type" class="form-input w-full bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-3 appearance-none transition-all"><option value="Dispute">⚡ Dispute</option><option value="Partner Portal">🔗 Partner Portal</option><option value="Inquiry">💬 Inquiry</option></select></div>
       <div>
@@ -788,7 +788,7 @@
         <div id="modal-dup-warning" class="hidden mt-2 flex items-center gap-2 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2"><svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg><span id="modal-dup-text"></span></div>
       </div>
       <div class="glass-light rounded-xl px-4 py-3 flex items-center justify-between"><span class="text-xs text-slate-400">Auto-assigned to:</span><span id="modal-assignee" class="text-sm font-bold text-indigo-300 font-mono">—</span></div>
-      <button id="modal-submit-btn" onclick="submitTicketModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm py-3 rounded-xl transition-all flex items-center justify-center gap-2"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Submit &amp; Save to Firebase</button>
+      <button id="modal-submit-btn" onclick="submitTicketModal()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm py-3 rounded-xl transition-all flex items-center justify-center gap-2"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>Submit &amp; Save to RTDB</button>
     </div>
   </div>
 </div>
@@ -815,11 +815,14 @@ firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore();
 const rtdb=firebase.database();
 db.enablePersistence().catch(()=>{});
-const ticketsCol=db.collection('tickets');
-const metaDoc=db.collection('meta').doc('rotation');
+const ticketsCol=db.collection('tickets'); // READ ONLY - for old Firestore tickets
 const profilesRef=rtdb.ref('profiles');
 const photosRef=rtdb.ref('profiles/photos');
 const chatRef=rtdb.ref('chat/messages');
+// RTDB references for new data
+const rtdbTicketsRef=rtdb.ref('tickets');
+const rtdbMetaRef=rtdb.ref('meta/rotation');
+const rtdbSeqRef=rtdb.ref('meta/seqNum');
 
 const DEFAULT_TEAM=['Kent','Johnny','Reysel','Jashmier','Keone','Diovic'];
 const TYPE_CFG={'Dispute':{color:'text-rose-400',bg:'bg-rose-500/10',border:'border-rose-500/20',icon:'⚡'},'Partner Portal':{color:'text-blue-400',bg:'bg-blue-500/10',border:'border-blue-500/20',icon:'🔗'},'Inquiry':{color:'text-violet-400',bg:'bg-violet-500/10',border:'border-violet-500/20',icon:'💬'}};
@@ -977,7 +980,10 @@ function handlePhotoUpload(e){const file=e.target.files[0];if(!file)return;e.tar
 
 // ── STATE ─────────────────────────────────────────────────────────
 let state={
-  tickets:[],rotationIndex:0,workingToday:[],activityLog:[],
+  tickets:[], // Combined tickets from Firestore + RTDB
+  firestoreTickets:[], // Old tickets from Firestore
+  rtdbTickets:[], // New tickets from RTDB
+  rotationIndex:0,workingToday:[],activityLog:[],
   filter:'all',dateFilter:'today',search:'',darkMode:true,submitting:false,loaded:false,
   pendingRemoveName:null,pendingSkipId:null,pendingEditId:null,statsView:'today',analyticsView:'today',
   myName:localStorage.getItem('dops_name')||'',
@@ -991,6 +997,27 @@ let state={
 function setFbStatus(cls,label){document.getElementById('fb-dot').className='fb-dot '+cls;document.getElementById('fb-label').textContent=label;}
 function hideLoader(){const el=document.getElementById('loading-overlay');el.style.opacity='0';setTimeout(()=>el.style.display='none',400);}
 
+// ── MERGE TICKETS ────────────────────────────────────────────────
+function mergeTickets(){
+  state.tickets=[...state.firestoreTickets,...state.rtdbTickets].sort((a,b)=>(b.ts||0)-(a.ts||0));
+  
+  // Update all UI
+  populateDateFilter();
+  renderStats();
+  renderRecentTable();
+  renderAllTable();
+  renderTeamStats();
+  renderAgentsPage();
+  renderAnalytics();
+  updateAgentCount();
+  
+  if(!state.loaded){
+    state.loaded=true;
+    hideLoader();
+    setFbStatus('connected','🔴 Live · RTDB');
+  }
+}
+
 async function init(){
   const tk=todayKey();
   document.getElementById('current-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
@@ -999,20 +1026,45 @@ async function init(){
   document.getElementById('stats-today-date-label').textContent=formatDayLabel(tk);
   listenProfiles();
   if(state.myName)applyName(state.myName);
-  const snap=await metaDoc.get().catch(()=>null);
-  if(!snap||!snap.exists){await metaDoc.set({rotationIndex:0,workingToday:DEFAULT_TEAM.slice(),activityLog:[]}).catch(console.error);}
-  metaDoc.onSnapshot(s=>{
-    if(!s.exists)return;
-    const d=s.data();
-    state.rotationIndex=d.rotationIndex??0;state.workingToday=d.workingToday??[];state.activityLog=d.activityLog??[];
+  
+  // Listen to RTDB meta for rotation data
+  rtdbMetaRef.on('value',snap=>{
+    const d=snap.val()||{};
+    state.rotationIndex=d.rotationIndex||0;
+    state.workingToday=d.workingToday||[];
+    state.activityLog=d.activityLog||[];
     renderWorkingToday();renderRotation();renderSidebar();renderActivityLog();renderPreview();renderDropdown('');renderNamePicker();renderAgentsPage();updateAgentCount();
     document.getElementById('stat-working').textContent=state.workingToday.length;
   },err=>{console.error(err);setFbStatus('error','Sync error');});
+  
+  // Initialize RTDB meta if not exists
+  const metaSnap=await rtdbMetaRef.once('value');
+  if(!metaSnap.exists()){
+    await rtdbMetaRef.set({rotationIndex:0,workingToday:DEFAULT_TEAM.slice(),activityLog:[]}).catch(console.error);
+  }
+  
+  // Listen to Firestore (existing tickets - READ ONLY)
   ticketsCol.orderBy('ts','desc').onSnapshot(s=>{
-    state.tickets=s.docs.map(d=>({_id:d.id,...d.data()}));
-    populateDateFilter();renderStats();renderRecentTable();renderAllTable();renderTeamStats();renderAgentsPage();renderAnalytics();updateAgentCount();
-    if(!state.loaded){state.loaded=true;hideLoader();setFbStatus('connected','🔴 Live · Firestore');}
-  },err=>{console.error(err);setFbStatus('error','Connection failed');hideLoader();});
+    state.firestoreTickets=s.docs.map(d=>({_id:'fs_'+d.id, source:'firestore', ...d.data()}));
+    mergeTickets();
+  },err=>{
+    console.error('Firestore error:',err);
+    setFbStatus('error','Firestore error');
+  });
+  
+  // Listen to RTDB (new tickets)
+  rtdbTicketsRef.on('value',snap=>{
+    const raw=snap.val()||{};
+    state.rtdbTickets=Object.keys(raw).map(key=>({
+      _id:'rtdb_'+key,
+      source:'rtdb',
+      ...raw[key]
+    }));
+    mergeTickets();
+  },err=>{
+    console.error('RTDB error:',err);
+  });
+  
   chatRef.orderByChild('ts').limitToLast(200).on('value',snap=>{
     const raw=snap.val()||{};state.chatMessages=raw;renderChat();
     if(!state.chatOpen){const newCount=Object.values(raw).filter(m=>m.ts>state.lastSeenTs).length;const badge=document.getElementById('chat-badge');if(newCount>0){badge.textContent=newCount;badge.classList.remove('hidden');}else badge.classList.add('hidden');}
@@ -1038,16 +1090,24 @@ function updateAgentCount(){
   document.getElementById('agent-count-badge').textContent=agentSet.size;
 }
 
-function isDupToday(title,excludeId){const n=title.trim().toLowerCase();if(!n)return null;const tk=todayKey();return state.tickets.find(t=>t._id!==excludeId&&t.dateKey===tk&&(t.title||'').trim().toLowerCase()===n)||null;}
+function isDupToday(title,excludeId){
+  const n=title.trim().toLowerCase();
+  if(!n)return null;
+  const tk=todayKey();
+  return state.tickets.find(t=>
+    t._id!==excludeId &&
+    t.dateKey===tk &&
+    (t.title||'').trim().toLowerCase()===n
+  )||null;
+}
 function checkDupInline(val,wid,tid){const dup=isDupToday(val);const w=document.getElementById(wid);if(!w)return;if(dup&&val.trim()){w.classList.remove('hidden');w.classList.add('flex');const te=document.getElementById(tid);if(te)te.textContent=`Already submitted today — assigned to ${dup.assignee} (${dup.id})`;}else{w.classList.add('hidden');w.classList.remove('flex');}}
 function showDupToast(dup){document.getElementById('dup-toast-msg').textContent=`"${dup.title}" already exists today.`;document.getElementById('dup-toast-detail').textContent=`${dup.id} · ${dup.assignee} · ${dup.status}`;const t=document.getElementById('dup-toast');t.classList.remove('hidden');['ticket-title','modal-title'].forEach(id=>{const el=document.getElementById(id);if(el){el.classList.add('shake');setTimeout(()=>el.classList.remove('shake'),450);}});setTimeout(()=>t.classList.add('hidden'),4200);}
 function populateDateFilter(){const el=document.getElementById('date-filter');const all=[...new Set(state.tickets.map(t=>t.dateKey).filter(Boolean))].sort().reverse();const tk=todayKey();let html=`<option value="all">All dates</option><option value="today" ${state.dateFilter==='today'?'selected':''}>Today only (${tk})</option>`;all.forEach(d=>{if(d!==tk)html+=`<option value="${d}" ${state.dateFilter===d?'selected':''}>${formatDayLabel(d)}</option>`;});el.innerHTML=html;}
 function dateFilterChanged(){state.dateFilter=document.getElementById('date-filter').value;state.currentPage=1;renderAllTable();}
 function addCustomName(){const input=document.getElementById('custom-name-input');const name=input.value.trim();if(!name)return;addMember(name);input.value='';closeDropdown();}
-function addMember(name){
+async function addMember(name){
   name=name.trim();
   if(!name)return;
-  // Check if agent exists in the agents list
   const allAgents=getAllAgents();
   const agentExists=allAgents.some(a=>a.toLowerCase()===name.toLowerCase());
   if(!agentExists){
@@ -1059,33 +1119,210 @@ function addMember(name){
     showToast(`${name} is already on the list`,'Already added');
     return;
   }
-  metaDoc.update({workingToday:[...state.workingToday,name]}).catch(console.error);
+  await rtdbMetaRef.update({workingToday:[...state.workingToday,name]}).catch(console.error);
   closeDropdown();
 }
 function removeMember(name){state.pendingRemoveName=name;const el=document.getElementById('confirm-avatar');const photo=getPhoto(name);if(photo){el.className='w-8 h-8 rounded-full overflow-hidden flex-shrink-0';el.innerHTML=`<img src="${photo}" class="w-full h-full object-cover"/>`;}else{el.className=`w-8 h-8 rounded-full ${memberColor(name)} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;el.textContent=name[0].toUpperCase();}document.getElementById('confirm-name-display').textContent=name;document.getElementById('confirm-modal').classList.add('open');}
 function closeConfirmModal(){state.pendingRemoveName=null;document.getElementById('confirm-modal').classList.remove('open');}
-function confirmRemoveMember(){const name=state.pendingRemoveName;if(!name)return;closeConfirmModal();const updated=state.workingToday.filter(n=>n!==name);const newIdx=updated.length>0?state.rotationIndex%updated.length:0;metaDoc.update({workingToday:updated,rotationIndex:newIdx}).catch(console.error);showToast(`${name} removed`,'Member removed');}
+async function confirmRemoveMember(){const name=state.pendingRemoveName;if(!name)return;closeConfirmModal();const updated=state.workingToday.filter(n=>n!==name);const newIdx=updated.length>0?state.rotationIndex%updated.length:0;await rtdbMetaRef.update({workingToday:updated,rotationIndex:newIdx}).catch(console.error);showToast(`${name} removed`,'Member removed');}
 function renderWorkingToday(){const c=document.getElementById('wt-pills');const wt=state.workingToday;document.getElementById('wt-count').textContent=`${wt.length} member${wt.length!==1?'s':''}`;if(!wt.length){c.innerHTML=`<span class="text-xs text-slate-600 italic">No members added yet.</span>`;return;}c.innerHTML=wt.map((name)=>{const isCurr=name===state.workingToday[state.rotationIndex%state.workingToday.length];const av=avatarHTML(name,'w-5 h-5','text-[10px]');return`<div class="wt-pill ${isCurr?'ring-1 ring-indigo-500':''}">${av}<span>${name}</span>${isCurr?'<span class="text-[9px] font-mono text-indigo-400 bg-indigo-500/15 px-1.5 py-0.5 rounded-full">NEXT</span>':''}<button class="del-btn" onclick="removeMember('${name.replace(/'/g,"\\'")}');event.stopPropagation();">✕</button></div>`;}).join('');}
 function openSkipRotationModal(){const wt=state.workingToday;if(!wt.length){showToast('No members','Nothing to skip');return;}const si=state.rotationIndex%wt.length;const curr=wt[si];const next=wt[(si+1)%wt.length];const ca=document.getElementById('skip-rot-curr-avatar');const cPhoto=getPhoto(curr);if(cPhoto){ca.className='w-9 h-9 rounded-full overflow-hidden flex-shrink-0';ca.innerHTML=`<img src="${cPhoto}" class="w-full h-full object-cover"/>`;}else{ca.className=`w-9 h-9 rounded-full ${memberColor(curr)} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;ca.textContent=curr[0].toUpperCase();}document.getElementById('skip-rot-curr-name').textContent=curr;const na=document.getElementById('skip-rot-next-avatar');const nPhoto=getPhoto(next);if(nPhoto){na.className='w-9 h-9 rounded-full overflow-hidden flex-shrink-0';na.innerHTML=`<img src="${nPhoto}" class="w-full h-full object-cover"/>`;}else{na.className=`w-9 h-9 rounded-full ${memberColor(next)} flex items-center justify-center text-sm font-bold text-white flex-shrink-0`;na.textContent=next[0].toUpperCase();}document.getElementById('skip-rot-next-name').textContent=next;document.getElementById('skip-rotation-modal').classList.add('open');}
 function closeSkipRotationModal(){document.getElementById('skip-rotation-modal').classList.remove('open');}
-async function confirmSkipRotation(){const wt=state.workingToday;if(!wt.length)return;const si=state.rotationIndex%wt.length;const skipped=wt[si];const ni=(si+1)%wt.length;closeSkipRotationModal();await metaDoc.update({rotationIndex:ni}).catch(console.error);showToast(`Skipped ${skipped} → ${wt[ni]}`,'Rotation Advanced');}
+async function confirmSkipRotation(){const wt=state.workingToday;if(!wt.length)return;const si=state.rotationIndex%wt.length;const skipped=wt[si];const ni=(si+1)%wt.length;closeSkipRotationModal();await rtdbMetaRef.update({rotationIndex:ni}).catch(console.error);showToast(`Skipped ${skipped} → ${wt[ni]}`,'Rotation Advanced');}
 function openSkipModal(fid){const t=state.tickets.find(x=>x._id===fid);if(!t)return;state.pendingSkipId=fid;document.getElementById('skip-ticket-title').textContent=t.title||'—';document.getElementById('skip-ticket-id').textContent=t.id||'—';document.getElementById('skip-reason-select').value='';document.getElementById('skip-reason-input').value='';document.getElementById('skip-reason-input').classList.add('hidden');document.getElementById('skip-note').value='';document.getElementById('skip-modal').classList.add('open');setTimeout(()=>document.getElementById('skip-reason-select').focus(),60);}
 function closeSkipModal(){state.pendingSkipId=null;document.getElementById('skip-modal').classList.remove('open');}
 function handleSkipReasonSelect(val){const ci=document.getElementById('skip-reason-input');if(val==='Other'){ci.classList.remove('hidden');ci.focus();}else{ci.classList.add('hidden');ci.value='';}}
-async function confirmSkip(){const fid=state.pendingSkipId;if(!fid)return;const sv=document.getElementById('skip-reason-select').value;const cv=document.getElementById('skip-reason-input').value.trim();const note=document.getElementById('skip-note').value.trim();const reason=sv==='Other'?cv:sv;if(!reason){document.getElementById('skip-reason-select').style.borderColor='rgba(239,68,68,0.6)';setTimeout(()=>document.getElementById('skip-reason-select').style.borderColor='',1500);return;}const t=state.tickets.find(x=>x._id===fid);closeSkipModal();await ticketsCol.doc(fid).update({status:'Skipped',skipReason:reason,skipNote:note||null}).catch(e=>alert(e.message));showToast(`${t?.id||'Ticket'} skipped`,'Dispute Skipped');}
+async function confirmSkip(){
+  const fid=state.pendingSkipId;
+  if(!fid)return;
+  const sv=document.getElementById('skip-reason-select').value;
+  const cv=document.getElementById('skip-reason-input').value.trim();
+  const note=document.getElementById('skip-note').value.trim();
+  const reason=sv==='Other'?cv:sv;
+  if(!reason){
+    document.getElementById('skip-reason-select').style.borderColor='rgba(239,68,68,0.6)';
+    setTimeout(()=>document.getElementById('skip-reason-select').style.borderColor='',1500);
+    return;
+  }
+  const t=state.tickets.find(x=>x._id===fid);
+  closeSkipModal();
+  
+  const updates={status:'Skipped',skipReason:reason,skipNote:note||null};
+  if(t.source==='rtdb'){
+    const rtdbKey=fid.replace('rtdb_','');
+    await rtdbTicketsRef.child(rtdbKey).update(updates).catch(e=>alert(e.message));
+  }else{
+    await ticketsCol.doc(fid.replace('fs_','')).update(updates).catch(e=>alert(e.message));
+  }
+  
+  showToast(`${t?.id||'Ticket'} skipped`,'Dispute Skipped');
+}
 function openEditModal(fid){const t=state.tickets.find(x=>x._id===fid);if(!t)return;state.pendingEditId=fid;document.getElementById('edit-ticket-id-label').textContent=t.id||'—';document.getElementById('edit-title').value=t.title||'';document.getElementById('edit-type').value=t.type||'Dispute';document.getElementById('edit-status').value=t.status||'Pending';const all=[...new Set([...state.workingToday,...state.tickets.map(x=>x.assignee).filter(Boolean)])];if(t.assignee&&!all.includes(t.assignee))all.push(t.assignee);document.getElementById('edit-assignee').innerHTML=all.map(n=>`<option value="${n}"${n===t.assignee?' selected':''}>${n}</option>`).join('');document.getElementById('edit-modal').classList.add('open');setTimeout(()=>document.getElementById('edit-title').focus(),60);}
 function closeEditModal(){state.pendingEditId=null;document.getElementById('edit-modal').classList.remove('open');}
-async function confirmEditTicket(){const fid=state.pendingEditId;if(!fid)return;const title=document.getElementById('edit-title').value.trim();const type=document.getElementById('edit-type').value;const assignee=document.getElementById('edit-assignee').value;const status=document.getElementById('edit-status').value;if(!title){document.getElementById('edit-title').style.borderColor='rgba(239,68,68,0.6)';setTimeout(()=>document.getElementById('edit-title').style.borderColor='',1500);return;}closeEditModal();const updates={title,type,assignee,status};if(status!=='Skipped'){updates.skipReason=null;updates.skipNote=null;}await ticketsCol.doc(fid).update(updates).catch(e=>alert(e.message));showToast('Ticket updated','Changes Saved');}
+async function confirmEditTicket(){
+  const fid=state.pendingEditId;
+  if(!fid)return;
+  const title=document.getElementById('edit-title').value.trim();
+  const type=document.getElementById('edit-type').value;
+  const assignee=document.getElementById('edit-assignee').value;
+  const status=document.getElementById('edit-status').value;
+  if(!title){
+    document.getElementById('edit-title').style.borderColor='rgba(239,68,68,0.6)';
+    setTimeout(()=>document.getElementById('edit-title').style.borderColor='',1500);
+    return;
+  }
+  const t=state.tickets.find(x=>x._id===fid);
+  closeEditModal();
+  
+  const updates={title,type,assignee,status};
+  if(status!=='Skipped'){
+    updates.skipReason=null;
+    updates.skipNote=null;
+  }
+  
+  if(t.source==='rtdb'){
+    const rtdbKey=fid.replace('rtdb_','');
+    await rtdbTicketsRef.child(rtdbKey).update(updates).catch(e=>alert(e.message));
+  }else{
+    await ticketsCol.doc(fid.replace('fs_','')).update(updates).catch(e=>alert(e.message));
+  }
+  
+  showToast('Ticket updated','Changes Saved');
+}
 function renderDropdown(query){const list=document.getElementById('dropdown-list');const q=query.toLowerCase().trim();const allAgents=getAllAgents();const filtered=allAgents.filter(n=>q===''||n.toLowerCase().includes(q));if(!filtered.length){list.innerHTML=`<p class="text-xs text-slate-600 px-3 py-3 text-center">No agents found</p>`;return;}const alreadySet=state.workingToday.map(n=>n.toLowerCase());list.innerHTML=filtered.map(n=>{const already=alreadySet.includes(n.toLowerCase());const av=avatarHTML(n,'w-7 h-7','text-[11px]');const role=getRole(n);return`<div class="member-chip ${already?'already':''}" onclick="addMember('${n.replace(/'/g,"\\'")}');event.stopPropagation();">${av}<div class="flex-1 min-w-0"><span class="font-medium block truncate">${n}</span>${role?`<span class="text-[10px] text-slate-500 block truncate">${role}</span>`:''}</div>${already?'<span class="text-[10px] text-slate-500 font-mono bg-white/5 px-2 py-0.5 rounded-full">added</span>':'<span class="text-[10px] text-indigo-400 font-mono bg-indigo-500/10 px-2 py-0.5 rounded-full">+ add</span>'}</div>`;}).join('');}
 function filterDropdown(val){renderDropdown(val);positionDropdown();}
 function positionDropdown(){const input=document.getElementById('custom-name-input');const dd=document.getElementById('add-dropdown');const rect=input.getBoundingClientRect();dd.style.top=(rect.bottom+6)+'px';dd.style.left=rect.left+'px';dd.style.width=rect.width+'px';}
 function openDropdown(){renderDropdown(document.getElementById('custom-name-input').value);positionDropdown();document.getElementById('add-dropdown').classList.add('open');}
 function closeDropdown(){document.getElementById('add-dropdown').classList.remove('open');}
-async function createTicket(type,title){title=title.trim();if(!title){alert('Please enter a ticket title.');return false;}if(!state.workingToday.length){alert('No members in Working Today!');return false;}if(state.submitting)return false;const dup=isDupToday(title);if(dup){showDupToast(dup);return false;}setSubmitting(true);let ticketId,assignee;try{await db.runTransaction(async tx=>{const ms=await tx.get(metaDoc);const ci=ms.exists?(ms.data().rotationIndex??0):0;const cw=ms.exists?(ms.data().workingToday??[]):[];const cl=ms.exists?(ms.data().activityLog??[]):[];if(!cw.length)throw new Error('No members.');const si=ci%cw.length;assignee=cw[si];const ni=(si+1)%cw.length;const ls=await ticketsCol.orderBy('seqNum','desc').limit(1).get();const seq=ls.empty?0:(ls.docs[0].data().seqNum||0);const ns=seq+1;ticketId='TKT-'+String(ns).padStart(4,'0');const now=new Date();const ds=now.toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'});const ts2=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});const dk=todayKey();tx.set(ticketsCol.doc(),{id:ticketId,seqNum:ns,type,title,assignee,date:ds,time:ts2,dateKey:dk,status:'Pending',ts:firebase.firestore.FieldValue.serverTimestamp()});tx.set(metaDoc,{rotationIndex:ni,workingToday:cw,activityLog:[{msg:`${ticketId} → ${assignee}`,type,time:ts2,ts:Date.now()},...cl].slice(0,20)});});showToast(`${ticketId} assigned to ${assignee}`);setSubmitting(false);return true;}catch(err){console.error(err);setSubmitting(false);alert('Failed: '+err.message);return false;}}
-async function markComplete(fid){const t=state.tickets.find(x=>x._id===fid);if(!t)return;const ns=t.status==='Completed'?'Pending':'Completed';const u={status:ns};if(ns==='Pending'){u.skipReason=null;u.skipNote=null;}await ticketsCol.doc(fid).update(u).catch(e=>alert(e.message));}
-async function submitTicket(){const ok=await createTicket(document.getElementById('ticket-type').value,document.getElementById('ticket-title').value);if(ok){document.getElementById('ticket-title').value='';checkDupInline('','inline-dup-warning','inline-dup-text');}}
-async function submitTicketModal(){const ok=await createTicket(document.getElementById('modal-type').value,document.getElementById('modal-title').value);if(ok){document.getElementById('modal-title').value='';document.getElementById('modal-dup-warning').classList.add('hidden');closeModal();}}
-function renderStats(){const tk=todayKey();const tt=state.tickets.filter(t=>t.dateKey===tk);const total=tt.length,done=tt.filter(t=>t.status==='Completed').length,skipped=tt.filter(t=>t.status==='Skipped').length;document.getElementById('stat-total').textContent=total;document.getElementById('stat-pending').textContent=total-done-skipped;document.getElementById('stat-completed').textContent=done;document.getElementById('ticket-count-badge').textContent=state.tickets.length;}
+
+// ── CREATE TICKET (Saves to RTDB only) ────────────────────────────
+async function createTicket(type,title){
+  title=title.trim();
+  if(!title){
+    alert('Please enter a ticket title.');
+    return false;
+  }
+  if(!state.workingToday.length){
+    alert('No members in Working Today!');
+    return false;
+  }
+  if(state.submitting)return false;
+  
+  const dup=isDupToday(title);
+  if(dup){
+    showDupToast(dup);
+    return false;
+  }
+  
+  setSubmitting(true);
+  let ticketId,assignee;
+  
+  try{
+    // Get current rotation from RTDB
+    const metaSnap=await rtdbMetaRef.once('value');
+    const metaData=metaSnap.val()||{};
+    const ci=metaData.rotationIndex||0;
+    const cw=metaData.workingToday||[];
+    const cl=metaData.activityLog||[];
+    
+    if(!cw.length)throw new Error('No members.');
+    
+    const si=ci%cw.length;
+    assignee=cw[si];
+    const ni=(si+1)%cw.length;
+    
+    // Get sequence number from RTDB
+    const seqSnap=await rtdbSeqRef.once('value');
+    const seq=seqSnap.val()||0;
+    const ns=seq+1;
+    ticketId='TKT-'+String(ns).padStart(4,'0');
+    
+    const now=new Date();
+    const ds=now.toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'});
+    const ts2=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    const dk=todayKey();
+    const ts=Date.now();
+    
+    // Save ticket to RTDB
+    await rtdbTicketsRef.push({
+      id:ticketId,
+      seqNum:ns,
+      type,
+      title,
+      assignee,
+      date:ds,
+      time:ts2,
+      dateKey:dk,
+      status:'Pending',
+      ts
+    });
+    
+    // Update sequence number in RTDB
+    await rtdbSeqRef.set(ns);
+    
+    // Update rotation meta in RTDB
+    await rtdbMetaRef.set({
+      rotationIndex:ni,
+      workingToday:cw,
+      activityLog:[{msg:`${ticketId} → ${assignee}`,type,time:ts2,ts:Date.now()},...cl].slice(0,20)
+    });
+    
+    showToast(`${ticketId} assigned to ${assignee}`, 'Saved to RTDB');
+    setSubmitting(false);
+    return true;
+  }catch(err){
+    console.error(err);
+    setSubmitting(false);
+    alert('Failed: '+err.message);
+    return false;
+  }
+}
+
+async function markComplete(fid){
+  const t=state.tickets.find(x=>x._id===fid);
+  if(!t)return;
+  const ns=t.status==='Completed'?'Pending':'Completed';
+  const u={status:ns};
+  if(ns==='Pending'){
+    u.skipReason=null;
+    u.skipNote=null;
+  }
+  
+  if(t.source==='rtdb'){
+    const rtdbKey=fid.replace('rtdb_','');
+    await rtdbTicketsRef.child(rtdbKey).update(u).catch(e=>alert(e.message));
+  }else{
+    const fsKey=fid.replace('fs_','');
+    await ticketsCol.doc(fsKey).update(u).catch(e=>alert(e.message));
+  }
+}
+
+async function submitTicket(){
+  const ok=await createTicket(document.getElementById('ticket-type').value,document.getElementById('ticket-title').value);
+  if(ok){
+    document.getElementById('ticket-title').value='';
+    checkDupInline('','inline-dup-warning','inline-dup-text');
+  }
+}
+
+async function submitTicketModal(){
+  const ok=await createTicket(document.getElementById('modal-type').value,document.getElementById('modal-title').value);
+  if(ok){
+    document.getElementById('modal-title').value='';
+    document.getElementById('modal-dup-warning').classList.add('hidden');
+    closeModal();
+  }
+}
+
+function renderStats(){
+  const tk=todayKey();
+  const tt=state.tickets.filter(t=>t.dateKey===tk);
+  const total=tt.length,done=tt.filter(t=>t.status==='Completed').length,skipped=tt.filter(t=>t.status==='Skipped').length;
+  document.getElementById('stat-total').textContent=total;
+  document.getElementById('stat-pending').textContent=total-done-skipped;
+  document.getElementById('stat-completed').textContent=done;
+  document.getElementById('ticket-count-badge').textContent=state.tickets.length;
+}
 
 // ── DELETE TICKET FUNCTIONS ──────────────────────────────────────
 function openDeleteTicketModal(fid){
@@ -1139,10 +1376,21 @@ async function confirmFinalDeleteTicket(){
   const fid=state.pendingDeleteTicketId;
   if(!fid)return;
   closeFinalDeleteTicketModal();
-  await ticketsCol.doc(fid).delete().catch(e=>{
-    console.error(e);
-    alert('Failed to delete ticket: '+e.message);
-  });
+  
+  const t=state.tickets.find(x=>x._id===fid);
+  if(t.source==='rtdb'){
+    const rtdbKey=fid.replace('rtdb_','');
+    await rtdbTicketsRef.child(rtdbKey).remove().catch(e=>{
+      console.error(e);
+      alert('Failed to delete ticket: '+e.message);
+    });
+  }else{
+    await ticketsCol.doc(fid.replace('fs_','')).delete().catch(e=>{
+      console.error(e);
+      alert('Failed to delete ticket: '+e.message);
+    });
+  }
+  
   showToast('Ticket deleted','Delete Successful');
   state.pendingDeleteTicketId=null;
 }
@@ -1179,7 +1427,7 @@ async function confirmAddAgent(){
   closeAddAgentModal();
   await saveProfile(name,{role});
   if(!state.workingToday.includes(name)){
-    metaDoc.update({workingToday:[...state.workingToday,name]}).catch(console.error);
+    await rtdbMetaRef.update({workingToday:[...state.workingToday,name]}).catch(console.error);
   }
   showToast(`${name} added`,'Agent Added');
   renderAgentsPage();
@@ -1233,8 +1481,40 @@ function renderRotation(){
   }
 }
 
-function renderPreview(){const wt=state.workingToday;if(!wt.length){document.getElementById('preview-assignee').textContent='Add members first';document.getElementById('modal-assignee').textContent='Add members first';return;}const n=wt[state.rotationIndex%wt.length];document.getElementById('preview-assignee').textContent=n;document.getElementById('modal-assignee').textContent=n;}
-function renderSidebar(){const el=document.getElementById('sidebar-rotation');const wt=state.workingToday;el.innerHTML='';if(!wt.length){el.innerHTML=`<p class="text-xs text-slate-600 px-3 italic">No one added yet</p>`;return;}const si=state.rotationIndex%wt.length;const tk=todayKey();for(let i=0;i<wt.length;i++){const idx=(si+i)%wt.length;const name=wt[idx];const isCurr=i===0,isNext=i===1;const cnt=state.tickets.filter(t=>t.assignee===name&&t.dateKey===tk).length;const av=avatarHTML(name,'w-6 h-6','text-[10px]','',true);const div=document.createElement('div');div.className=`rotation-item flex items-center gap-2 px-3 py-1.5 rounded-lg border border-transparent ${isCurr?'active':isNext?'next-up':''}`;div.innerHTML=`${av}<span class="text-xs ${isCurr?'text-indigo-300 font-semibold':isNext?'text-amber-400':'text-slate-400'} truncate flex-1">${name}</span><span class="text-[10px] font-mono ${isCurr?'text-indigo-400':'text-slate-600'}">${cnt}</span>${isCurr?'<div class="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0 pending-dot"></div>':''}`;el.appendChild(div);}}
+function renderPreview(){
+  const wt=state.workingToday;
+  if(!wt.length){
+    document.getElementById('preview-assignee').textContent='Add members first';
+    document.getElementById('modal-assignee').textContent='Add members first';
+    return;
+  }
+  const n=wt[state.rotationIndex%wt.length];
+  document.getElementById('preview-assignee').textContent=n;
+  document.getElementById('modal-assignee').textContent=n;
+}
+
+function renderSidebar(){
+  const el=document.getElementById('sidebar-rotation');
+  const wt=state.workingToday;
+  el.innerHTML='';
+  if(!wt.length){
+    el.innerHTML=`<p class="text-xs text-slate-600 px-3 italic">No one added yet</p>`;
+    return;
+  }
+  const si=state.rotationIndex%wt.length;
+  const tk=todayKey();
+  for(let i=0;i<wt.length;i++){
+    const idx=(si+i)%wt.length;
+    const name=wt[idx];
+    const isCurr=i===0,isNext=i===1;
+    const cnt=state.tickets.filter(t=>t.assignee===name&&t.dateKey===tk).length;
+    const av=avatarHTML(name,'w-6 h-6','text-[10px]','',true);
+    const div=document.createElement('div');
+    div.className=`rotation-item flex items-center gap-2 px-3 py-1.5 rounded-lg border border-transparent ${isCurr?'active':isNext?'next-up':''}`;
+    div.innerHTML=`${av}<span class="text-xs ${isCurr?'text-indigo-300 font-semibold':isNext?'text-amber-400':'text-slate-400'} truncate flex-1">${name}</span><span class="text-[10px] font-mono ${isCurr?'text-indigo-400':'text-slate-600'}">${cnt}</span>${isCurr?'<div class="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0 pending-dot"></div>':''}`;
+    el.appendChild(div);
+  }
+}
 
 // ── AGENTS PAGE ───────────────────────────────────────────────────
 function getAllAgents(){
@@ -1245,11 +1525,15 @@ function getAllAgents(){
   Object.keys(profileCache).forEach(n=>agentSet.add(n));
   return [...agentSet].sort();
 }
+
 function renderAgentsPage(){
   const grid=document.getElementById('agents-grid');
   if(!grid)return;
   const agents=getAllAgents();
-  if(!agents.length){grid.innerHTML=`<p class="text-xs text-slate-600 text-center py-8">No agents yet.</p>`;return;}
+  if(!agents.length){
+    grid.innerHTML=`<p class="text-xs text-slate-600 text-center py-8">No agents yet.</p>`;
+    return;
+  }
   grid.innerHTML=agents.map(name=>{
     const role=getRole(name);
     const av=avatarHTML(name,'w-16 h-16','text-2xl','',true);
@@ -1366,7 +1650,7 @@ async function confirmDeleteAgent(){
   closeDeleteAgentModal();
   const updated=state.workingToday.filter(n=>n!==name);
   const newIdx=updated.length>0?state.rotationIndex%updated.length:0;
-  await metaDoc.update({workingToday:updated,rotationIndex:newIdx}).catch(console.error);
+  await rtdbMetaRef.update({workingToday:updated,rotationIndex:newIdx}).catch(console.error);
   await deleteProfile(name);
   showToast(`${name} deleted`,'Agent Deleted');
   renderAgentsPage();
@@ -1463,12 +1747,20 @@ function rowHTML(t,cols){
   const av=avatarHTML(t.assignee||'?','w-6 h-6','text-[10px]');
   return`<tr class="ticket-row border-b border-white/5 ${skipped?'opacity-60':''}"><td class="px-6 py-4 text-xs font-mono text-slate-400">${t.id||'—'}</td><td class="px-6 py-4"><span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${tc.bg} ${tc.color} border ${tc.border}">${tc.icon} ${t.type}</span></td><td class="px-6 py-4 text-sm text-white font-medium max-w-xs truncate">${t.title}${dupB}</td><td class="px-6 py-4"><div class="flex items-center gap-2">${av}<span class="text-sm text-white font-medium">${t.assignee||'—'}</span></div></td>${cols===7?`<td class="px-6 py-4 text-xs text-slate-500 font-mono">${t.date||'—'}</td>`:''}<td class="px-6 py-4">${sb}</td><td class="px-6 py-4"><div class="flex items-center flex-wrap gap-1">${db2}${skpB}${editB}${deleteB}</div></td></tr>`;
 }
-function renderRecentTable(){const tbody=document.getElementById('recent-table-body');const tk=todayKey();const r=state.tickets.filter(t=>t.dateKey===tk).slice(0,5);tbody.innerHTML=r.length?r.map(t=>rowHTML(t,6)).join(''):`<tr><td colspan="6" class="px-6 py-12 text-center text-slate-600 text-sm">No tickets yet today.</td></tr>`;}
+function renderRecentTable(){
+  const tbody=document.getElementById('recent-table-body');
+  const tk=todayKey();
+  const r=state.tickets.filter(t=>t.dateKey===tk).slice(0,5);
+  tbody.innerHTML=r.length?r.map(t=>rowHTML(t,6)).join(''):`<tr><td colspan="6" class="px-6 py-12 text-center text-slate-600 text-sm">No tickets yet today.</td></tr>`;
+}
 
 function getFilteredTickets(){
   let list=state.tickets;
   const dfVal=state.dateFilter;
-  if(dfVal==='today'){const tk=todayKey();list=list.filter(t=>t.dateKey===tk);}
+  if(dfVal==='today'){
+    const tk=todayKey();
+    list=list.filter(t=>t.dateKey===tk);
+  }
   else if(dfVal!=='all')list=list.filter(t=>t.dateKey===dfVal);
   if(state.filter!=='all')list=list.filter(t=>t.status===state.filter);
   if(state.search)list=list.filter(t=>(t.title||'').toLowerCase().includes(state.search)||(t.assignee||'').toLowerCase().includes(state.search)||(t.type||'').toLowerCase().includes(state.search)||(t.id||'').toLowerCase().includes(state.search));
@@ -1512,11 +1804,71 @@ function changePage(delta){
   renderAllTable();
 }
 
-function renderActivityLog(){const el=document.getElementById('activity-log');const LC={'Dispute':'border-rose-500/50','Partner Portal':'border-blue-500/50','Inquiry':'border-violet-500/50'};el.innerHTML=state.activityLog.length?state.activityLog.slice(0,8).map((a,i)=>`<div class="log-item ${LC[a.type]||'border-indigo-500/50'} pl-3" style="animation:slideIn 0.4s ${i*0.05}s ease both"><p class="text-xs text-white font-medium font-mono">${a.msg}</p><p class="text-[10px] text-slate-500">${a.type} · ${a.time}</p></div>`).join(''):`<div class="text-center text-slate-600 text-xs py-8">No activity yet</div>`;}
-function setStatsView(view){state.statsView=view;document.getElementById('stats-tab-today').classList.toggle('active',view==='today');document.getElementById('stats-tab-history').classList.toggle('active',view==='history');document.getElementById('stats-today-panel').classList.toggle('hidden',view!=='today');document.getElementById('stats-history-panel').classList.toggle('hidden',view!=='history');if(view==='history')renderHistoryStats();}
-function renderTeamStats(){const el=document.getElementById('team-stats-grid');const tk=todayKey();const tt=state.tickets.filter(t=>t.dateKey===tk);const names=[...new Set([...state.workingToday,...tt.map(t=>t.assignee).filter(Boolean)])];if(!names.length){el.innerHTML=`<div class="text-center py-8"><p class="text-xs text-slate-600">No tickets yet today.</p></div>`;return;}const max=Math.max(...names.map(n=>tt.filter(t=>t.assignee===n).length),1);el.innerHTML=names.map(name=>{const total=tt.filter(t=>t.assignee===name).length;const done=tt.filter(t=>t.assignee===name&&t.status==='Completed').length;const skipped=tt.filter(t=>t.assignee===name&&t.status==='Skipped').length;const pending=total-done-skipped;const pct=Math.round((total/max)*100);const clr=memberColor(name);const isOn=state.workingToday.includes(name);const av=avatarHTML(name,'w-9 h-9','text-sm');return`<div class="flex items-center gap-4 p-3 rounded-xl hover:bg-white/3 transition-colors">${av}<div class="flex-1"><div class="flex items-center justify-between mb-1.5"><div class="flex items-center gap-2"><span class="text-sm font-semibold text-white">${name}</span>${isOn?'<span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20">ON DUTY</span>':''}</div><div class="flex items-center gap-3"><span class="text-xs text-emerald-400 font-mono">${done} done</span>${pending?`<span class="text-xs text-amber-400 font-mono">${pending} pending</span>`:''} ${skipped?`<span class="text-xs text-slate-500 font-mono">${skipped} skip</span>`:''}<span class="text-xs text-slate-400 font-mono font-bold">${total} total</span></div></div><div class="h-2 bg-white/5 rounded-full overflow-hidden"><div class="h-full bar-fill rounded-full ${clr} opacity-70" style="width:${pct}%"></div></div></div></div>`;}).join('');}
-function renderHistoryStats(){const el=document.getElementById('history-stats-container');const groups={};state.tickets.forEach(t=>{const k=t.dateKey||'unknown';if(!groups[k])groups[k]=[];groups[k].push(t);});const keys=Object.keys(groups).sort().reverse();if(!keys.length){el.innerHTML=`<p class="text-xs text-slate-600 text-center py-4">No historical data yet.</p>`;return;}const tk=todayKey();el.innerHTML=keys.map(key=>{const dt=groups[key];const isToday=key===tk;const names=[...new Set(dt.map(t=>t.assignee).filter(Boolean))];const dDone=dt.filter(t=>t.status==='Completed').length;return`<div class="border border-white/5 rounded-xl overflow-hidden"><div class="history-day-header px-5 py-3 flex items-center justify-between" onclick="toggleHistoryDay('${key}')"><div class="flex items-center gap-3">${isToday?'<div class="w-2 h-2 rounded-full bg-emerald-400 pending-dot"></div>':'<div class="w-2 h-2 rounded-full bg-slate-600"></div>'}<span class="text-sm font-semibold text-white">${formatDayLabel(key)}</span>${isToday?'<span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">LIVE</span>':''}</div><div class="flex items-center gap-4"><span class="text-xs text-emerald-400 font-mono">${dDone}/${dt.length} done</span><svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></div></div><div id="hist-body-${key}" class="hidden px-5 pb-4 pt-1 space-y-2 border-t border-white/5">${names.map(name=>{const t2=dt.filter(t=>t.assignee===name).length;const d2=dt.filter(t=>t.assignee===name&&t.status==='Completed').length;const s2=dt.filter(t=>t.assignee===name&&t.status==='Skipped').length;const m2=Math.max(...names.map(n=>dt.filter(t=>t.assignee===n).length),1);const p2=Math.round((t2/m2)*100);const c2=memberColor(name);const av=avatarHTML(name,'w-7 h-7','text-xs');return`<div class="flex items-center gap-3 py-1">${av}<div class="flex-1"><div class="flex items-center justify-between mb-1"><span class="text-xs font-semibold text-white">${name}</span><div class="flex gap-3"><span class="text-[11px] text-emerald-400 font-mono">${d2} done</span>${s2?`<span class="text-[11px] text-slate-500 font-mono">${s2} skip</span>`:''}<span class="text-[11px] text-slate-400 font-mono font-bold">${t2} total</span></div></div><div class="h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full ${c2} opacity-60" style="width:${p2}%"></div></div></div></div>`;}).join('')}</div></div>`;}).join('');}
-function toggleHistoryDay(key){const el=document.getElementById(`hist-body-${key}`);if(el)el.classList.toggle('hidden');}
+function renderActivityLog(){
+  const el=document.getElementById('activity-log');
+  const LC={'Dispute':'border-rose-500/50','Partner Portal':'border-blue-500/50','Inquiry':'border-violet-500/50'};
+  el.innerHTML=state.activityLog.length?state.activityLog.slice(0,8).map((a,i)=>`<div class="log-item ${LC[a.type]||'border-indigo-500/50'} pl-3" style="animation:slideIn 0.4s ${i*0.05}s ease both"><p class="text-xs text-white font-medium font-mono">${a.msg}</p><p class="text-[10px] text-slate-500">${a.type} · ${a.time}</p></div>`).join(''):`<div class="text-center text-slate-600 text-xs py-8">No activity yet</div>`;
+}
+
+function setStatsView(view){
+  state.statsView=view;
+  document.getElementById('stats-tab-today').classList.toggle('active',view==='today');
+  document.getElementById('stats-tab-history').classList.toggle('active',view==='history');
+  document.getElementById('stats-today-panel').classList.toggle('hidden',view!=='today');
+  document.getElementById('stats-history-panel').classList.toggle('hidden',view!=='history');
+  if(view==='history')renderHistoryStats();
+}
+
+function renderTeamStats(){
+  const el=document.getElementById('team-stats-grid');
+  const tk=todayKey();
+  const tt=state.tickets.filter(t=>t.dateKey===tk);
+  const names=[...new Set([...state.workingToday,...tt.map(t=>t.assignee).filter(Boolean)])];
+  if(!names.length){
+    el.innerHTML=`<div class="text-center py-8"><p class="text-xs text-slate-600">No tickets yet today.</p></div>`;
+    return;
+  }
+  const max=Math.max(...names.map(n=>tt.filter(t=>t.assignee===n).length),1);
+  el.innerHTML=names.map(name=>{
+    const total=tt.filter(t=>t.assignee===name).length;
+    const done=tt.filter(t=>t.assignee===name&&t.status==='Completed').length;
+    const skipped=tt.filter(t=>t.assignee===name&&t.status==='Skipped').length;
+    const pending=total-done-skipped;
+    const pct=Math.round((total/max)*100);
+    const clr=memberColor(name);
+    const isOn=state.workingToday.includes(name);
+    const av=avatarHTML(name,'w-9 h-9','text-sm');
+    return`<div class="flex items-center gap-4 p-3 rounded-xl hover:bg-white/3 transition-colors">${av}<div class="flex-1"><div class="flex items-center justify-between mb-1.5"><div class="flex items-center gap-2"><span class="text-sm font-semibold text-white">${name}</span>${isOn?'<span class="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20">ON DUTY</span>':''}</div><div class="flex items-center gap-3"><span class="text-xs text-emerald-400 font-mono">${done} done</span>${pending?`<span class="text-xs text-amber-400 font-mono">${pending} pending</span>`:''} ${skipped?`<span class="text-xs text-slate-500 font-mono">${skipped} skip</span>`:''}<span class="text-xs text-slate-400 font-mono font-bold">${total} total</span></div></div><div class="h-2 bg-white/5 rounded-full overflow-hidden"><div class="h-full bar-fill rounded-full ${clr} opacity-70" style="width:${pct}%"></div></div></div></div>`;
+  }).join('');
+}
+
+function renderHistoryStats(){
+  const el=document.getElementById('history-stats-container');
+  const groups={};
+  state.tickets.forEach(t=>{
+    const k=t.dateKey||'unknown';
+    if(!groups[k])groups[k]=[];
+    groups[k].push(t);
+  });
+  const keys=Object.keys(groups).sort().reverse();
+  if(!keys.length){
+    el.innerHTML=`<p class="text-xs text-slate-600 text-center py-4">No historical data yet.</p>`;
+    return;
+  }
+  const tk=todayKey();
+  el.innerHTML=keys.map(key=>{
+    const dt=groups[key];
+    const isToday=key===tk;
+    const names=[...new Set(dt.map(t=>t.assignee).filter(Boolean))];
+    const dDone=dt.filter(t=>t.status==='Completed').length;
+    return`<div class="border border-white/5 rounded-xl overflow-hidden"><div class="history-day-header px-5 py-3 flex items-center justify-between" onclick="toggleHistoryDay('${key}')"><div class="flex items-center gap-3">${isToday?'<div class="w-2 h-2 rounded-full bg-emerald-400 pending-dot"></div>':'<div class="w-2 h-2 rounded-full bg-slate-600"></div>'}<span class="text-sm font-semibold text-white">${formatDayLabel(key)}</span>${isToday?'<span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">LIVE</span>':''}</div><div class="flex items-center gap-4"><span class="text-xs text-emerald-400 font-mono">${dDone}/${dt.length} done</span><svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></div></div><div id="hist-body-${key}" class="hidden px-5 pb-4 pt-1 space-y-2 border-t border-white/5">${names.map(name=>{const t2=dt.filter(t=>t.assignee===name).length;const d2=dt.filter(t=>t.assignee===name&&t.status==='Completed').length;const s2=dt.filter(t=>t.assignee===name&&t.status==='Skipped').length;const m2=Math.max(...names.map(n=>dt.filter(t=>t.assignee===n).length),1);const p2=Math.round((t2/m2)*100);const c2=memberColor(name);const av=avatarHTML(name,'w-7 h-7','text-xs');return`<div class="flex items-center gap-3 py-1">${av}<div class="flex-1"><div class="flex items-center justify-between mb-1"><span class="text-xs font-semibold text-white">${name}</span><div class="flex gap-3"><span class="text-[11px] text-emerald-400 font-mono">${d2} done</span>${s2?`<span class="text-[11px] text-slate-500 font-mono">${s2} skip</span>`:''}<span class="text-[11px] text-slate-400 font-mono font-bold">${t2} total</span></div></div><div class="h-1.5 bg-white/5 rounded-full overflow-hidden"><div class="h-full rounded-full ${c2} opacity-60" style="width:${p2}%"></div></div></div></div>`;}).join('')}</div></div>`;
+  }).join('');
+}
+
+function toggleHistoryDay(key){
+  const el=document.getElementById(`hist-body-${key}`);
+  if(el)el.classList.toggle('hidden');
+}
 
 // ── ANALYTICS ───────────────────────────────────────────────────────
 function setAnalyticsView(view){
@@ -1525,13 +1877,17 @@ function setAnalyticsView(view){
   document.getElementById('analytics-tab-all').classList.toggle('active',view==='all');
   renderAnalytics();
 }
+
 function renderAnalytics(){
   const typeEl=document.getElementById('chart-type-breakdown');
   const agentEl=document.getElementById('chart-agent-performance');
   if(!typeEl||!agentEl)return;
   const view=state.analyticsView||'today';
   let list=state.tickets;
-  if(view==='today'){const tk=todayKey();list=list.filter(t=>t.dateKey===tk);}
+  if(view==='today'){
+    const tk=todayKey();
+    list=list.filter(t=>t.dateKey===tk);
+  }
   const types=['Dispute','Partner Portal','Inquiry'];
   const counts=types.map(ty=>({label:ty,value:list.filter(t=>t.type===ty).length,cfg:TYPE_CFG[ty],bar:TYPE_BAR_COLOR[ty]}));
   const total=list.length;
@@ -1549,6 +1905,7 @@ function renderAnalytics(){
       </div>
     </div>`;
   }).join('') : `<div class="text-center text-slate-600 text-xs py-10">No tickets ${view==='today'?'today':'yet'}.</div>`;
+  
   const map={};
   list.forEach(t=>{ if(!t.assignee)return; map[t.assignee]=(map[t.assignee]||0)+1; });
   const agents=Object.keys(map).map(name=>({name,count:map[name]})).sort((a,b)=>b.count-a.count);
@@ -1579,20 +1936,162 @@ function renderAnalytics(){
 }
 
 // ── CHAT ──────────────────────────────────────────────────────────
-function renderNamePicker(){const dd=document.getElementById('name-picker-dropdown');const names=[...new Set([...DEFAULT_TEAM,...state.workingToday])];dd.innerHTML=`<div class="px-3 pt-2 pb-1 border-b border-white/5 flex items-center justify-between"><p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Select Name</p>${state.myName?`<button onclick="triggerPhotoUpload(event)" class="photo-upload-btn" title="Upload profile photo"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke="currentColor" stroke-width="2"/></svg></button>`:''}</div><div class="px-2 py-2">${names.map(n=>{const sel=n===state.myName;const photo=getPhoto(n);let avHtml;if(photo){avHtml=`<div class="w-7 h-7 rounded-full overflow-hidden flex-shrink-0"><img src="${photo}" class="w-full h-full object-cover"/></div>`;}else{const clr=memberColor(n);avHtml=`<div class="w-7 h-7 rounded-full ${clr} flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">${n[0]}</div>`;}const check=sel?`<svg class="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`:'';return`<div class="member-chip ${sel?'bg-indigo-500/10':''}" onclick="pickName('${n}')">${avHtml}<span class="flex-1 font-medium">${n}</span>${check}</div>`;}).join('')}</div>${state.myName?`<div class="px-3 pb-3 pt-1 border-t border-white/5"><button onclick="triggerPhotoUpload(event)" class="w-full flex items-center gap-2 text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-xl px-3 py-2 transition-all"><svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke-width="2"/></svg>${getPhoto(state.myName)?'Change Profile Photo':'Upload Profile Photo'}</button></div>`:''}`;} 
-function toggleNamePicker(){renderNamePicker();document.getElementById('name-picker-dropdown').classList.toggle('open');}
-function pickName(name){state.myName=name;localStorage.setItem('dops_name',name);applyName(name);document.getElementById('name-picker-dropdown').classList.remove('open');renderNamePicker();}
-function applyName(name){const photo=getPhoto(name);const wrap=document.getElementById('my-avatar-wrap');if(photo){wrap.className='w-7 h-7 rounded-full overflow-hidden flex-shrink-0';wrap.innerHTML=`<img src="${photo}" class="w-full h-full object-cover" alt="${name}"/>`;}else{const clr=memberColor(name);wrap.className=`w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ${clr} flex items-center justify-center`;wrap.innerHTML=`<span class="text-[11px] font-bold text-white">${name[0].toUpperCase()}</span>`;}document.getElementById('my-name-label').textContent=name;}
+function renderNamePicker(){
+  const dd=document.getElementById('name-picker-dropdown');
+  const names=[...new Set([...DEFAULT_TEAM,...state.workingToday])];
+  dd.innerHTML=`<div class="px-3 pt-2 pb-1 border-b border-white/5 flex items-center justify-between"><p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Select Name</p>${state.myName?`<button onclick="triggerPhotoUpload(event)" class="photo-upload-btn" title="Upload profile photo"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke="currentColor" stroke-width="2"/></svg></button>`:''}</div><div class="px-2 py-2">${names.map(n=>{const sel=n===state.myName;const photo=getPhoto(n);let avHtml;if(photo){avHtml=`<div class="w-7 h-7 rounded-full overflow-hidden flex-shrink-0"><img src="${photo}" class="w-full h-full object-cover"/></div>`;}else{const clr=memberColor(n);avHtml=`<div class="w-7 h-7 rounded-full ${clr} flex items-center justify-center text-[11px] font-bold text-white flex-shrink-0">${n[0]}</div>`;}const check=sel?`<svg class="w-4 h-4 text-indigo-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>`:'';return`<div class="member-chip ${sel?'bg-indigo-500/10':''}" onclick="pickName('${n}')">${avHtml}<span class="flex-1 font-medium">${n}</span>${check}</div>`;}).join('')}</div>${state.myName?`<div class="px-3 pb-3 pt-1 border-t border-white/5"><button onclick="triggerPhotoUpload(event)" class="w-full flex items-center gap-2 text-xs text-indigo-400 hover:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 rounded-xl px-3 py-2 transition-all"><svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><circle cx="12" cy="13" r="3" stroke-width="2"/></svg>${getPhoto(state.myName)?'Change Profile Photo':'Upload Profile Photo'}</button></div>`:''}`;
+}
+
+function toggleNamePicker(){
+  renderNamePicker();
+  document.getElementById('name-picker-dropdown').classList.toggle('open');
+}
+
+function pickName(name){
+  state.myName=name;
+  localStorage.setItem('dops_name',name);
+  applyName(name);
+  document.getElementById('name-picker-dropdown').classList.remove('open');
+  renderNamePicker();
+}
+
+function applyName(name){
+  const photo=getPhoto(name);
+  const wrap=document.getElementById('my-avatar-wrap');
+  if(photo){
+    wrap.className='w-7 h-7 rounded-full overflow-hidden flex-shrink-0';
+    wrap.innerHTML=`<img src="${photo}" class="w-full h-full object-cover" alt="${name}"/>`;
+  }else{
+    const clr=memberColor(name);
+    wrap.className=`w-7 h-7 rounded-full overflow-hidden flex-shrink-0 ${clr} flex items-center justify-center`;
+    wrap.innerHTML=`<span class="text-[11px] font-bold text-white">${name[0].toUpperCase()}</span>`;
+  }
+  document.getElementById('my-name-label').textContent=name;
+}
+
 function esc(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
 function chatTimeStr(ts){const d=new Date(ts);const now=new Date();const diffDays=Math.floor((now-d)/86400000);const t=d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});if(diffDays===0)return t;if(diffDays===1)return`Yesterday ${t}`;return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+t;}
-function renderChat(){const el=document.getElementById('chat-scroll');const msgs=state.chatMessages;const keys=Object.keys(msgs).sort((a,b)=>(msgs[a].ts||0)-(msgs[b].ts||0));if(!keys.length){el.innerHTML=`<div class="flex flex-col items-center justify-center gap-3 py-20"><div class="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center"><svg class="w-7 h-7 text-indigo-400/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div><p class="text-sm text-slate-500 font-semibold">No messages yet</p></div>`;return;}const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<80;let html='';let prevDate='';keys.forEach(key=>{const m=msgs[key];const dateLabel=new Date(m.ts||Date.now()).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});if(dateLabel!==prevDate){html+=`<div class="flex items-center gap-3 py-3"><div class="flex-1 h-px bg-white/5"></div><span class="text-[10px] text-slate-600 font-mono uppercase tracking-wider px-3 flex-shrink-0">${dateLabel}</span><div class="flex-1 h-px bg-white/5"></div></div>`;prevDate=dateLabel;}const isOwn=m.sender===state.myName;const senderPhoto=getPhoto(m.sender||'');const senderClr=memberColor(m.sender||'?');const senderInit=(m.sender||'?')[0].toUpperCase();const clickAv=`onclick="viewPhoto('${(m.sender||'').replace(/'/g,"\\'")}');event.stopPropagation();" title="View ${esc(m.sender||'')}'s photo"`;let bubbleAv;if(senderPhoto){bubbleAv=`<div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 mb-5 av-clickable" ${clickAv}><img src="${senderPhoto}" class="w-full h-full object-cover" alt="${esc(m.sender)}"/></div>`;}else{bubbleAv=`<div class="w-8 h-8 rounded-full ${senderClr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mb-5 av-clickable" ${clickAv}>${senderInit}</div>`;}const editedBadge=m.edited?`<span class="text-[9px] text-slate-600 ml-1">(edited)</span>`:'';const actBtns=isOwn?`<button onclick="startEdit('${key}')" title="Edit" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-blue-500/20 text-slate-500 hover:text-blue-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="openDelMsg('${key}')" title="Delete" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>`:'';if(isOwn){html+=`<div class="chat-bubble flex items-end justify-end gap-2 group" data-key="${key}"><div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div><div class="max-w-[68%]"><div class="bubble-own rounded-2xl rounded-br-sm px-4 py-2.5"><p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p></div><p class="text-[10px] text-slate-600 mt-1 text-right font-mono">${chatTimeStr(m.ts)}</p></div>${bubbleAv}</div>`;}else{html+=`<div class="chat-bubble flex items-end gap-2 group" data-key="${key}">${bubbleAv}<div class="max-w-[68%]"><p class="text-[10px] text-slate-500 font-semibold mb-1 ml-1">${esc(m.sender||'Unknown')}</p><div class="bubble-other rounded-2xl rounded-bl-sm px-4 py-2.5"><p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p></div><p class="text-[10px] text-slate-600 mt-1 font-mono ml-1">${chatTimeStr(m.ts)}</p></div><div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div></div>`;}});el.innerHTML=html;if(atBottom)el.scrollTop=el.scrollHeight;}
-async function sendMsg(){if(!state.myName){showToast('Select your name first','No name set');toggleNamePicker();return;}const inp=document.getElementById('chat-input');const text=inp.value.trim();if(!text)return;if(state.editingKey){await chatRef.child(state.editingKey).update({text,edited:true,editedAt:Date.now()}).catch(e=>console.error(e));cancelEdit();inp.value='';inp.style.height='auto';return;}inp.value='';inp.style.height='auto';await chatRef.push({sender:state.myName,text,ts:Date.now()}).catch(e=>console.error(e));setTimeout(()=>{const el=document.getElementById('chat-scroll');el.scrollTop=el.scrollHeight;},120);}
-function chatKeydown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}if(e.key==='Escape'&&state.editingKey)cancelEdit();}
-function startEdit(key){const m=state.chatMessages[key];if(!m)return;if(m.sender!==state.myName){showToast('You can only edit your own messages','Not allowed');return;}state.editingKey=key;const inp=document.getElementById('chat-input');inp.value=m.text;inp.style.height='auto';inp.style.height=Math.min(inp.scrollHeight,120)+'px';inp.focus();document.getElementById('edit-bar').classList.remove('hidden');document.getElementById('edit-preview').textContent=(m.text||'').substring(0,60)+((m.text||'').length>60?'…':'');}
-function cancelEdit(){state.editingKey=null;document.getElementById('edit-bar').classList.add('hidden');const inp=document.getElementById('chat-input');inp.value='';inp.style.height='auto';}
-function openDelMsg(key){const m=state.chatMessages[key];if(!m)return;state.pendingDelKey=key;document.getElementById('del-msg-preview').textContent=(m.text||'').substring(0,80)+((m.text||'').length>80?'…':'');document.getElementById('del-msg-modal').classList.add('open');}
-function closeDelMsgModal(){state.pendingDelKey=null;document.getElementById('del-msg-modal').classList.remove('open');}
-async function confirmDelMsg(){const key=state.pendingDelKey;if(!key)return;closeDelMsgModal();await chatRef.child(key).remove().catch(e=>console.error(e));showToast('Message deleted','Chat');}
+
+function renderChat(){
+  const el=document.getElementById('chat-scroll');
+  const msgs=state.chatMessages;
+  const keys=Object.keys(msgs).sort((a,b)=>(msgs[a].ts||0)-(msgs[b].ts||0));
+  if(!keys.length){
+    el.innerHTML=`<div class="flex flex-col items-center justify-center gap-3 py-20"><div class="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center"><svg class="w-7 h-7 text-indigo-400/40" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg></div><p class="text-sm text-slate-500 font-semibold">No messages yet</p></div>`;
+    return;
+  }
+  const atBottom=el.scrollHeight-el.scrollTop-el.clientHeight<80;
+  let html='';
+  let prevDate='';
+  keys.forEach(key=>{
+    const m=msgs[key];
+    const dateLabel=new Date(m.ts||Date.now()).toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+    if(dateLabel!==prevDate){
+      html+=`<div class="flex items-center gap-3 py-3"><div class="flex-1 h-px bg-white/5"></div><span class="text-[10px] text-slate-600 font-mono uppercase tracking-wider px-3 flex-shrink-0">${dateLabel}</span><div class="flex-1 h-px bg-white/5"></div></div>`;
+      prevDate=dateLabel;
+    }
+    const isOwn=m.sender===state.myName;
+    const senderPhoto=getPhoto(m.sender||'');
+    const senderClr=memberColor(m.sender||'?');
+    const senderInit=(m.sender||'?')[0].toUpperCase();
+    const clickAv=`onclick="viewPhoto('${(m.sender||'').replace(/'/g,"\\'")}');event.stopPropagation();" title="View ${esc(m.sender||'')}'s photo"`;
+    let bubbleAv;
+    if(senderPhoto){
+      bubbleAv=`<div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 mb-5 av-clickable" ${clickAv}><img src="${senderPhoto}" class="w-full h-full object-cover" alt="${esc(m.sender)}"/></div>`;
+    }else{
+      bubbleAv=`<div class="w-8 h-8 rounded-full ${senderClr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mb-5 av-clickable" ${clickAv}>${senderInit}</div>`;
+    }
+    const editedBadge=m.edited?`<span class="text-[9px] text-slate-600 ml-1">(edited)</span>`:'';
+    const actBtns=isOwn?`<button onclick="startEdit('${key}')" title="Edit" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-blue-500/20 text-slate-500 hover:text-blue-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="openDelMsg('${key}')" title="Delete" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>`:'';
+    
+    if(isOwn){
+      html+=`<div class="chat-bubble flex items-end justify-end gap-2 group" data-key="${key}"><div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div><div class="max-w-[68%]"><div class="bubble-own rounded-2xl rounded-br-sm px-4 py-2.5"><p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p></div><p class="text-[10px] text-slate-600 mt-1 text-right font-mono">${chatTimeStr(m.ts)}</p></div>${bubbleAv}</div>`;
+    }else{
+      html+=`<div class="chat-bubble flex items-end gap-2 group" data-key="${key}">${bubbleAv}<div class="max-w-[68%]"><p class="text-[10px] text-slate-500 font-semibold mb-1 ml-1">${esc(m.sender||'Unknown')}</p><div class="bubble-other rounded-2xl rounded-bl-sm px-4 py-2.5"><p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p></div><p class="text-[10px] text-slate-600 mt-1 font-mono ml-1">${chatTimeStr(m.ts)}</p></div><div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div></div>`;
+    }
+  });
+  el.innerHTML=html;
+  if(atBottom)el.scrollTop=el.scrollHeight;
+}
+
+async function sendMsg(){
+  if(!state.myName){
+    showToast('Select your name first','No name set');
+    toggleNamePicker();
+    return;
+  }
+  const inp=document.getElementById('chat-input');
+  const text=inp.value.trim();
+  if(!text)return;
+  if(state.editingKey){
+    await chatRef.child(state.editingKey).update({text,edited:true,editedAt:Date.now()}).catch(e=>console.error(e));
+    cancelEdit();
+    inp.value='';
+    inp.style.height='auto';
+    return;
+  }
+  inp.value='';
+  inp.style.height='auto';
+  await chatRef.push({sender:state.myName,text,ts:Date.now()}).catch(e=>console.error(e));
+  setTimeout(()=>{
+    const el=document.getElementById('chat-scroll');
+    el.scrollTop=el.scrollHeight;
+  },120);
+}
+
+function chatKeydown(e){
+  if(e.key==='Enter'&&!e.shiftKey){
+    e.preventDefault();
+    sendMsg();
+  }
+  if(e.key==='Escape'&&state.editingKey)cancelEdit();
+}
+
+function startEdit(key){
+  const m=state.chatMessages[key];
+  if(!m)return;
+  if(m.sender!==state.myName){
+    showToast('You can only edit your own messages','Not allowed');
+    return;
+  }
+  state.editingKey=key;
+  const inp=document.getElementById('chat-input');
+  inp.value=m.text;
+  inp.style.height='auto';
+  inp.style.height=Math.min(inp.scrollHeight,120)+'px';
+  inp.focus();
+  document.getElementById('edit-bar').classList.remove('hidden');
+  document.getElementById('edit-preview').textContent=(m.text||'').substring(0,60)+((m.text||'').length>60?'…':'');
+}
+
+function cancelEdit(){
+  state.editingKey=null;
+  document.getElementById('edit-bar').classList.add('hidden');
+  const inp=document.getElementById('chat-input');
+  inp.value='';
+  inp.style.height='auto';
+}
+
+function openDelMsg(key){
+  const m=state.chatMessages[key];
+  if(!m)return;
+  state.pendingDelKey=key;
+  document.getElementById('del-msg-preview').textContent=(m.text||'').substring(0,80)+((m.text||'').length>80?'…':'');
+  document.getElementById('del-msg-modal').classList.add('open');
+}
+
+function closeDelMsgModal(){
+  state.pendingDelKey=null;
+  document.getElementById('del-msg-modal').classList.remove('open');
+}
+
+async function confirmDelMsg(){
+  const key=state.pendingDelKey;
+  if(!key)return;
+  closeDelMsgModal();
+  await chatRef.child(key).remove().catch(e=>console.error(e));
+  showToast('Message deleted','Chat');
+}
 
 // ── NAV ────────────────────────────────────────────────────────────
 function showSection(name){
@@ -1612,20 +2111,103 @@ function showSection(name){
   const ms=document.getElementById('main-scroll');
   chatPanel.style.display='none';ms.style.display='';
   state.chatOpen=false;
-  if(name==='chat'){chatPanel.style.display='flex';chatPanel.style.flexDirection='column';ms.style.display='none';state.chatOpen=true;state.lastSeenTs=Date.now();localStorage.setItem('dops_chat_seen',state.lastSeenTs.toString());document.getElementById('chat-badge').classList.add('hidden');setTimeout(()=>{const el=document.getElementById('chat-scroll');if(el)el.scrollTop=el.scrollHeight;},80);}
+  if(name==='chat'){
+    chatPanel.style.display='flex';
+    chatPanel.style.flexDirection='column';
+    ms.style.display='none';
+    state.chatOpen=true;
+    state.lastSeenTs=Date.now();
+    localStorage.setItem('dops_chat_seen',state.lastSeenTs.toString());
+    document.getElementById('chat-badge').classList.add('hidden');
+    setTimeout(()=>{
+      const el=document.getElementById('chat-scroll');
+      if(el)el.scrollTop=el.scrollHeight;
+    },80);
+  }
   if(name==='team')renderTeamStats();
   if(name==='analytics')renderAnalytics();
   if(name==='agents')renderAgentsPage();
   if(name==='tickets')renderAllTable();
 }
-function filterTickets(f){state.filter=f;state.currentPage=1;['all','Pending','Completed','Skipped'].forEach(x=>{const btn=document.getElementById('filter-'+x);if(!btn)return;btn.className=x===f?'filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-indigo-600 text-white':'filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white';});renderAllTable();}
-function searchTickets(){state.search=document.getElementById('search-input').value.toLowerCase();state.currentPage=1;renderAllTable();}
-function openModal(){renderPreview();const m=document.getElementById('modal');m.classList.remove('hidden');m.classList.add('flex');document.getElementById('modal-dup-warning').classList.add('hidden');setTimeout(()=>document.getElementById('modal-title').focus(),60);}
-function closeModal(){const m=document.getElementById('modal');m.classList.add('hidden');m.classList.remove('flex');}
-function showToast(msg,sub='Saved to Firebase'){document.getElementById('toast-msg').textContent=msg;document.getElementById('toast-sub').textContent=sub;const t=document.getElementById('toast');t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),3800);}
-function setSubmitting(v){state.submitting=v;['submit-btn','modal-submit-btn'].forEach(id=>{const b=document.getElementById(id);if(!b)return;b.disabled=v;b.style.opacity=v?'0.6':'1';b.style.cursor=v?'not-allowed':'pointer';if(v)b.innerHTML=`<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Saving…`;else b.innerHTML=`<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Submit Ticket`;});}
-function toggleDark(){state.darkMode=!state.darkMode;document.documentElement.classList.toggle('dark',state.darkMode);document.getElementById('dark-label').textContent=state.darkMode?'Light Mode':'Dark Mode';}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeConfirmModal();closeSkipModal();closeEditModal();closeSkipRotationModal();closeDelMsgModal();closeCropModal();closePhotoViewer();closeEditAgentModal();closeDeleteAgentModal();closeViewAgentTickets();closeDeleteTicketModal();closeFinalDeleteTicketModal();closeAddAgentModal();}if(e.key==='Enter'&&!document.getElementById('modal').classList.contains('hidden')&&document.activeElement!==document.getElementById('chat-input')&&document.activeElement!==document.getElementById('delete-agent-input')&&document.activeElement!==document.getElementById('agent-ticket-search')&&document.activeElement!==document.getElementById('delete-ticket-input')&&document.activeElement!==document.getElementById('add-agent-name-input')&&document.activeElement!==document.getElementById('add-agent-role-input'))submitTicketModal();});
+
+function filterTickets(f){
+  state.filter=f;
+  state.currentPage=1;
+  ['all','Pending','Completed','Skipped'].forEach(x=>{
+    const btn=document.getElementById('filter-'+x);
+    if(!btn)return;
+    btn.className=x===f?'filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-indigo-600 text-white':'filter-btn text-xs font-semibold px-4 py-1.5 rounded-full bg-white/5 text-slate-400 hover:text-white';
+  });
+  renderAllTable();
+}
+
+function searchTickets(){
+  state.search=document.getElementById('search-input').value.toLowerCase();
+  state.currentPage=1;
+  renderAllTable();
+}
+
+function openModal(){
+  renderPreview();
+  const m=document.getElementById('modal');
+  m.classList.remove('hidden');
+  m.classList.add('flex');
+  document.getElementById('modal-dup-warning').classList.add('hidden');
+  setTimeout(()=>document.getElementById('modal-title').focus(),60);
+}
+
+function closeModal(){
+  const m=document.getElementById('modal');
+  m.classList.add('hidden');
+  m.classList.remove('flex');
+}
+
+function showToast(msg,sub='Saved to Firebase'){
+  document.getElementById('toast-msg').textContent=msg;
+  document.getElementById('toast-sub').textContent=sub;
+  const t=document.getElementById('toast');
+  t.classList.remove('hidden');
+  setTimeout(()=>t.classList.add('hidden'),3800);
+}
+
+function setSubmitting(v){
+  state.submitting=v;
+  ['submit-btn','modal-submit-btn'].forEach(id=>{
+    const b=document.getElementById(id);
+    if(!b)return;
+    b.disabled=v;
+    b.style.opacity=v?'0.6':'1';
+    b.style.cursor=v?'not-allowed':'pointer';
+    if(v)b.innerHTML=`<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg> Saving…`;
+    else b.innerHTML=`<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg> Submit Ticket`;
+  });
+}
+
+function toggleDark(){
+  state.darkMode=!state.darkMode;
+  document.documentElement.classList.toggle('dark',state.darkMode);
+  document.getElementById('dark-label').textContent=state.darkMode?'Light Mode':'Dark Mode';
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    closeModal();
+    closeConfirmModal();
+    closeSkipModal();
+    closeEditModal();
+    closeSkipRotationModal();
+    closeDelMsgModal();
+    closeCropModal();
+    closePhotoViewer();
+    closeEditAgentModal();
+    closeDeleteAgentModal();
+    closeViewAgentTickets();
+    closeDeleteTicketModal();
+    closeFinalDeleteTicketModal();
+    closeAddAgentModal();
+  }
+  if(e.key==='Enter'&&!document.getElementById('modal').classList.contains('hidden')&&document.activeElement!==document.getElementById('chat-input')&&document.activeElement!==document.getElementById('delete-agent-input')&&document.activeElement!==document.getElementById('agent-ticket-search')&&document.activeElement!==document.getElementById('delete-ticket-input')&&document.activeElement!==document.getElementById('add-agent-name-input')&&document.activeElement!==document.getElementById('add-agent-role-input'))submitTicketModal();
+});
 
 init();
 </script>
