@@ -86,6 +86,7 @@
   #name-picker-dropdown{position:absolute;top:calc(100% + 8px);right:0;left:auto;z-index:60;background:rgba(8,12,30,0.98);border:1px solid rgba(99,102,241,0.25);border-radius:14px;box-shadow:0 20px 48px rgba(0,0,0,0.6);min-width:230px;max-height:300px;overflow-y:auto;display:none;backdrop-filter:blur(20px);}
   #name-picker-dropdown.open{display:block;animation:fadeSlide 0.15s ease forwards;}
   .edit-bar{background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);}
+  .reply-bar{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.22);}
   .photo-upload-btn{width:28px;height:28px;border-radius:8px;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#818cf8;transition:all 0.15s ease;flex-shrink:0;}
   .photo-upload-btn:hover{background:rgba(99,102,241,0.28);color:#a5b4fc;border-color:rgba(99,102,241,0.5);}
   .av-photo{object-fit:cover;border-radius:9999px;}
@@ -125,13 +126,43 @@
   .icon-btn{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;transition:all 0.2s ease;cursor:pointer;border:none;}
   .icon-btn:hover{transform:translateY(-2px);}
   .icon-btn:active{transform:scale(0.95);}
+
+  /* ── NEW: chat media / reply styles ─────────────────────── */
+  .chat-media-img{max-width:280px;max-height:280px;border-radius:12px;cursor:pointer;transition:transform 0.2s ease;object-fit:cover;display:block;}
+  .chat-media-img:hover{transform:scale(1.02);}
+  .chat-media-gif{max-width:240px;max-height:240px;border-radius:12px;display:block;}
+  .quoted-box{display:flex;align-items:flex-start;gap:8px;padding:6px 10px;border-radius:8px;background:rgba(0,0,0,0.22);border-left:3px solid rgba(99,102,241,0.6);margin-bottom:6px;cursor:pointer;transition:background 0.15s ease;max-width:100%;}
+  .quoted-box:hover{background:rgba(99,102,241,0.18);}
+  .quoted-box .q-sender{font-size:10px;font-weight:700;color:#a5b4fc;text-transform:uppercase;letter-spacing:0.5px;}
+  .quoted-box .q-text{font-size:11px;color:#cbd5e1;line-height:1.35;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word;}
+  .reply-jump-highlight{animation:jumpFlash 1.6s ease;}
+  @keyframes jumpFlash{0%,100%{background:transparent}20%{background:rgba(99,102,241,0.25)}60%{background:rgba(99,102,241,0.18)}}
+  .chat-composer-btn{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:#94a3b8;cursor:pointer;transition:all 0.15s ease;flex-shrink:0;}
+  .chat-composer-btn:hover{background:rgba(99,102,241,0.18);border-color:rgba(99,102,241,0.4);color:#a5b4fc;transform:translateY(-1px);}
+  #gif-modal-overlay{position:fixed;inset:0;z-index:500;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);}
+  #gif-modal-overlay.open{display:flex;}
+  .gif-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .gif-item{border-radius:10px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:all 0.15s ease;background:rgba(255,255,255,0.04);aspect-ratio:1/1;}
+  .gif-item img{width:100%;height:100%;object-fit:cover;display:block;}
+  .gif-item:hover{border-color:rgba(99,102,241,0.7);transform:scale(1.04);}
+  #img-lightbox{position:fixed;inset:0;z-index:10001;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.92);backdrop-filter:blur(14px);padding:24px;cursor:zoom-out;}
+  #img-lightbox.open{display:flex;animation:lbIn 0.25s ease;}
+  #img-lightbox img{max-width:92vw;max-height:88vh;border-radius:14px;box-shadow:0 32px 80px rgba(0,0,0,0.8);cursor:default;}
+  @keyframes lbIn{from{opacity:0}to{opacity:1}}
+  .upload-progress{height:3px;background:rgba(99,102,241,0.15);border-radius:2px;overflow:hidden;margin-top:6px;}
+  .upload-progress-bar{height:100%;background:linear-gradient(90deg,#6366f1,#8b5cf6);width:0%;transition:width 0.2s ease;border-radius:2px;}
+  .pending-attach{display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,0.05);border:1px solid rgba(99,102,241,0.25);border-radius:12px;margin-bottom:10px;}
+  .pending-attach img{width:56px;height:56px;object-fit:cover;border-radius:8px;flex-shrink:0;}
+  .pending-attach .rm-btn{width:26px;height:26px;border-radius:8px;background:rgba(239,68,68,0.15);border:none;color:#f87171;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s ease;flex-shrink:0;}
+  .pending-attach .rm-btn:hover{background:rgba(239,68,68,0.35);color:#fff;}
 </style>
 </head>
 <body class="bg-mesh min-h-screen text-slate-100 dark">
 
 <input type="file" id="photo-upload-input" accept="image/*" class="hidden" onchange="handlePhotoUpload(event)"/>
+<input type="file" id="chat-media-input" accept="image/*,image/gif" class="hidden" onchange="handleChatMediaUpload(event)"/>
 
-<!-- PHOTO VIEWER LIGHTBOX -->
+<!-- PHOTO VIEWER LIGHTBOX (profile) -->
 <div id="photo-viewer" onclick="closePhotoViewer()">
   <button id="photo-viewer-close" onclick="closePhotoViewer()">
     <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -143,6 +174,32 @@
     </div>
     <p id="photo-viewer-name">—</p>
     <p id="photo-viewer-sub">Team Member</p>
+  </div>
+</div>
+
+<!-- CHAT IMAGE LIGHTBOX -->
+<div id="img-lightbox" onclick="closeImgLightbox()">
+  <img id="img-lightbox-img" src="" alt="" onclick="event.stopPropagation()"/>
+</div>
+
+<!-- GIF PICKER MODAL -->
+<div id="gif-modal-overlay">
+  <div class="relative z-10 w-full max-w-2xl">
+    <div class="glass rounded-2xl p-6" style="background:rgba(10,16,36,0.98);border:1px solid rgba(99,102,241,0.25);">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-base font-bold text-white">Send a GIF</h3>
+          <p class="text-xs text-slate-500">Pick one below or paste a GIF URL</p>
+        </div>
+        <button onclick="closeGifModal()" class="text-slate-500 hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <div class="flex gap-2 mb-4">
+        <input id="gif-url-input" type="text" placeholder="Paste a GIF URL (ends with .gif or giphy media link)…" class="form-input flex-1 bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-2.5 placeholder-slate-600 transition-all" onkeydown="if(event.key==='Enter'){event.preventDefault();sendGifFromUrl();}"/>
+        <button onclick="sendGifFromUrl()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all flex-shrink-0">Send</button>
+      </div>
+      <p class="text-[11px] uppercase tracking-widest text-slate-500 font-semibold mb-2">Quick picks</p>
+      <div id="gif-grid" class="gif-grid"></div>
+    </div>
   </div>
 </div>
 
@@ -757,16 +814,44 @@
       </div>
       <div id="chat-scroll" class="flex-1 overflow-y-auto px-8 py-5 space-y-2"><div class="flex items-center justify-center py-12"><div class="flex items-center gap-2"><div class="w-4 h-4 border-2 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin"></div><span class="text-xs text-slate-600">Loading messages…</span></div></div></div>
       <div class="flex-shrink-0 px-8 py-4 border-t border-white/5" style="background:rgba(15,23,42,0.6)">
+        <!-- EDIT BAR -->
         <div id="edit-bar" class="edit-bar hidden mb-3 rounded-xl px-4 py-2 flex items-center gap-3">
           <svg class="w-4 h-4 text-blue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
           <div class="flex-1 min-w-0"><p class="text-xs font-semibold text-blue-400">Editing message</p><p class="text-xs text-slate-400 truncate" id="edit-preview">—</p></div>
           <button onclick="cancelEdit()" class="text-slate-500 hover:text-white transition-colors"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
         </div>
-        <div class="flex items-end gap-3">
+        <!-- REPLY BAR (NEW) -->
+        <div id="reply-bar" class="reply-bar hidden mb-3 rounded-xl px-4 py-2 flex items-center gap-3">
+          <svg class="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+          <div class="flex-1 min-w-0"><p class="text-xs font-semibold text-emerald-400">Replying to <span id="reply-bar-sender">—</span></p><p class="text-xs text-slate-400 truncate" id="reply-bar-preview">—</p></div>
+          <button onclick="cancelReply()" class="text-slate-500 hover:text-white transition-colors"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+        </div>
+        <!-- PENDING ATTACHMENT PREVIEW (NEW) -->
+        <div id="pending-attach" class="hidden">
+          <div class="pending-attach">
+            <img id="pending-attach-img" src="" alt="attachment"/>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-semibold text-white" id="pending-attach-name">image.jpg</p>
+              <p class="text-[10px] text-slate-500">Ready to send</p>
+              <div class="upload-progress"><div class="upload-progress-bar" id="pending-attach-bar" style="width:100%"></div></div>
+            </div>
+            <button class="rm-btn" onclick="clearPendingAttach()" title="Remove">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+        <!-- COMPOSER ROW -->
+        <div class="flex items-end gap-2">
+          <button class="chat-composer-btn" onclick="triggerChatMediaUpload()" title="Attach image">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </button>
+          <button class="chat-composer-btn" onclick="openGifModal()" title="Send a GIF">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/></svg>
+          </button>
           <textarea id="chat-input" rows="1" placeholder="Type a message… (Enter to send, Shift+Enter for new line)" class="flex-1 form-input bg-slate-800/60 border border-white/10 text-white text-sm rounded-xl px-4 py-3 placeholder-slate-600 transition-all resize-none overflow-y-auto" style="min-height:46px;max-height:120px;" onkeydown="chatKeydown(event)" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
           <button onclick="sendMsg()" class="flex-shrink-0 w-11 h-11 bg-indigo-600 hover:bg-indigo-500 rounded-xl flex items-center justify-center transition-all shadow-lg shadow-indigo-900/40"><svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg></button>
         </div>
-        <p class="text-[10px] text-slate-600 text-center mt-2">Messages sync across all team members in real-time via Firebase</p>
+        <p class="text-[10px] text-slate-600 text-center mt-2">Messages sync across all team members in real-time via Firebase · Tip: hover any message and click ↩ to reply</p>
       </div>
     </div>
 
@@ -908,7 +993,7 @@ function refreshUI(){
 // ── AVATAR HTML ─────────────────────────────────────────────────
 function avatarHTML(name,szClass,textSz='text-[10px]',extra='',clickable=false){
   const photo=getPhoto(name);
-  const clickAttr=clickable?`onclick="viewPhoto('${name.replace(/'/g,"\\'")}');event.stopPropagation();" title="View ${name}'s photo"`:'';
+  const clickAttr=clickable?`onclick="viewPhoto('${name.replace(/'/g,"\\'")}');event.stopPropagation();" title="View ${name}'s photo"`: '';
   const clickCls=clickable?'av-clickable':'';
   if(photo)return`<div class="${szClass} rounded-full overflow-hidden flex-shrink-0 ${clickCls} ${extra}" ${clickAttr}><img src="${photo}" class="w-full h-full object-cover" alt="${name}" onerror="this.style.display='none';this.parentElement.innerHTML='<span class=&quot;${textSz} font-bold text-white&quot;>${(name||'?')[0].toUpperCase()}</span>'"/></div>`;
   const clr=memberColor(name);
@@ -992,6 +1077,8 @@ let state={
   editAgentName:null, deleteAgentName:null,
   agentTicketsPage:1, agentTicketsPageSize:100, agentTicketsSearch:'', agentTicketsAgent:null,
   pendingDeleteTicketId:null,
+  // NEW: reply + attachment
+  replyingTo:null, pendingAttachment:null,
 };
 
 function setFbStatus(cls,label){document.getElementById('fb-dot').className='fb-dot '+cls;document.getElementById('fb-label').textContent=label;}
@@ -1079,6 +1166,8 @@ async function init(){
   });
   window.addEventListener('scroll',()=>{if(document.getElementById('add-dropdown').classList.contains('open'))positionDropdown();},true);
   window.addEventListener('resize',()=>{if(document.getElementById('add-dropdown').classList.contains('open'))positionDropdown();});
+  // Build GIF quick picks
+  buildGifGrid();
 }
 
 function updateAgentCount(){
@@ -1972,6 +2061,44 @@ function applyName(name){
 function esc(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
 function chatTimeStr(ts){const d=new Date(ts);const now=new Date();const diffDays=Math.floor((now-d)/86400000);const t=d.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});if(diffDays===0)return t;if(diffDays===1)return`Yesterday ${t}`;return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+t;}
 
+// ── NEW: chat media + reply helpers ───────────────────────────────
+function shortText(str,n=60){str=String(str||'');return str.length>n?str.substring(0,n)+'…':str;}
+
+function buildQuotedHTML(reply){
+  if(!reply) return '';
+  const rSender=esc(reply.sender||'Unknown');
+  let rPreview;
+  if(reply.mediaType==='image') rPreview='📷 Photo';
+  else if(reply.mediaType==='gif') rPreview='🎞 GIF';
+  else rPreview=esc(shortText(reply.text||'',80));
+  return `<div class="quoted-box" onclick="scrollToMsg('${reply.key}')" title="Jump to message">
+    <div class="flex-1 min-w-0">
+      <p class="q-sender">${rSender}</p>
+      <p class="q-text">${rPreview}</p>
+    </div>
+  </div>`;
+}
+
+function scrollToMsg(key){
+  if(!key) return;
+  const el=document.querySelector(`.chat-bubble[data-key="${key}"]`);
+  if(!el) return;
+  el.scrollIntoView({behavior:'smooth',block:'center'});
+  el.classList.remove('reply-jump-highlight');
+  void el.offsetWidth;
+  el.classList.add('reply-jump-highlight');
+  setTimeout(()=>el.classList.remove('reply-jump-highlight'),1700);
+}
+
+function openImgLightbox(src){
+  document.getElementById('img-lightbox-img').src=src;
+  document.getElementById('img-lightbox').classList.add('open');
+}
+function closeImgLightbox(){
+  document.getElementById('img-lightbox').classList.remove('open');
+  document.getElementById('img-lightbox-img').src='';
+}
+
 function renderChat(){
   const el=document.getElementById('chat-scroll');
   const msgs=state.chatMessages;
@@ -2002,18 +2129,161 @@ function renderChat(){
       bubbleAv=`<div class="w-8 h-8 rounded-full ${senderClr} flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mb-5 av-clickable" ${clickAv}>${senderInit}</div>`;
     }
     const editedBadge=m.edited?`<span class="text-[9px] text-slate-600 ml-1">(edited)</span>`:'';
-    const actBtns=isOwn?`<button onclick="startEdit('${key}')" title="Edit" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-blue-500/20 text-slate-500 hover:text-blue-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="openDelMsg('${key}')" title="Delete" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>`:'';
-    
+
+    // Actions: reply (always), edit/delete (own only)
+    const replyBtn=`<button onclick="startReply('${key}')" title="Reply" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-emerald-500/20 text-slate-500 hover:text-emerald-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg></button>`;
+    const editDelBtns=isOwn?`<button onclick="startEdit('${key}')" title="Edit" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-blue-500/20 text-slate-500 hover:text-blue-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg></button><button onclick="openDelMsg('${key}')" title="Delete" class="w-7 h-7 rounded-lg bg-white/5 hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 flex items-center justify-center transition-all"><svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>`:'';
+    const actBtns=replyBtn+editDelBtns;
+
+    // Media content
+    let mediaHTML='';
+    if(m.mediaType==='image' && m.mediaUrl){
+      mediaHTML=`<img src="${m.mediaUrl}" class="chat-media-img mt-1" onclick="openImgLightbox('${m.mediaUrl}')" alt="image"/>`;
+    } else if(m.mediaType==='gif' && m.mediaUrl){
+      mediaHTML=`<img src="${m.mediaUrl}" class="chat-media-gif mt-1" alt="gif"/>`;
+    }
+    const textHTML=m.text?`<p class="text-sm text-white leading-relaxed break-words ${mediaHTML?'mt-2':''}">${esc(m.text)}${editedBadge}</p>`:(editedBadge?`<p class="text-[10px] text-slate-500">${editedBadge}</p>`:'');
+    const quotedHTML=buildQuotedHTML(m.replyTo);
+
     if(isOwn){
-      html+=`<div class="chat-bubble flex items-end justify-end gap-2 group" data-key="${key}"><div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div><div class="max-w-[68%]"><div class="bubble-own rounded-2xl rounded-br-sm px-4 py-2.5"><p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p></div><p class="text-[10px] text-slate-600 mt-1 text-right font-mono">${chatTimeStr(m.ts)}</p></div>${bubbleAv}</div>`;
+      html+=`<div class="chat-bubble flex items-end justify-end gap-2 group" data-key="${key}"><div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div><div class="max-w-[68%]"><div class="bubble-own rounded-2xl rounded-br-sm px-4 py-2.5">${quotedHTML}${mediaHTML}${textHTML}</div><p class="text-[10px] text-slate-600 mt-1 text-right font-mono">${chatTimeStr(m.ts)}</p></div>${bubbleAv}</div>`;
     }else{
-      html+=`<div class="chat-bubble flex items-end gap-2 group" data-key="${key}">${bubbleAv}<div class="max-w-[68%]"><p class="text-[10px] text-slate-500 font-semibold mb-1 ml-1">${esc(m.sender||'Unknown')}</p><div class="bubble-other rounded-2xl rounded-bl-sm px-4 py-2.5"><p class="text-sm text-white leading-relaxed break-words">${esc(m.text||'')}${editedBadge}</p></div><p class="text-[10px] text-slate-600 mt-1 font-mono ml-1">${chatTimeStr(m.ts)}</p></div><div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div></div>`;
+      html+=`<div class="chat-bubble flex items-end gap-2 group" data-key="${key}">${bubbleAv}<div class="max-w-[68%]"><p class="text-[10px] text-slate-500 font-semibold mb-1 ml-1">${esc(m.sender||'Unknown')}</p><div class="bubble-other rounded-2xl rounded-bl-sm px-4 py-2.5">${quotedHTML}${mediaHTML}${textHTML}</div><p class="text-[10px] text-slate-600 mt-1 font-mono ml-1">${chatTimeStr(m.ts)}</p></div><div class="msg-actions flex items-center gap-1 mb-5">${actBtns}</div></div>`;
     }
   });
   el.innerHTML=html;
   if(atBottom)el.scrollTop=el.scrollHeight;
 }
 
+// ── NEW: reply state ─────────────────────────────────────────────
+function startReply(key){
+  const m=state.chatMessages[key];
+  if(!m) return;
+  if(state.editingKey) cancelEdit();
+  state.replyingTo={key,sender:m.sender||'Unknown',text:m.text||'',mediaType:m.mediaType||null};
+  const bar=document.getElementById('reply-bar');
+  bar.classList.remove('hidden');
+  document.getElementById('reply-bar-sender').textContent=m.sender||'Unknown';
+  let preview;
+  if(m.mediaType==='image') preview='📷 Photo';
+  else if(m.mediaType==='gif') preview='🎞 GIF';
+  else preview=shortText(m.text||'',80);
+  document.getElementById('reply-bar-preview').textContent=preview;
+  const inp=document.getElementById('chat-input');
+  inp.focus();
+}
+function cancelReply(){
+  state.replyingTo=null;
+  document.getElementById('reply-bar').classList.add('hidden');
+}
+
+// ── NEW: image upload for chat ───────────────────────────────────
+function triggerChatMediaUpload(){
+  if(!state.myName){showToast('Select your name first','No name set');toggleNamePicker();return;}
+  document.getElementById('chat-media-input').click();
+}
+function handleChatMediaUpload(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  e.target.value='';
+  if(file.size>5*1024*1024){
+    showToast('Image too large (max 5MB)','Upload failed');
+    return;
+  }
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const dataUrl=ev.target.result;
+    // Compress if it's a large raster image (skip GIFs — they need to stay animated)
+    if(file.type==='image/gif'){
+      state.pendingAttachment={url:dataUrl,mediaType:'gif',name:file.name};
+      showPendingAttach();
+    } else {
+      compressImage(dataUrl,800,0.75).then(compressed=>{
+        state.pendingAttachment={url:compressed,mediaType:'image',name:file.name};
+        showPendingAttach();
+      }).catch(()=>{
+        state.pendingAttachment={url:dataUrl,mediaType:'image',name:file.name};
+        showPendingAttach();
+      });
+    }
+  };
+  reader.readAsDataURL(file);
+}
+function compressImage(dataUrl,maxDim,quality){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      let {width:w,height:h}=img;
+      if(w>h && w>maxDim){h=Math.round(h*maxDim/w);w=maxDim;}
+      else if(h>maxDim){w=Math.round(w*maxDim/h);h=maxDim;}
+      const c=document.createElement('canvas');
+      c.width=w;c.height=h;
+      const ctx=c.getContext('2d');
+      ctx.drawImage(img,0,0,w,h);
+      try{resolve(c.toDataURL('image/jpeg',quality));}catch(e){reject(e);}
+    };
+    img.onerror=reject;
+    img.src=dataUrl;
+  });
+}
+function showPendingAttach(){
+  const a=state.pendingAttachment;
+  if(!a) return;
+  const wrap=document.getElementById('pending-attach');
+  wrap.classList.remove('hidden');
+  document.getElementById('pending-attach-img').src=a.url;
+  document.getElementById('pending-attach-name').textContent=a.name||'attachment';
+  document.getElementById('pending-attach-bar').style.width='100%';
+}
+function clearPendingAttach(){
+  state.pendingAttachment=null;
+  document.getElementById('pending-attach').classList.add('hidden');
+  document.getElementById('pending-attach-img').src='';
+}
+
+// ── NEW: GIF picker ──────────────────────────────────────────────
+const GIF_QUICK_PICKS=[
+  'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif',
+  'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
+  'https://media.giphy.com/media/26ufdipQqU2lhNA4g/giphy.gif',
+  'https://media.giphy.com/media/3o6Zt6ML6BklcajjsA/giphy.gif',
+  'https://media.giphy.com/media/5GoVLqeAOo6PK/giphy.gif',
+  'https://media.giphy.com/media/13HgwGsXF0aiGY/giphy.gif',
+  'https://media.giphy.com/media/3ohzdIuqJoo8QdKlnW/giphy.gif',
+  'https://media.giphy.com/media/111ebonMs90YLu/giphy.gif',
+  'https://media.giphy.com/media/l3q2K5jinAlChoCLS/giphy.gif',
+  'https://media.giphy.com/media/3oKIPnAiaMCws8nOsE/giphy.gif',
+  'https://media.giphy.com/media/xT0xeJpnrWC4XWblEk/giphy.gif',
+  'https://media.giphy.com/media/26BRv0ThflsHCqDrG/giphy.gif'
+];
+function buildGifGrid(){
+  const grid=document.getElementById('gif-grid');
+  if(!grid) return;
+  grid.innerHTML=GIF_QUICK_PICKS.map(url=>`<div class="gif-item" onclick="sendGif('${url}')"><img src="${url}" loading="lazy" alt="gif"/></div>`).join('');
+}
+function openGifModal(){
+  if(!state.myName){showToast('Select your name first','No name set');toggleNamePicker();return;}
+  buildGifGrid();
+  document.getElementById('gif-modal-overlay').classList.add('open');
+  document.getElementById('gif-url-input').value='';
+}
+function closeGifModal(){document.getElementById('gif-modal-overlay').classList.remove('open');}
+function sendGif(url){
+  if(!url) return;
+  closeGifModal();
+  sendMessage({mediaType:'gif',mediaUrl:url,text:''});
+}
+function sendGifFromUrl(){
+  const url=document.getElementById('gif-url-input').value.trim();
+  if(!url){return;}
+  if(!/^https?:\/\//i.test(url)){
+    showToast('Please enter a valid URL','Invalid URL');
+    return;
+  }
+  sendGif(url);
+}
+
+// ── NEW: unified send ─────────────────────────────────────────────
 async function sendMsg(){
   if(!state.myName){
     showToast('Select your name first','No name set');
@@ -2022,17 +2292,48 @@ async function sendMsg(){
   }
   const inp=document.getElementById('chat-input');
   const text=inp.value.trim();
-  if(!text)return;
+  const attach=state.pendingAttachment;
+
+  // Edit mode
   if(state.editingKey){
+    if(!text){return;}
     await chatRef.child(state.editingKey).update({text,edited:true,editedAt:Date.now()}).catch(e=>console.error(e));
     cancelEdit();
     inp.value='';
     inp.style.height='auto';
     return;
   }
+
+  // Need at least text or attachment
+  if(!text && !attach) return;
+
+  const payload={text};
+  if(attach){
+    payload.mediaType=attach.mediaType;
+    payload.mediaUrl=attach.url;
+  }
+  if(state.replyingTo){
+    payload.replyTo={
+      key:state.replyingTo.key,
+      sender:state.replyingTo.sender,
+      text:state.replyingTo.text||'',
+      mediaType:state.replyingTo.mediaType||null
+    };
+  }
+
+  // Clear composer immediately for snappy feel
   inp.value='';
   inp.style.height='auto';
-  await chatRef.push({sender:state.myName,text,ts:Date.now()}).catch(e=>console.error(e));
+  clearPendingAttach();
+  cancelReply();
+
+  await sendMessage(payload);
+}
+
+async function sendMessage(payload){
+  payload.sender=state.myName;
+  payload.ts=Date.now();
+  await chatRef.push(payload).catch(e=>console.error(e));
   setTimeout(()=>{
     const el=document.getElementById('chat-scroll');
     el.scrollTop=el.scrollHeight;
@@ -2044,7 +2345,10 @@ function chatKeydown(e){
     e.preventDefault();
     sendMsg();
   }
-  if(e.key==='Escape'&&state.editingKey)cancelEdit();
+  if(e.key==='Escape'){
+    if(state.editingKey)cancelEdit();
+    if(state.replyingTo)cancelReply();
+  }
 }
 
 function startEdit(key){
@@ -2054,6 +2358,11 @@ function startEdit(key){
     showToast('You can only edit your own messages','Not allowed');
     return;
   }
+  if(m.mediaType){
+    showToast('Media messages can\'t be edited','Not allowed');
+    return;
+  }
+  if(state.replyingTo) cancelReply();
   state.editingKey=key;
   const inp=document.getElementById('chat-input');
   inp.value=m.text;
@@ -2076,7 +2385,11 @@ function openDelMsg(key){
   const m=state.chatMessages[key];
   if(!m)return;
   state.pendingDelKey=key;
-  document.getElementById('del-msg-preview').textContent=(m.text||'').substring(0,80)+((m.text||'').length>80?'…':'');
+  let preview;
+  if(m.mediaType==='image') preview='📷 Photo';
+  else if(m.mediaType==='gif') preview='🎞 GIF';
+  else preview=(m.text||'').substring(0,80)+((m.text||'').length>80?'…':'');
+  document.getElementById('del-msg-preview').textContent=preview;
   document.getElementById('del-msg-modal').classList.add('open');
 }
 
@@ -2205,6 +2518,9 @@ document.addEventListener('keydown',e=>{
     closeDeleteTicketModal();
     closeFinalDeleteTicketModal();
     closeAddAgentModal();
+    closeGifModal();
+    closeImgLightbox();
+    cancelReply();
   }
   if(e.key==='Enter'&&!document.getElementById('modal').classList.contains('hidden')&&document.activeElement!==document.getElementById('chat-input')&&document.activeElement!==document.getElementById('delete-agent-input')&&document.activeElement!==document.getElementById('agent-ticket-search')&&document.activeElement!==document.getElementById('delete-ticket-input')&&document.activeElement!==document.getElementById('add-agent-name-input')&&document.activeElement!==document.getElementById('add-agent-role-input'))submitTicketModal();
 });
